@@ -1,0 +1,12 @@
+<resources>
+    <string name="app_name">Reminder</string>
+    <string name="enter_reminder">Enter reminder</string>
+    <string name="set_reminder">Set Reminder</string>
+    <string name="test_notification">Test Notification</string>
+    <string name="reminder">Reminder</string>
+    <string name="delete_button_desc">Delete</string>
+    <string name="notification_title">Reminder Alert</string>
+    <string name="payment_input_hint">Enter payment name</string>
+    <string name="clear_all">Clear All</string>
+    <string name="add_payment">Add Payment</string>
+</resources>

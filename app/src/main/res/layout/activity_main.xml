@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#121212"
+    android:padding="16dp">
+
+    <!-- ScrollView to contain Quick Notes section -->
+    <androidx.core.widget.NestedScrollView
+        android:id="@+id/scrollView"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:fillViewport="true"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/timedRemindersBtn"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <!-- Quick Notes Label -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="QUICK NOTES"
+                android:textSize="18sp"
+                android:textColor="#FFFFFF"
+                android:layout_gravity="center_horizontal"
+                android:paddingTop="24dp"
+                android:paddingBottom="12dp"
+                android:textStyle="bold"/>
+
+            <!-- Quick Notes Input -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <EditText
+                    android:id="@+id/editTextQuickNote"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:background="@drawable/rounded_edittext"
+                    android:hint="Enter note"
+                    android:textColor="#FFFFFF"
+                    android:textColorHint="#AAAAAA"
+                    android:padding="12dp" />
+
+                <ImageView
+                    android:id="@+id/btnAddQuickNote"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:layout_marginStart="8dp"
+                    android:padding="10dp"
+                    android:src="@android:drawable/ic_input_add"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="Add Note"
+                    app:tint="@android:color/white" />
+            </LinearLayout>
+
+            <!-- Quick Notes RecyclerView -->
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/recyclerQuickNotes"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:nestedScrollingEnabled="false" />
+
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+
+    <!-- Timed Reminders Button -->
+    <Button
+        android:id="@+id/timedRemindersBtn"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="8dp"
+        android:background="@drawable/rounded_primary_button"
+        android:text="Timed Reminders"
+        android:textColor="@android:color/white"
+        app:layout_constraintBottom_toTopOf="@id/monthlyPaymentsBtn"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <!-- Monthly Payments Button -->
+    <Button
+        android:id="@+id/monthlyPaymentsBtn"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="12dp"
+        android:background="@drawable/rounded_secondary_button"
+        android:text="Monthly Payments"
+        android:textColor="@android:color/white"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

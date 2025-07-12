@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    package="com.example.remainder">
+
+    <!-- Permissions -->
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <application
+        android:allowBackup="false"
+        android:icon="@mipmap/ic_launcher"
+        android:label="Reminder"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.MaterialComponents.DayNight.DarkActionBar"
+        tools:ignore="DataExtractionRules">
+
+        <activity android:name=".ExpiredRemindersActivity" />
+
+        <!-- Monthly Payments Activity -->
+        <activity android:name=".MonthlyPaymentsActivity" />
+
+        <activity android:name=".TimedRemindersActivity" />
+
+
+        <!-- Main Activity -->
+        <activity
+            android:name="com.example.remainder.MainActivity"
+            android:exported="true"
+            android:windowSoftInputMode="adjustResize">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- Broadcast Receiver -->
+        <receiver
+            android:name=".ReminderReceiver"
+            android:exported="true"
+            android:permission="android.permission.BROADCAST_STICKY" />
+
+    </application>
+
+</manifest>

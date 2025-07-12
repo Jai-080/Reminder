@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#121212"
+    android:padding="16dp">
+
+    <androidx.core.widget.NestedScrollView
+        android:id="@+id/scrollView"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:fillViewport="true"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <!-- Reminder Input -->
+            <EditText
+                android:id="@+id/editTextReminder"
+                android:layout_width="0dp"
+                android:layout_height="50dp"
+                android:hint="Enter reminder"
+                android:background="@drawable/rounded_edittext"
+                android:padding="12dp"
+                android:textColor="#FFFFFF"
+                android:textColorHint="#AAAAAA"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent" />
+
+            <!-- Set Reminder Button -->
+            <Button
+                android:id="@+id/btnSetReminderFull"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="Set Reminder"
+                android:textColor="@android:color/white"
+                android:background="@drawable/rounded_primary_button"
+                app:layout_constraintTop_toBottomOf="@id/editTextReminder"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent" />
+
+            <!-- Pending Reminders Label -->
+            <TextView
+                android:id="@+id/pendingLabel"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:text="Pending Reminders:"
+                android:textColor="#FFFFFF"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:layout_marginTop="16dp"
+                android:visibility="gone"
+                app:layout_constraintTop_toBottomOf="@id/btnSetReminderFull"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent" />
+
+            <!-- Pending RecyclerView -->
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rv_pending_reminders"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:nestedScrollingEnabled="false"
+                app:layout_constraintTop_toBottomOf="@id/pendingLabel"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent" />
+
+            <!-- Expired Reminders Label -->
+            <TextView
+                android:id="@+id/expiredLabel"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:text="Expired Reminders:"
+                android:textColor="#FFFFFF"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:layout_marginTop="24dp"
+                android:visibility="gone"
+                app:layout_constraintTop_toBottomOf="@id/rv_pending_reminders"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent" />
+
+            <!-- Expired RecyclerView -->
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rv_expired_reminders"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:nestedScrollingEnabled="false"
+                app:layout_constraintTop_toBottomOf="@id/expiredLabel"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent" />
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+    </androidx.core.widget.NestedScrollView>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

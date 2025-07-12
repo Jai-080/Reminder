@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:orientation="horizontal"
+    android:padding="16dp"
+    android:background="@drawable/rounded_item_background"
+    android:layout_marginBottom="12dp"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:gravity="center_vertical">
+
+    <CheckBox
+        android:id="@+id/paymentCheckBox"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:buttonTint="#90EE90"
+        android:layout_marginEnd="12dp" />
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/paymentNameTextView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="#FBEBD7"
+            android:textSize="18sp" />
+
+        <TextView
+            android:id="@+id/dueDateTextView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="#AAAAAA"
+            android:textSize="14sp" />
+    </LinearLayout>
+
+    <ImageButton
+        android:id="@+id/deletePaymentBtn"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:contentDescription="Delete Payment"
+        android:scaleType="centerInside"
+        android:src="@android:drawable/ic_menu_delete"
+        app:tint="@android:color/holo_red_dark"
+        android:padding="8dp" />
+
+</LinearLayout>
