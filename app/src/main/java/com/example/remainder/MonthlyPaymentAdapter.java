@@ -48,6 +48,12 @@ public class MonthlyPaymentAdapter extends RecyclerView.Adapter<MonthlyPaymentAd
 
         holder.checkBox.setOnCheckedChangeListener((buttonView, isChecked) -> {
             if (isChecked) {
+                // Cancel the corresponding notification
+                android.app.NotificationManager notificationManager =
+                        (android.app.NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+                notificationManager.cancel(payment.getId());  // Use same ID used to post the notification
+
+                // Remove payment from database and UI
                 dbHelper.deletePayment(payment.getId());
                 int pos = holder.getAdapterPosition();
                 if (pos != RecyclerView.NO_POSITION && pos < payments.size()) {
@@ -57,6 +63,7 @@ public class MonthlyPaymentAdapter extends RecyclerView.Adapter<MonthlyPaymentAd
                     Toast.makeText(context, "Payment completed and removed", Toast.LENGTH_SHORT).show();
                 }
             }
+
         });
 
 

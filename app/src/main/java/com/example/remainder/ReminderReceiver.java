@@ -1,5 +1,6 @@
 package com.example.remainder;
 
+import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
@@ -41,18 +42,15 @@ public class ReminderReceiver extends BroadcastReceiver {
             return;
         }
 
-        // Handle snooze action: launch SnoozeOptionsActivity and cancel the original notification
+        // Handle snooze action
         if (isSnooze || SNOOZE_ACTION.equals(action)) {
             Log.d(TAG, "Launching SnoozeOptionsActivity for ID " + reminderId);
-
-            // Cancel the original notification
             NotificationManagerCompat.from(context).cancel(reminderId);
 
-            // Launch the snooze options screen
             Intent snoozeOptionsIntent = new Intent(context, SnoozeOptionsActivity.class);
             snoozeOptionsIntent.putExtra("reminder_id", reminderId);
             snoozeOptionsIntent.putExtra("reminder_text", reminderText);
-            snoozeOptionsIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK); // Required when launching from BroadcastReceiver
+            snoozeOptionsIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             context.startActivity(snoozeOptionsIntent);
             return;
         }
@@ -67,7 +65,7 @@ public class ReminderReceiver extends BroadcastReceiver {
 
         createNotificationChannel(context);
 
-        // Intent to open the correct activity when tapping the notification
+        // Intent to open main or payment screen
         Intent mainIntent = new Intent(context,
                 isPayment ? MonthlyPaymentsActivity.class : TimedRemindersActivity.class);
         mainIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
@@ -81,7 +79,7 @@ public class ReminderReceiver extends BroadcastReceiver {
                 PendingIntent.FLAG_CANCEL_CURRENT | PendingIntent.FLAG_IMMUTABLE
         );
 
-        // Intent for snooze action button
+        // Snooze action
         Intent snoozeIntent = new Intent(context, ReminderReceiver.class);
         snoozeIntent.setAction(SNOOZE_ACTION);
         snoozeIntent.putExtra("reminder_id", reminderId);
@@ -99,21 +97,33 @@ public class ReminderReceiver extends BroadcastReceiver {
                 .setSmallIcon(android.R.drawable.ic_popup_reminder)
                 .setContentTitle("Reminder")
                 .setContentText(reminderText)
-                .setPriority(NotificationCompat.PRIORITY_HIGH)
                 .setContentIntent(contentPendingIntent)
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
                 .setAutoCancel(true);
 
         if (!isPayment) {
+            // Timed reminder: show snooze button
             builder.addAction(android.R.drawable.ic_menu_recent_history, "Snooze", snoozePendingIntent);
+        } else {
+            // Monthly payment: make it permanent
+            builder.setOngoing(true)
+                    .setAutoCancel(false)
+                    .setPriority(NotificationCompat.PRIORITY_LOW)
+                    .setCategory(NotificationCompat.CATEGORY_REMINDER)
+                    .setOnlyAlertOnce(true);
         }
 
+        Notification notification = builder.build();
 
-        NotificationManagerCompat manager = NotificationManagerCompat.from(context);
-        manager.notify(reminderId, builder.build());
+        if (isPayment) {
+            notification.flags |= Notification.FLAG_NO_CLEAR | Notification.FLAG_ONGOING_EVENT;
+        }
+
+        NotificationManagerCompat.from(context).notify(reminderId, notification);
 
         Log.d(TAG, "Notification shown for reminder: " + reminderId);
 
-        // Optional broadcast for UI updates
+        // Send broadcast to update UI (for timed reminders only)
         if (!isPayment) {
             Intent uiIntent = new Intent("com.example.remainder.REMINDER_EXPIRED");
             uiIntent.putExtra("reminder_id", reminderId);
