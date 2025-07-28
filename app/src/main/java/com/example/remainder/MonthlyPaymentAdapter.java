@@ -47,12 +47,18 @@ public class MonthlyPaymentAdapter extends RecyclerView.Adapter<MonthlyPaymentAd
         holder.checkBox.setChecked(payment.isCompleted());
 
         holder.checkBox.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            payment.setCompleted(isChecked);
-            dbHelper.updatePaymentStatus(payment.getId(), isChecked);
-
-            sortPayments();  // Sort updated list (incomplete at top, completed at bottom)
-            notifyDataSetChanged(); // Refresh UI
+            if (isChecked) {
+                dbHelper.deletePayment(payment.getId());
+                int pos = holder.getAdapterPosition();
+                if (pos != RecyclerView.NO_POSITION && pos < payments.size()) {
+                    payments.remove(pos);
+                    sortPayments(); // Optional, keeps the UI sorted
+                    notifyDataSetChanged(); // Refresh whole list
+                    Toast.makeText(context, "Payment completed and removed", Toast.LENGTH_SHORT).show();
+                }
+            }
         });
+
 
         holder.deleteButton.setOnClickListener(v -> {
             int pos = holder.getAdapterPosition();

@@ -81,11 +81,16 @@ public class MainActivity extends AppCompatActivity {
                     quickNoteAdapter.notifyItemInserted(0);
                     quickNotesRecycler.scrollToPosition(0);
                     quickNoteInput.setText("");
+
+                    // ✅ Update the widget
+                    QuickNotesWidgetProvider.updateWidget(getApplicationContext());
                 } else {
                     Toast.makeText(this, "Failed to add note", Toast.LENGTH_SHORT).show();
                 }
             }
         });
+
+
     }
 
     private void createNotificationChannel() {

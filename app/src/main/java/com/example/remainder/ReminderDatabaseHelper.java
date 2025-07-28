@@ -12,7 +12,7 @@ import java.util.ArrayList;
 public class ReminderDatabaseHelper extends SQLiteOpenHelper {
 
     private static final String DATABASE_NAME = "reminders.db";
-    private static final int DATABASE_VERSION = 4;
+    private static final int DATABASE_VERSION = 5;  // Updated version
     private static final String TAG = "ReminderDB";
 
     public ReminderDatabaseHelper(Context context) {
@@ -25,7 +25,8 @@ public class ReminderDatabaseHelper extends SQLiteOpenHelper {
                 "id INTEGER PRIMARY KEY AUTOINCREMENT, " +
                 "text TEXT NOT NULL, " +
                 "time INTEGER NOT NULL, " +
-                "is_expired INTEGER DEFAULT 0)");
+                "is_expired INTEGER DEFAULT 0, " +
+                "snoozed_time INTEGER DEFAULT 0)");
 
         db.execSQL("CREATE TABLE IF NOT EXISTS quick_notes (" +
                 "id INTEGER PRIMARY KEY AUTOINCREMENT, " +
@@ -53,15 +54,25 @@ public class ReminderDatabaseHelper extends SQLiteOpenHelper {
                     "is_completed INTEGER DEFAULT 0)");
             Log.d(TAG, "Quick Notes table created.");
         }
+
+        if (oldVersion < 5) {
+            try {
+                db.execSQL("ALTER TABLE reminders ADD COLUMN snoozed_time INTEGER DEFAULT 0");
+                Log.d(TAG, "Upgraded DB: added snoozed_time column");
+            } catch (Exception e) {
+                Log.w(TAG, "Column snoozed_time may already exist.");
+            }
+        }
     }
 
-    // Reminders Logic (existing)
+    // Reminders Logic
     public void addReminder(String text, long timeMillis) {
         SQLiteDatabase db = getWritableDatabase();
         ContentValues values = new ContentValues();
         values.put("text", text);
         values.put("time", timeMillis);
         values.put("is_expired", 0);
+        values.put("snoozed_time", 0);
         long result = db.insert("reminders", null, values);
         if (result == -1) {
             Log.e(TAG, "Failed to insert reminder: " + text);
@@ -163,7 +174,38 @@ public class ReminderDatabaseHelper extends SQLiteOpenHelper {
         return reminders;
     }
 
-    // ✅ Quick Notes Logic
+    // ✅ Snooze Support
+    public void snoozeReminder(int id, long newTimeMillis) {
+        SQLiteDatabase db = getWritableDatabase();
+        ContentValues values = new ContentValues();
+        values.put("snoozed_time", newTimeMillis);
+        db.update("reminders", values, "id=?", new String[]{String.valueOf(id)});
+        db.close();
+    }
+
+    public long getSnoozedTime(int id) {
+        SQLiteDatabase db = getReadableDatabase();
+        long snoozedTime = 0;
+
+        try (Cursor cursor = db.query("reminders", new String[]{"snoozed_time"}, "id=?", new String[]{String.valueOf(id)}, null, null, null)) {
+            if (cursor.moveToFirst()) {
+                snoozedTime = cursor.getLong(cursor.getColumnIndexOrThrow("snoozed_time"));
+            }
+        }
+
+        db.close();
+        return snoozedTime;
+    }
+
+    public void clearSnoozeTime(int id) {
+        SQLiteDatabase db = getWritableDatabase();
+        ContentValues values = new ContentValues();
+        values.put("snoozed_time", 0);
+        db.update("reminders", values, "id=?", new String[]{String.valueOf(id)});
+        db.close();
+    }
+
+    // ✅ Quick Notes Logic (unchanged)
     public void addQuickNote(String text) {
         SQLiteDatabase db = getWritableDatabase();
         ContentValues values = new ContentValues();

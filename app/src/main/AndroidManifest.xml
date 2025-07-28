@@ -16,15 +16,12 @@
         android:theme="@style/Theme.MaterialComponents.DayNight.DarkActionBar"
         tools:ignore="DataExtractionRules">
 
+        <!-- Activities -->
         <activity android:name=".ExpiredRemindersActivity" />
-
-        <!-- Monthly Payments Activity -->
         <activity android:name=".MonthlyPaymentsActivity" />
-
         <activity android:name=".TimedRemindersActivity" />
+        <activity android:name=".SnoozeOptionsActivity" />
 
-
-        <!-- Main Activity -->
         <activity
             android:name="com.example.remainder.MainActivity"
             android:exported="true"
@@ -35,11 +32,26 @@
             </intent-filter>
         </activity>
 
-        <!-- Broadcast Receiver -->
+        <!-- Reminder Broadcast Receiver -->
         <receiver
             android:name=".ReminderReceiver"
             android:exported="true"
             android:permission="android.permission.BROADCAST_STICKY" />
+
+        <!-- Snooze Action Receiver -->
+        <receiver
+            android:name=".SnoozeReceiver"
+            android:exported="true" />
+
+        <receiver android:name=".QuickNotesWidgetProvider" android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/quick_notes_widget_info" />
+        </receiver>
 
     </application>
 

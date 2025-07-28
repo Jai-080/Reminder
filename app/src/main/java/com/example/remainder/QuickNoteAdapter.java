@@ -54,13 +54,12 @@ public class QuickNoteAdapter extends RecyclerView.Adapter<QuickNoteAdapter.Note
             notes.remove(position);
             notes.add(note);
             notifyDataSetChanged();
+
+            QuickNotesWidgetProvider.updateWidget(context);  // Refresh widget
         });
 
-        // Tap to edit
-        holder.noteText.setOnClickListener(v -> showEditDialog(position));
-
-        // Long press for edit/delete
-        holder.noteText.setOnLongClickListener(v -> {
+        // Single tap shows options (Edit/Delete)
+        holder.noteText.setOnClickListener(v -> {
             String[] options = {"Edit", "Delete"};
             new AlertDialog.Builder(context)
                     .setTitle("Choose Action")
@@ -71,10 +70,10 @@ public class QuickNoteAdapter extends RecyclerView.Adapter<QuickNoteAdapter.Note
                             noteDbHelper.deleteNote(note.getId());
                             notes.remove(position);
                             notifyItemRemoved(position);
+                            QuickNotesWidgetProvider.updateWidget(context); // Refresh widget
                         }
                     })
                     .show();
-            return true;
         });
     }
 
@@ -93,6 +92,7 @@ public class QuickNoteAdapter extends RecyclerView.Adapter<QuickNoteAdapter.Note
                         note.setText(newText);
                         noteDbHelper.updateNote(note.getId(), newText, note.isCompleted());
                         notifyItemChanged(position);
+                        QuickNotesWidgetProvider.updateWidget(context); // Refresh widget
                     }
                 })
                 .setNegativeButton("Cancel", null)

@@ -44,6 +44,10 @@ public class QuickNoteDatabaseHelper extends SQLiteOpenHelper {
         return id;
     }
 
+    public long addNote(String noteText) {
+        return addNote(noteText, false);
+    }
+
     public void deleteNote(int id) {
         SQLiteDatabase db = getWritableDatabase();
         db.delete(TABLE_NAME, "id = ?", new String[]{String.valueOf(id)});
@@ -76,8 +80,18 @@ public class QuickNoteDatabaseHelper extends SQLiteOpenHelper {
         return notes;
     }
 
-    public long addNote(String noteText) {
-        return addNote(noteText, false);
-    }
+    // ✅ Add this method to support the app widget
+    public ArrayList<String> getNoteTexts() {
+        ArrayList<String> noteTexts = new ArrayList<>();
+        SQLiteDatabase db = getReadableDatabase();
+        Cursor cursor = db.query(TABLE_NAME, new String[]{"text"}, null, null, null, null, null);
 
+        while (cursor.moveToNext()) {
+            noteTexts.add(cursor.getString(cursor.getColumnIndexOrThrow("text")));
+        }
+
+        cursor.close();
+        db.close();
+        return noteTexts;
+    }
 }

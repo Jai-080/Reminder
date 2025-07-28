@@ -27,4 +27,16 @@ public class Reminder {
     public long getTimeMillis() {
         return timeMillis;
     }
+
+    private long snoozedUntil = -1;
+
+    public void setSnoozedUntil(long timeMillis) {
+        this.snoozedUntil = timeMillis;
+    }
+
+    public long getSnoozedUntil() {
+        return snoozedUntil;
+    }
+
 }
+
