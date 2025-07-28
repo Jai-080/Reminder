@@ -101,8 +101,12 @@ public class ReminderReceiver extends BroadcastReceiver {
                 .setContentText(reminderText)
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
                 .setContentIntent(contentPendingIntent)
-                .setAutoCancel(true)
-                .addAction(android.R.drawable.ic_menu_recent_history, "Snooze", snoozePendingIntent);
+                .setAutoCancel(true);
+
+        if (!isPayment) {
+            builder.addAction(android.R.drawable.ic_menu_recent_history, "Snooze", snoozePendingIntent);
+        }
+
 
         NotificationManagerCompat manager = NotificationManagerCompat.from(context);
         manager.notify(reminderId, builder.build());
