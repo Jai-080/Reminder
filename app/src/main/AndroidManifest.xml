@@ -13,7 +13,7 @@
         android:label="Reminder"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.MaterialComponents.DayNight.DarkActionBar"
+        android:theme="@style/Theme.Reminder20"
         tools:ignore="DataExtractionRules">
 
         <!-- Activities -->
@@ -23,7 +23,7 @@
         <activity android:name=".SnoozeOptionsActivity" />
 
         <activity
-            android:name="com.example.remainder.MainActivity"
+            android:name=".MainActivity"
             android:exported="true"
             android:windowSoftInputMode="adjustResize">
             <intent-filter>
@@ -43,11 +43,13 @@
             android:name=".SnoozeReceiver"
             android:exported="true" />
 
-        <receiver android:name=".QuickNotesWidgetProvider" android:exported="true">
+        <!-- Quick Notes Widget -->
+        <receiver
+            android:name=".QuickNotesWidgetProvider"
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>
-
             <meta-data
                 android:name="android.appwidget.provider"
                 android:resource="@xml/quick_notes_widget_info" />

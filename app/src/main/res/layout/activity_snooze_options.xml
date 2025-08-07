@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/snooze_layout"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:padding="24dp"
+    android:orientation="vertical"
+    android:background="@android:color/black">
+
+    <TextView
+        android:id="@+id/tv_snooze_prompt"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Snooze reminder for:"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="16dp" />
+
+    <Button
+        android:id="@+id/btn_snooze_1_min"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="1 Minute"
+        android:layout_marginBottom="12dp" />
+
+    <Button
+        android:id="@+id/btn_snooze_5_min"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="5 Minutes"
+        android:layout_marginBottom="12dp" />
+
+    <Button
+        android:id="@+id/btn_snooze_10_min"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="10 Minutes" />
+</LinearLayout>

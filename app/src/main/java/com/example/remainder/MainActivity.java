@@ -16,6 +16,8 @@ import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.Toast;
 import android.app.Notification;
+import com.google.android.material.button.MaterialButton;
+
 
 
 import androidx.annotation.NonNull;
@@ -32,7 +34,7 @@ public class MainActivity extends AppCompatActivity {
     private static final String TAG = "MainActivity";
 
     private EditText quickNoteInput;
-    private ImageView addNoteButton;
+    private MaterialButton addNoteButton;
     private RecyclerView quickNotesRecycler;
     private QuickNoteAdapter quickNoteAdapter;
     private ArrayList<QuickNote> noteList = new ArrayList<>();

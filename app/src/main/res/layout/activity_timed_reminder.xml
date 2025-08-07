@@ -3,7 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#121212"
+    android:background="?android:attr/colorBackground"
     android:padding="16dp">
 
     <androidx.core.widget.NestedScrollView
@@ -20,30 +20,40 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content">
 
-            <!-- Reminder Input -->
-            <EditText
-                android:id="@+id/editTextReminder"
+            <!-- Reminder Input Field -->
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/reminderInputLayout"
                 android:layout_width="0dp"
-                android:layout_height="50dp"
-                android:hint="Enter reminder"
-                android:background="@drawable/rounded_edittext"
-                android:padding="12dp"
-                android:textColor="#FFFFFF"
-                android:textColorHint="#AAAAAA"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                app:boxBackgroundMode="outline"
+                app:boxCornerRadiusTopStart="12dp"
+                app:boxCornerRadiusTopEnd="12dp"
+                app:boxCornerRadiusBottomStart="12dp"
+                app:boxCornerRadiusBottomEnd="12dp"
                 app:layout_constraintTop_toTopOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintEnd_toEndOf="parent" />
+                app:layout_constraintEnd_toEndOf="parent">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/editTextReminder"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Enter reminder"
+                    android:textColor="?android:attr/textColorPrimary"
+                    android:textColorHint="?android:attr/textColorHint"
+                    android:inputType="text" />
+            </com.google.android.material.textfield.TextInputLayout>
 
             <!-- Set Reminder Button -->
-            <Button
+            <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnSetReminderFull"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
                 android:text="Set Reminder"
-                android:textColor="@android:color/white"
-                android:background="@drawable/rounded_primary_button"
-                app:layout_constraintTop_toBottomOf="@id/editTextReminder"
+                style="@style/Widget.Material3.Button"
+                app:layout_constraintTop_toBottomOf="@id/reminderInputLayout"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toEndOf="parent" />
 
@@ -53,16 +63,15 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:text="Pending Reminders:"
-                android:textColor="#FFFFFF"
-                android:textSize="16sp"
+                android:textAppearance="?attr/textAppearanceTitleSmall"
                 android:textStyle="bold"
-                android:layout_marginTop="16dp"
                 android:visibility="gone"
+                android:layout_marginTop="16dp"
                 app:layout_constraintTop_toBottomOf="@id/btnSetReminderFull"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toEndOf="parent" />
 
-            <!-- Pending RecyclerView -->
+            <!-- Pending Reminders RecyclerView -->
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/rv_pending_reminders"
                 android:layout_width="0dp"
@@ -79,16 +88,15 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:text="Expired Reminders:"
-                android:textColor="#FFFFFF"
-                android:textSize="16sp"
+                android:textAppearance="?attr/textAppearanceTitleSmall"
                 android:textStyle="bold"
-                android:layout_marginTop="24dp"
                 android:visibility="gone"
+                android:layout_marginTop="24dp"
                 app:layout_constraintTop_toBottomOf="@id/rv_pending_reminders"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toEndOf="parent" />
 
-            <!-- Expired RecyclerView -->
+            <!-- Expired Reminders RecyclerView -->
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/rv_expired_reminders"
                 android:layout_width="0dp"
@@ -98,7 +106,6 @@
                 app:layout_constraintTop_toBottomOf="@id/expiredLabel"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toEndOf="parent" />
-
         </androidx.constraintlayout.widget.ConstraintLayout>
     </androidx.core.widget.NestedScrollView>
 

@@ -1,78 +1,65 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/monthlyPaymentsLayout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:padding="16dp"
-    android:background="#121212"
-    tools:context=".MonthlyPaymentsActivity">
+    android:orientation="vertical"
+    android:background="?android:attr/colorBackground"
+    android:padding="16dp">
 
     <!-- Payment Input -->
-    <EditText
-        android:id="@+id/paymentInput"
-        android:layout_width="match_parent"
-        android:layout_height="60dp"
-        android:layout_alignParentTop="true"
-        android:layout_marginBottom="8dp"
-        android:background="@drawable/rounded_edittext"
-        android:hint="@string/payment_input_hint"
-        android:padding="12dp"
-        android:textColor="#FFFFFF"
-        android:textColorHint="#AAAAAA"
-        android:textSize="16sp" />
-
-    <!-- Buttons Row -->
-    <androidx.constraintlayout.widget.ConstraintLayout
-        android:id="@+id/buttonRow"
+    <com.google.android.material.textfield.TextInputLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_below="@id/paymentInput"
         android:layout_marginBottom="8dp"
-        android:layout_marginTop="8dp">
+        app:boxBackgroundMode="outline"
+        app:boxCornerRadiusTopStart="12dp"
+        app:boxCornerRadiusTopEnd="12dp"
+        app:boxCornerRadiusBottomStart="12dp"
+        app:boxCornerRadiusBottomEnd="12dp">
 
-        <!-- Clear All Button -->
-        <Button
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/paymentInput"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/payment_input_hint"
+            android:textColor="?android:attr/textColorPrimary"
+            android:textColorHint="?android:attr/textColorHint"
+            android:inputType="text" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <!-- Buttons Row -->
+    <com.google.android.material.button.MaterialButtonToggleGroup
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="8dp">
+
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/clearAllBtn"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginEnd="8dp"
-            android:background="@drawable/rounded_secondary_button"
-            android:minWidth="48dp"
-            android:minHeight="48dp"
+            android:layout_weight="1"
             android:text="@string/clear_all"
-            android:textColor="@android:color/white"
-            android:textSize="16sp"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toStartOf="@+id/addPaymentButton" />
+            style="@style/Widget.Material3.Button.OutlinedButton"
+            android:textColor="?android:attr/textColorPrimary" />
 
-        <!-- Add Payment Button -->
-        <Button
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/addPaymentButton"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:background="@drawable/rounded_primary_button"
-            android:minWidth="48dp"
-            android:minHeight="48dp"
+            android:layout_weight="1"
             android:text="@string/add_payment"
-            android:textColor="#FFFFFF"
-            android:textSize="16sp"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintStart_toEndOf="@id/clearAllBtn"
-            app:layout_constraintEnd_toEndOf="parent" />
-    </androidx.constraintlayout.widget.ConstraintLayout>
+            style="@style/Widget.Material3.Button" />
+    </com.google.android.material.button.MaterialButtonToggleGroup>
 
     <!-- Payment List -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/paymentRecyclerView"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:layout_below="@id/buttonRow"
-        android:layout_marginTop="8dp"
+        android:layout_height="0dp"
+        android:layout_weight="1"
         android:clipToPadding="false"
+        android:paddingTop="8dp"
         android:paddingBottom="16dp" />
-</RelativeLayout>
+</LinearLayout>

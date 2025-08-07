@@ -9,4 +9,6 @@
     <string name="payment_input_hint">Enter payment name</string>
     <string name="clear_all">Clear All</string>
     <string name="add_payment">Add Payment</string>
+    <string name="delete_payment">Delete Payment</string>
+
 </resources>

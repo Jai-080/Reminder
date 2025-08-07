@@ -1,10 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#121212"
-    android:padding="16dp">
+    android:padding="16dp"
+    android:background="?android:attr/windowBackground">
 
     <!-- ScrollView to contain Quick Notes section -->
     <androidx.core.widget.NestedScrollView
@@ -23,16 +24,15 @@
             android:orientation="vertical">
 
             <!-- Quick Notes Label -->
-            <TextView
+            <com.google.android.material.textview.MaterialTextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="QUICK NOTES"
-                android:textSize="18sp"
-                android:textColor="#FFFFFF"
+                android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
+                android:textStyle="bold"
                 android:layout_gravity="center_horizontal"
                 android:paddingTop="24dp"
-                android:paddingBottom="12dp"
-                android:textStyle="bold"/>
+                android:paddingBottom="12dp" />
 
             <!-- Quick Notes Input -->
             <LinearLayout
@@ -40,27 +40,29 @@
                 android:layout_height="wrap_content"
                 android:orientation="horizontal">
 
-                <EditText
-                    android:id="@+id/editTextQuickNote"
+                <com.google.android.material.textfield.TextInputLayout
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:background="@drawable/rounded_edittext"
-                    android:hint="Enter note"
-                    android:textColor="#FFFFFF"
-                    android:textColorHint="#AAAAAA"
-                    android:padding="12dp" />
+                    android:layout_marginEnd="8dp"
+                    style="@style/Widget.Material3.TextInputLayout.FilledBox.Dense">
 
-                <ImageView
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/editTextQuickNote"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="Enter note" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnAddQuickNote"
-                    android:layout_width="48dp"
-                    android:layout_height="48dp"
-                    android:layout_marginStart="8dp"
-                    android:padding="10dp"
-                    android:src="@android:drawable/ic_input_add"
-                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:icon="@android:drawable/ic_input_add"
                     android:contentDescription="Add Note"
-                    app:tint="@android:color/white" />
+                    style="@style/Widget.Material3.Button.Icon"
+                    app:iconPadding="0dp"
+                    android:padding="10dp" />
             </LinearLayout>
 
             <!-- Quick Notes RecyclerView -->
@@ -70,34 +72,31 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
                 android:nestedScrollingEnabled="false" />
-
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
 
     <!-- Timed Reminders Button -->
-    <Button
+    <com.google.android.material.button.MaterialButton
         android:id="@+id/timedRemindersBtn"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginBottom="8dp"
-        android:background="@drawable/rounded_primary_button"
         android:text="Timed Reminders"
-        android:textColor="@android:color/white"
         app:layout_constraintBottom_toTopOf="@id/monthlyPaymentsBtn"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+        app:layout_constraintEnd_toEndOf="parent"
+        style="@style/Widget.Material3.Button" />
 
     <!-- Monthly Payments Button -->
-    <Button
+    <com.google.android.material.button.MaterialButton
         android:id="@+id/monthlyPaymentsBtn"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginBottom="12dp"
-        android:background="@drawable/rounded_secondary_button"
         android:text="Monthly Payments"
-        android:textColor="@android:color/white"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+        app:layout_constraintEnd_toEndOf="parent"
+        style="@style/Widget.Material3.Button.OutlinedButton" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
