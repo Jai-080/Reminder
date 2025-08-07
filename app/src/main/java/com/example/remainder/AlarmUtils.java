@@ -39,12 +39,23 @@ public class AlarmUtils {
 
     // ✅ Show permanent notification for monthly payments
     public static void showMonthlyPaymentNotification(Context context, int paymentId, String paymentName) {
+        Intent intent = new Intent(context, MonthlyPaymentsActivity.class);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+
+        PendingIntent pendingIntent = PendingIntent.getActivity(
+                context,
+                paymentId, // unique request code
+                intent,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+        );
+
         Notification notification = new NotificationCompat.Builder(context, CHANNEL_ID)
                 .setContentTitle("Monthly Payment Due")
                 .setContentText(paymentName + " is due today")
                 .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
-                .setOngoing(true) // Permanent notification
+                .setOngoing(true) // makes it permanent
+                .setContentIntent(pendingIntent) // 👉 launch MonthlyPaymentsActivity on click
                 .build();
 
         NotificationManager manager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
@@ -52,6 +63,7 @@ public class AlarmUtils {
             manager.notify(paymentId, notification);
         }
     }
+
 
     // ✅ Cancel permanent notification (monthly payment)
     public static void cancelNotification(Context context, int notificationId) {
