@@ -56,13 +56,17 @@ public class ReminderAdapter extends RecyclerView.Adapter<ReminderAdapter.ViewHo
         holder.expiredIcon.setVisibility(isExpired ? View.VISIBLE : View.GONE);
 
         holder.deleteButton.setOnClickListener(v -> {
+            // 🛑 Cancel the scheduled notification before deletion
+            AlarmUtils.cancelReminder(context, reminder.getId());
+
+            // ✅ Now delete from DB and update UI
             dbHelper.deleteReminder(reminder.getId());
             reminders.remove(position);
             notifyItemRemoved(position);
             notifyItemRangeChanged(position, reminders.size());
 
             if (deleteListener != null) {
-                deleteListener.onReminderDeleted();  // 👈 Notify MainActivity to reload
+                deleteListener.onReminderDeleted();
             }
         });
     }
