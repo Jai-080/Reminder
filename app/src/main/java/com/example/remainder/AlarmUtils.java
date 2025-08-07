@@ -13,12 +13,36 @@ import androidx.core.app.NotificationCompat;
 public class AlarmUtils {
     private static final String CHANNEL_ID = "reminder_channel";
 
+    // ✅ Schedule a timed reminder (Fixed intent extra keys)
+    public static void scheduleReminder(Context context, int reminderId, String reminderText, long triggerAtMillis) {
+        Intent intent = new Intent(context, ReminderReceiver.class);
+        intent.putExtra("reminder_id", reminderId); // FIXED
+        intent.putExtra("reminder_text", reminderText); // FIXED
+        intent.putExtra("is_payment", false); // Helps receiver distinguish
+
+        PendingIntent pendingIntent = PendingIntent.getBroadcast(
+                context,
+                reminderId,
+                intent,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+        );
+
+        AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+        if (alarmManager != null) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && alarmManager.canScheduleExactAlarms()) {
+                alarmManager.setExact(AlarmManager.RTC_WAKEUP, triggerAtMillis, pendingIntent);
+            } else {
+                alarmManager.set(AlarmManager.RTC_WAKEUP, triggerAtMillis, pendingIntent);
+            }
+        }
+    }
+
     // ✅ Schedule a timed monthly payment reminder
     public static void schedulePaymentReminder(Context context, int paymentId, String paymentName, long triggerAtMillis) {
         Intent intent = new Intent(context, ReminderReceiver.class);
-        intent.putExtra("reminderId", paymentId);
-        intent.putExtra("reminderText", paymentName);
-        intent.putExtra("isMonthlyPayment", true); // Used to differentiate in receiver
+        intent.putExtra("reminder_id", paymentId); // FIXED
+        intent.putExtra("reminder_text", paymentName); // FIXED
+        intent.putExtra("is_payment", true); // Differentiate in receiver
 
         PendingIntent pendingIntent = PendingIntent.getBroadcast(
                 context,
@@ -39,23 +63,12 @@ public class AlarmUtils {
 
     // ✅ Show permanent notification for monthly payments
     public static void showMonthlyPaymentNotification(Context context, int paymentId, String paymentName) {
-        Intent intent = new Intent(context, MonthlyPaymentsActivity.class);
-        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-
-        PendingIntent pendingIntent = PendingIntent.getActivity(
-                context,
-                paymentId, // unique request code
-                intent,
-                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
-        );
-
         Notification notification = new NotificationCompat.Builder(context, CHANNEL_ID)
                 .setContentTitle("Monthly Payment Due")
                 .setContentText(paymentName + " is due today")
                 .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
-                .setOngoing(true) // makes it permanent
-                .setContentIntent(pendingIntent) // 👉 launch MonthlyPaymentsActivity on click
+                .setOngoing(true) // Permanent notification
                 .build();
 
         NotificationManager manager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
@@ -63,7 +76,6 @@ public class AlarmUtils {
             manager.notify(paymentId, notification);
         }
     }
-
 
     // ✅ Cancel permanent notification (monthly payment)
     public static void cancelNotification(Context context, int notificationId) {
@@ -73,9 +85,10 @@ public class AlarmUtils {
         }
     }
 
-    // ✅ Cancel scheduled timed reminder (used when user deletes a timed reminder)
+    // ✅ Cancel scheduled timed reminder
     public static void cancelReminder(Context context, int reminderId) {
         Intent intent = new Intent(context, ReminderReceiver.class);
+
         PendingIntent pendingIntent = PendingIntent.getBroadcast(
                 context,
                 reminderId,

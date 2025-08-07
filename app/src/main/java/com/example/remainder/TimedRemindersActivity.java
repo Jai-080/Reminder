@@ -12,6 +12,7 @@ import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
+import com.example.remainder.AlarmUtils;
 import android.provider.Settings;
 import android.util.Log;
 import android.view.ContextThemeWrapper;
@@ -117,7 +118,7 @@ public class TimedRemindersActivity extends AppCompatActivity {
                     Reminder newReminder = updatedReminders.get(updatedReminders.size() - 1);
 
                     Log.d(TAG, "Scheduling reminder: ID=" + newReminder.getId() + ", Text=" + reminderText + ", Time=" + triggerTime);
-                    AlarmUtils.schedulePaymentReminder(this, newReminder.getId(), reminderText, triggerTime);
+                    AlarmUtils.scheduleReminder(this, newReminder.getId(), reminderText, triggerTime);
 
                     editTextReminder.setText("");
                     loadReminders();
