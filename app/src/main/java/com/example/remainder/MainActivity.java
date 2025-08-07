@@ -15,6 +15,8 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.Toast;
+import android.app.Notification;
+
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
@@ -95,20 +97,28 @@ public class MainActivity extends AppCompatActivity {
 
     private void createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            NotificationChannel channel = new NotificationChannel(
-                    CHANNEL_ID,
-                    "Reminders",
-                    NotificationManager.IMPORTANCE_HIGH
-            );
-            channel.setDescription("Channel for reminder notifications");
-
             NotificationManager manager = getSystemService(NotificationManager.class);
             if (manager != null) {
-                manager.createNotificationChannel(channel);
-                Log.d(TAG, "Notification channel created: " + CHANNEL_ID);
+                NotificationChannel existingChannel = manager.getNotificationChannel(CHANNEL_ID);
+                if (existingChannel == null) {
+                    NotificationChannel channel = new NotificationChannel(
+                            CHANNEL_ID,
+                            "Reminders",
+                            NotificationManager.IMPORTANCE_HIGH
+                    );
+                    channel.setDescription("Channel for reminder notifications");
+                    channel.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
+                    channel.enableLights(true);
+                    channel.enableVibration(true);
+                    manager.createNotificationChannel(channel);
+                    Log.d(TAG, "Notification channel created: " + CHANNEL_ID);
+                } else {
+                    Log.d(TAG, "Notification channel already exists: " + CHANNEL_ID);
+                }
             }
         }
     }
+
 
     private void requestExactAlarmPermission() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {

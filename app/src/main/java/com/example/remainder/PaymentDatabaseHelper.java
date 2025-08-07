@@ -40,14 +40,17 @@ public class PaymentDatabaseHelper extends SQLiteOpenHelper {
         onCreate(db);
     }
 
-    public void insertPayment(String name, long dueDateMillis, boolean isCompleted) {
-        SQLiteDatabase db = getWritableDatabase();
+    public int insertPayment(String name, long dueDate, boolean isCompleted) {
+        SQLiteDatabase db = this.getWritableDatabase();
         ContentValues values = new ContentValues();
         values.put(COL_NAME, name);
-        values.put(COL_DUE_DATE, dueDateMillis);
+        values.put(COL_DUE_DATE, dueDate);
         values.put(COL_COMPLETED, isCompleted ? 1 : 0);
-        db.insert(TABLE_NAME, null, values);
+
+        long id = db.insert(TABLE_NAME, null, values);
+        return (int) id;
     }
+
 
     public ArrayList<MonthlyPayment> getAllPayments() {
         ArrayList<MonthlyPayment> list = new ArrayList<>();
@@ -73,6 +76,7 @@ public class PaymentDatabaseHelper extends SQLiteOpenHelper {
         values.put(COL_COMPLETED, isCompleted ? 1 : 0);
         db.update(TABLE_NAME, values, COL_ID + " = ?", new String[]{String.valueOf(id)});
     }
+
     public void deletePayment(int id) {
         SQLiteDatabase db = this.getWritableDatabase();
         db.delete(TABLE_NAME, "id = ?", new String[]{String.valueOf(id)});
@@ -85,5 +89,15 @@ public class PaymentDatabaseHelper extends SQLiteOpenHelper {
         db.close();
     }
 
-
+    // 🔄 New method to get payment name by ID (used for canceling notification)
+    public String getPaymentNameById(int id) {
+        SQLiteDatabase db = getReadableDatabase();
+        Cursor cursor = db.query(TABLE_NAME, new String[]{COL_NAME}, COL_ID + " = ?", new String[]{String.valueOf(id)}, null, null, null);
+        if (cursor != null && cursor.moveToFirst()) {
+            String name = cursor.getString(cursor.getColumnIndexOrThrow(COL_NAME));
+            cursor.close();
+            return name;
+        }
+        return null;
+    }
 }

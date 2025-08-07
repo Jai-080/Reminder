@@ -26,7 +26,7 @@ public class MonthlyPaymentAdapter extends RecyclerView.Adapter<MonthlyPaymentAd
         this.context = context;
         this.payments = payments;
         this.dbHelper = dbHelper;
-        sortPayments(); // Initial sort
+        sortPayments();
     }
 
     @Override
@@ -47,30 +47,33 @@ public class MonthlyPaymentAdapter extends RecyclerView.Adapter<MonthlyPaymentAd
         holder.checkBox.setChecked(payment.isCompleted());
 
         holder.checkBox.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            if (isChecked) {
-                // Cancel the corresponding notification
-                android.app.NotificationManager notificationManager =
-                        (android.app.NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
-                notificationManager.cancel(payment.getId());  // Use same ID used to post the notification
+            int pos = holder.getAdapterPosition();
+            if (pos != RecyclerView.NO_POSITION && pos < payments.size()) {
+                MonthlyPayment currentPayment = payments.get(pos);
+                currentPayment.setCompleted(isChecked);
+                dbHelper.updatePaymentStatus(currentPayment.getId(), isChecked);
 
-                // Remove payment from database and UI
-                dbHelper.deletePayment(payment.getId());
-                int pos = holder.getAdapterPosition();
-                if (pos != RecyclerView.NO_POSITION && pos < payments.size()) {
-                    payments.remove(pos);
-                    sortPayments(); // Optional, keeps the UI sorted
-                    notifyDataSetChanged(); // Refresh whole list
-                    Toast.makeText(context, "Payment completed and removed", Toast.LENGTH_SHORT).show();
+                // ✅ Cancel the permanent notification when marked as done
+                if (isChecked) {
+                    AlarmUtils.cancelNotification(context, currentPayment.getName().hashCode());
+                    Toast.makeText(context, "Payment marked as completed", Toast.LENGTH_SHORT).show();
+                } else {
+                    Toast.makeText(context, "Payment marked as pending", Toast.LENGTH_SHORT).show();
                 }
+
+                sortPayments();
+                notifyDataSetChanged();
             }
-
         });
-
 
         holder.deleteButton.setOnClickListener(v -> {
             int pos = holder.getAdapterPosition();
             if (pos != RecyclerView.NO_POSITION && pos < payments.size()) {
                 dbHelper.deletePayment(payments.get(pos).getId());
+
+                // ✅ Cancel permanent notification
+                AlarmUtils.cancelNotification(context, payments.get(pos).getName().hashCode());
+
                 payments.remove(pos);
                 notifyItemRemoved(pos);
                 Toast.makeText(context, "Payment deleted", Toast.LENGTH_SHORT).show();

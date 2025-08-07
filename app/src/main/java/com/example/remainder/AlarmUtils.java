@@ -1,97 +1,72 @@
 package com.example.remainder;
 
 import android.app.AlarmManager;
+import android.app.Notification;
+import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Build;
-import android.util.Log;
+
+import androidx.core.app.NotificationCompat;
 
 public class AlarmUtils {
+    private static final String CHANNEL_ID = "reminder_channel";
 
-    private static final String TAG = "AlarmUtils";
-
-    public static void scheduleReminder(Context context, int id, String text, long timeMillis) {
-        Log.d(TAG, "Scheduling reminder: id=" + id + ", text=" + text + ", time=" + timeMillis);
-
+    // ✅ Schedule a timed monthly payment reminder
+    public static void schedulePaymentReminder(Context context, int paymentId, String paymentName, long triggerAtMillis) {
         Intent intent = new Intent(context, ReminderReceiver.class);
-        intent.putExtra("reminder_id", id);
-        intent.putExtra("reminder_text", text);
-        intent.putExtra("is_snooze", false);
-        intent.putExtra("is_payment", false); // ✅ It's a timed reminder, not a payment
+        intent.putExtra("reminderId", paymentId);
+        intent.putExtra("reminderText", paymentName);
+        intent.putExtra("isMonthlyPayment", true); // Used to differentiate in receiver
 
         PendingIntent pendingIntent = PendingIntent.getBroadcast(
                 context,
-                id,
+                paymentId,
                 intent,
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
         );
 
-        scheduleAlarm(context, timeMillis, pendingIntent);
-    }
-
-
-    public static void scheduleSnoozedReminder(Context context, int originalId, String text, long delayMillis) {
-        long snoozeTime = System.currentTimeMillis() + delayMillis;
-        int snoozeRequestCode = (int) (originalId + snoozeTime); // Ensure unique request code
-
-        Log.d(TAG, "Scheduling snoozed reminder: originalId=" + originalId + ", delay=" + delayMillis);
-
-        Intent intent = new Intent(context, ReminderReceiver.class);
-        intent.putExtra("reminder_id", originalId);
-        intent.putExtra("reminder_text", text);
-        intent.putExtra("is_snooze", true); // Mark that this is a snoozed instance
-        intent.putExtra("is_payment", false); // 🟢 Important: Mark as NOT a payment reminder
-
-        PendingIntent pendingIntent = PendingIntent.getBroadcast(
-                context,
-                snoozeRequestCode,
-                intent,
-                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
-        );
-
-        scheduleAlarm(context, snoozeTime, pendingIntent);
-    }
-
-
-    private static void scheduleAlarm(Context context, long timeMillis, PendingIntent pendingIntent) {
         AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
         if (alarmManager != null) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && !alarmManager.canScheduleExactAlarms()) {
-                Log.w(TAG, "Exact alarms not permitted");
-                return;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && alarmManager.canScheduleExactAlarms()) {
+                alarmManager.setExact(AlarmManager.RTC_WAKEUP, triggerAtMillis, pendingIntent);
+            } else {
+                alarmManager.set(AlarmManager.RTC_WAKEUP, triggerAtMillis, pendingIntent);
             }
-            alarmManager.setExact(AlarmManager.RTC_WAKEUP, timeMillis, pendingIntent);
-            Log.d(TAG, "Alarm scheduled for: " + timeMillis);
-        } else {
-            Log.e(TAG, "AlarmManager is null");
         }
     }
 
-    public static void schedulePaymentReminder(Context context, String paymentName, long timeMillis) {
-        Log.d(TAG, "Scheduling payment reminder: name=" + paymentName + ", time=" + timeMillis);
+    // ✅ Show permanent notification for monthly payments
+    public static void showMonthlyPaymentNotification(Context context, int paymentId, String paymentName) {
+        Notification notification = new NotificationCompat.Builder(context, CHANNEL_ID)
+                .setContentTitle("Monthly Payment Due")
+                .setContentText(paymentName + " is due today")
+                .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setOngoing(true) // Permanent notification
+                .build();
 
-        Intent intent = new Intent(context, ReminderReceiver.class);
-        intent.putExtra("reminder_id", (int) timeMillis);
-        intent.putExtra("reminder_text", "Payment due: " + paymentName);
-        intent.putExtra("is_snooze", false);
-        intent.putExtra("is_payment", true); // Mark as payment reminder
-
-        PendingIntent pendingIntent = PendingIntent.getBroadcast(
-                context,
-                (int) timeMillis,
-                intent,
-                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
-        );
-
-        scheduleAlarm(context, timeMillis, pendingIntent);
+        NotificationManager manager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+        if (manager != null) {
+            manager.notify(paymentId, notification);
+        }
     }
 
-    public static void cancelReminder(Context context, int id) {
+    // ✅ Cancel permanent notification (monthly payment)
+    public static void cancelNotification(Context context, int notificationId) {
+        NotificationManager manager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+        if (manager != null) {
+            manager.cancel(notificationId);
+        }
+    }
+
+    // ✅ Cancel scheduled timed reminder (used when user deletes a timed reminder)
+    public static void cancelReminder(Context context, int reminderId) {
         Intent intent = new Intent(context, ReminderReceiver.class);
         PendingIntent pendingIntent = PendingIntent.getBroadcast(
                 context,
-                id,
+                reminderId,
                 intent,
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
         );
@@ -99,7 +74,6 @@ public class AlarmUtils {
         AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
         if (alarmManager != null) {
             alarmManager.cancel(pendingIntent);
-            Log.d(TAG, "Canceled reminder with id: " + id);
         }
     }
 }

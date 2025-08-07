@@ -9,10 +9,10 @@
     <!-- Bullet icon -->
     <ImageView
         android:id="@+id/bulletIcon"
-        android:layout_width="10dp"
-        android:layout_height="10dp"
+        android:layout_width="30dp"
+        android:layout_height="30dp"
         android:layout_marginEnd="12dp"
-        android:src="@android:drawable/ic_notification_overlay"
+        android:src="@android:drawable/ic_menu_send"
         app:tint="#FF5722"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"

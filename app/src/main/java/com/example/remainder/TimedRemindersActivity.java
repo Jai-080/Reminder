@@ -117,7 +117,7 @@ public class TimedRemindersActivity extends AppCompatActivity {
                     Reminder newReminder = updatedReminders.get(updatedReminders.size() - 1);
 
                     Log.d(TAG, "Scheduling reminder: ID=" + newReminder.getId() + ", Text=" + reminderText + ", Time=" + triggerTime);
-                    AlarmUtils.scheduleReminder(this, newReminder.getId(), reminderText, triggerTime);
+                    AlarmUtils.schedulePaymentReminder(this, newReminder.getId(), reminderText, triggerTime);
 
                     editTextReminder.setText("");
                     loadReminders();

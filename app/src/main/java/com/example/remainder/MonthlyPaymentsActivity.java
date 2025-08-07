@@ -31,7 +31,7 @@ public class MonthlyPaymentsActivity extends AppCompatActivity {
         dbHelper = new PaymentDatabaseHelper(this);
         paymentInput = findViewById(R.id.paymentInput);
         addButton = findViewById(R.id.addPaymentButton);
-        clearAllButton = findViewById(R.id.clearAllBtn); // make sure this ID exists in XML
+        clearAllButton = findViewById(R.id.clearAllBtn);
         RecyclerView recyclerView = findViewById(R.id.paymentRecyclerView);
 
         payments = dbHelper.getAllPayments();
@@ -64,14 +64,14 @@ public class MonthlyPaymentsActivity extends AppCompatActivity {
                 (view, year, month, dayOfMonth) -> {
                     calendar.set(year, month, dayOfMonth);
                     long dueDateMillis = calendar.getTimeInMillis();
-                    dbHelper.insertPayment(paymentName, dueDateMillis, false);
 
-                    // Update the list and notify the adapter
+                    int paymentId = dbHelper.insertPayment(paymentName, dueDateMillis, false);
                     payments.clear();
                     payments.addAll(dbHelper.getAllPayments());
                     adapter.notifyDataSetChanged();
 
-                    AlarmUtils.schedulePaymentReminder(this, paymentName, dueDateMillis);
+                    AlarmUtils.showMonthlyPaymentNotification(this, paymentId, paymentName);
+
                     paymentInput.setText("");
                 },
                 calendar.get(Calendar.YEAR),
