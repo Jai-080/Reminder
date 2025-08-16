@@ -19,16 +19,22 @@ public class ReminderAdapter extends RecyclerView.Adapter<ReminderAdapter.ViewHo
     private ReminderDatabaseHelper dbHelper;
     private Context context;
     private OnReminderDeletedListener deleteListener;
+    private boolean isExpiredList; // 🔹 To distinguish pending vs expired lists
 
     public interface OnReminderDeletedListener {
         void onReminderDeleted();
     }
 
-    public ReminderAdapter(ArrayList<Reminder> reminders, ReminderDatabaseHelper dbHelper, Context context, OnReminderDeletedListener deleteListener) {
+    public ReminderAdapter(ArrayList<Reminder> reminders,
+                           ReminderDatabaseHelper dbHelper,
+                           Context context,
+                           OnReminderDeletedListener deleteListener,
+                           boolean isExpiredList) {
         this.reminders = reminders;
         this.dbHelper = dbHelper;
         this.context = context;
         this.deleteListener = deleteListener;
+        this.isExpiredList = isExpiredList;
     }
 
     public void setReminders(ArrayList<Reminder> reminders) {
@@ -56,8 +62,10 @@ public class ReminderAdapter extends RecyclerView.Adapter<ReminderAdapter.ViewHo
         holder.expiredIcon.setVisibility(isExpired ? View.VISIBLE : View.GONE);
 
         holder.deleteButton.setOnClickListener(v -> {
-            // 🛑 Cancel the scheduled notification before deletion
-            AlarmUtils.cancelReminder(context, reminder.getId());
+            // 🛑 Cancel the scheduled notification before deletion (only if it's a pending reminder)
+            if (!isExpiredList) {
+                AlarmUtils.cancelReminder(context, reminder.getId());
+            }
 
             // ✅ Now delete from DB and update UI
             dbHelper.deleteReminder(reminder.getId());

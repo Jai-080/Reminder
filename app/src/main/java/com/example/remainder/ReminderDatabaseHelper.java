@@ -65,7 +65,10 @@ public class ReminderDatabaseHelper extends SQLiteOpenHelper {
         }
     }
 
+    // ------------------------
     // Reminders Logic
+    // ------------------------
+
     public void addReminder(String text, long timeMillis) {
         SQLiteDatabase db = getWritableDatabase();
         ContentValues values = new ContentValues();
@@ -150,6 +153,33 @@ public class ReminderDatabaseHelper extends SQLiteOpenHelper {
         db.close();
     }
 
+    // ✅ New helper for snooze loop
+    public void markAsPending(int id) {
+        SQLiteDatabase db = getWritableDatabase();
+        ContentValues values = new ContentValues();
+        values.put("is_expired", 0);
+        int rows = db.update("reminders", values, "id=?", new String[]{String.valueOf(id)});
+        Log.d(TAG, "Marked reminder ID " + id + " as pending. Rows affected: " + rows);
+        db.close();
+    }
+
+    // ✅ Added method so ReminderReceiver can update status easily
+    public void updateReminderStatus(int reminderId, String status) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        ContentValues values = new ContentValues();
+
+        // Map string status to is_expired int
+        if ("expired".equalsIgnoreCase(status)) {
+            values.put("is_expired", 1);
+        } else if ("pending".equalsIgnoreCase(status)) {
+            values.put("is_expired", 0);
+        }
+
+        db.update("reminders", values, "id = ?", new String[]{String.valueOf(reminderId)});
+        db.close();
+        Log.d(TAG, "Updated reminder ID " + reminderId + " status to " + status);
+    }
+
     public ArrayList<Reminder> getAllReminders() {
         ArrayList<Reminder> reminders = new ArrayList<>();
         SQLiteDatabase db = getReadableDatabase();
@@ -179,7 +209,10 @@ public class ReminderDatabaseHelper extends SQLiteOpenHelper {
         SQLiteDatabase db = getWritableDatabase();
         ContentValues values = new ContentValues();
         values.put("snoozed_time", newTimeMillis);
-        db.update("reminders", values, "id=?", new String[]{String.valueOf(id)});
+        values.put("time", newTimeMillis);
+        values.put("is_expired", 0); // move back to pending
+        int rows = db.update("reminders", values, "id=?", new String[]{String.valueOf(id)});
+        Log.d(TAG, "Snoozed reminder ID " + id + " to " + newTimeMillis + ". Rows affected: " + rows);
         db.close();
     }
 
@@ -205,7 +238,10 @@ public class ReminderDatabaseHelper extends SQLiteOpenHelper {
         db.close();
     }
 
-    // ✅ Quick Notes Logic (unchanged)
+    // ------------------------
+    // Quick Notes Logic
+    // ------------------------
+
     public void addQuickNote(String text) {
         SQLiteDatabase db = getWritableDatabase();
         ContentValues values = new ContentValues();

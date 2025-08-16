@@ -12,7 +12,6 @@ import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
-import com.example.remainder.AlarmUtils;
 import android.provider.Settings;
 import android.util.Log;
 import android.view.ContextThemeWrapper;
@@ -49,8 +48,8 @@ public class TimedRemindersActivity extends AppCompatActivity {
     private static final String CHANNEL_ID = "reminder_channel";
     private static final String TAG = "TimedRemindersActivity";
 
-    private List<Reminder> pendingList = new ArrayList<>();
-    private List<Reminder> expiredList = new ArrayList<>();
+    private ArrayList<Reminder> pendingReminders = new ArrayList<>();
+    private ArrayList<Reminder> expiredReminders = new ArrayList<>();
 
     private BroadcastReceiver reminderExpiredReceiver;
 
@@ -72,8 +71,8 @@ public class TimedRemindersActivity extends AppCompatActivity {
 
         dbHelper = new ReminderDatabaseHelper(this);
 
-        pendingAdapter = new ReminderAdapter((ArrayList<Reminder>) pendingList, dbHelper, this, this::loadReminders);
-        expiredAdapter = new ReminderAdapter((ArrayList<Reminder>) expiredList, dbHelper, this, this::loadReminders);
+        pendingAdapter = new ReminderAdapter(pendingReminders, dbHelper, this, this::loadReminders, false);
+        expiredAdapter = new ReminderAdapter(expiredReminders, dbHelper, this, this::loadReminders, true);
 
         rvPending.setLayoutManager(new LinearLayoutManager(this));
         rvExpired.setLayoutManager(new LinearLayoutManager(this));
@@ -147,22 +146,30 @@ public class TimedRemindersActivity extends AppCompatActivity {
     }
 
     private void loadReminders() {
-        pendingList.clear();
-        expiredList.clear();
+        pendingReminders.clear();
+        expiredReminders.clear();
 
         List<Reminder> allReminders = dbHelper.getAllReminders();
         long now = System.currentTimeMillis();
 
         for (Reminder r : allReminders) {
-            if (r.getTime() < now) {
-                expiredList.add(r);
+            if (r.getTime() <= now) {
+                if (!r.isExpired()) {
+                    dbHelper.markAsExpired(r.getId());
+                    r.setExpired(true);
+                }
+                expiredReminders.add(r);
             } else {
-                pendingList.add(r);
+                if (r.isExpired()) {
+                    dbHelper.markAsPending(r.getId());
+                    r.setExpired(false);
+                }
+                pendingReminders.add(r);
             }
         }
 
-        pendingLabel.setVisibility(pendingList.isEmpty() ? View.GONE : View.VISIBLE);
-        expiredLabel.setVisibility(expiredList.isEmpty() ? View.GONE : View.VISIBLE);
+        pendingLabel.setVisibility(pendingReminders.isEmpty() ? View.GONE : View.VISIBLE);
+        expiredLabel.setVisibility(expiredReminders.isEmpty() ? View.GONE : View.VISIBLE);
 
         pendingAdapter.notifyDataSetChanged();
         expiredAdapter.notifyDataSetChanged();

@@ -1,156 +1,86 @@
 package com.example.remainder;
 
-import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-import android.media.AudioAttributes;
-import android.media.RingtoneManager;
 import android.os.Build;
-import android.util.Log;
 
 import androidx.core.app.NotificationCompat;
-import androidx.core.app.NotificationManagerCompat;
-import androidx.core.content.ContextCompat;
 
 public class ReminderReceiver extends BroadcastReceiver {
 
-    private static final String TAG = "ReminderReceiver";
-    private static final String CHANNEL_ID = "reminder_channel";
-    private static final String SNOOZE_ACTION = "SNOOZE_ACTION";
-
     @Override
     public void onReceive(Context context, Intent intent) {
-        Log.d(TAG, "Received broadcast intent: " + intent);
-
-        if (intent == null) {
-            Log.e(TAG, "Intent is null");
-            return;
-        }
-
-        String action = intent.getAction();
         int reminderId = intent.getIntExtra("reminder_id", -1);
-        String reminderText = intent.getStringExtra("reminder_text");
-        boolean isSnooze = intent.getBooleanExtra("is_snooze", false);
+        String title = intent.getStringExtra("reminder_text");
+        String time = intent.getStringExtra("reminder_time"); // optional display
         boolean isPayment = intent.getBooleanExtra("is_payment", false);
 
-        if (reminderId == -1 || reminderText == null) {
-            Log.e(TAG, "Missing reminder ID or text in intent");
-            return;
-        }
-
-        // Handle snooze action
-        if (isSnooze || SNOOZE_ACTION.equals(action)) {
-            Log.d(TAG, "Launching SnoozeOptionsActivity for ID " + reminderId);
-            NotificationManagerCompat.from(context).cancel(reminderId);
-
-            Intent snoozeOptionsIntent = new Intent(context, SnoozeOptionsActivity.class);
-            snoozeOptionsIntent.putExtra("reminder_id", reminderId);
-            snoozeOptionsIntent.putExtra("reminder_text", reminderText);
-            snoozeOptionsIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            context.startActivity(snoozeOptionsIntent);
-            return;
-        }
-
-        // Check notification permission (Android 13+)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
-                ContextCompat.checkSelfPermission(context, android.Manifest.permission.POST_NOTIFICATIONS)
-                        != android.content.pm.PackageManager.PERMISSION_GRANTED) {
-            Log.w(TAG, "Notification permission not granted. Skipping notification.");
-            return;
-        }
-
-        createNotificationChannel(context);
-
-        // Intent to open main or payment screen
-        Intent mainIntent = new Intent(context,
-                isPayment ? MonthlyPaymentsActivity.class : TimedRemindersActivity.class);
-        mainIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-        mainIntent.putExtra("reminder_id", reminderId);
-        mainIntent.putExtra("reminder_text", reminderText);
-
-        PendingIntent contentPendingIntent = PendingIntent.getActivity(
-                context,
-                reminderId + 20000,
-                mainIntent,
-                PendingIntent.FLAG_CANCEL_CURRENT | PendingIntent.FLAG_IMMUTABLE
-        );
-
-        // Snooze action
-        Intent snoozeIntent = new Intent(context, ReminderReceiver.class);
-        snoozeIntent.setAction(SNOOZE_ACTION);
-        snoozeIntent.putExtra("reminder_id", reminderId);
-        snoozeIntent.putExtra("reminder_text", reminderText);
-        snoozeIntent.putExtra("is_snooze", true);
-
-        PendingIntent snoozePendingIntent = PendingIntent.getBroadcast(
-                context,
-                reminderId + 1000,
-                snoozeIntent,
-                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
-        );
-
-        NotificationCompat.Builder builder = new NotificationCompat.Builder(context, CHANNEL_ID)
-                .setSmallIcon(android.R.drawable.ic_popup_reminder)
-                .setContentTitle("Reminder")
-                .setContentText(reminderText)
-                .setContentIntent(contentPendingIntent)
-                .setPriority(NotificationCompat.PRIORITY_HIGH)
-                .setAutoCancel(true);
-
-        if (!isPayment) {
-            // Timed reminder: show snooze button
-            builder.addAction(android.R.drawable.ic_menu_recent_history, "Snooze", snoozePendingIntent);
-        } else {
-            // Monthly payment: make it permanent
-            builder.setOngoing(true)
-                    .setAutoCancel(false)
-                    .setPriority(NotificationCompat.PRIORITY_LOW)
-                    .setCategory(NotificationCompat.CATEGORY_REMINDER)
-                    .setOnlyAlertOnce(true);
-        }
-
-        Notification notification = builder.build();
+        if (reminderId == -1 || title == null) return;
 
         if (isPayment) {
-            notification.flags |= Notification.FLAG_NO_CLEAR | Notification.FLAG_ONGOING_EVENT;
-        }
+            // ✅ Monthly payment notification (permanent)
+            AlarmUtils.showMonthlyPaymentNotification(context, reminderId, title);
+        } else {
+            // 1️⃣ Update reminder status to expired
+            ReminderDatabaseHelper dbHelper = new ReminderDatabaseHelper(context);
+            dbHelper.updateReminderStatus(reminderId, "expired");
 
-        NotificationManagerCompat.from(context).notify(reminderId, notification);
+            // 2️⃣ Broadcast to update UI
+            Intent updateIntent = new Intent("com.example.remainder.REMINDER_EXPIRED");
+            updateIntent.putExtra("reminder_id", reminderId);
+            context.sendBroadcast(updateIntent);
 
-        Log.d(TAG, "Notification shown for reminder: " + reminderId);
+            // 3️⃣ Intent to open snooze activity
+            Intent snoozeIntent = new Intent(context, SnoozeOptionsActivity.class);
+            snoozeIntent.putExtra("reminder_id", reminderId);
+            snoozeIntent.putExtra("reminder_text", title);
+            snoozeIntent.putExtra("reminder_time", time);
 
-        // Send broadcast to update UI (for timed reminders only)
-        if (!isPayment) {
-            Intent uiIntent = new Intent("com.example.remainder.REMINDER_EXPIRED");
-            uiIntent.putExtra("reminder_id", reminderId);
-            context.sendBroadcast(uiIntent);
-        }
-    }
+            PendingIntent snoozePendingIntent = PendingIntent.getActivity(
+                    context,
+                    reminderId,
+                    snoozeIntent,
+                    PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+            );
 
-    private void createNotificationChannel(Context context) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            CharSequence name = "Reminders";
-            String description = "Channel for reminder notifications";
-            int importance = NotificationManager.IMPORTANCE_HIGH;
+            // 4️⃣ Intent to open app on tap
+            Intent activityIntent = new Intent(context, TimedRemindersActivity.class);
+            PendingIntent activityPendingIntent = PendingIntent.getActivity(
+                    context,
+                    reminderId + 10000,
+                    activityIntent,
+                    PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+            );
 
-            NotificationChannel channel = new NotificationChannel(CHANNEL_ID, name, importance);
-            channel.setDescription(description);
-
-            AudioAttributes audioAttributes = new AudioAttributes.Builder()
-                    .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                    .setUsage(AudioAttributes.USAGE_NOTIFICATION)
-                    .build();
-
-            channel.setSound(RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION), audioAttributes);
-
-            NotificationManager notificationManager = context.getSystemService(NotificationManager.class);
-            if (notificationManager != null) {
+            // 5️⃣ Notification channel
+            String channelId = "reminder_channel";
+            NotificationManager notificationManager =
+                    (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                NotificationChannel channel = new NotificationChannel(
+                        channelId,
+                        "Reminders",
+                        NotificationManager.IMPORTANCE_HIGH
+                );
                 notificationManager.createNotificationChannel(channel);
             }
+
+            // 6️⃣ Build notification
+            NotificationCompat.Builder builder = new NotificationCompat.Builder(context, channelId)
+                    .setSmallIcon(android.R.drawable.ic_popup_reminder)
+                    .setContentTitle("Reminder: " + title)
+                    .setContentText(time != null ? "Scheduled for " + time : "")
+                    .setContentIntent(activityPendingIntent)
+                    .setAutoCancel(true)
+                    .setPriority(NotificationCompat.PRIORITY_HIGH)
+                    .addAction(android.R.drawable.ic_menu_recent_history, "Snooze", snoozePendingIntent);
+
+            // 7️⃣ Show notification
+            notificationManager.notify(reminderId, builder.build());
         }
     }
 }

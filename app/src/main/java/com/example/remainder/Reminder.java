@@ -10,6 +10,10 @@ public class Reminder {
         this.text = text;
         this.timeMillis = timeMillis;
     }
+    private boolean isExpired;
+    public boolean isExpired() { return isExpired; }
+    public void setExpired(boolean expired) { this.isExpired = expired; }
+
 
     public int getId() {
         return id;

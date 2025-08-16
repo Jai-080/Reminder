@@ -35,14 +35,14 @@
         <!-- Reminder Broadcast Receiver -->
         <receiver
             android:name=".ReminderReceiver"
-            android:exported="true"
-            android:permission="android.permission.BROADCAST_STICKY" />
+            android:exported="true" />
 
         <!-- Snooze Action Receiver -->
         <receiver
             android:name=".SnoozeReceiver"
             android:exported="true" />
 
+        <!-- Quick Notes Widget -->
         <receiver android:name=".QuickNotesWidgetProvider" android:exported="true">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
