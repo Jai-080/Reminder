@@ -74,7 +74,8 @@ public class MonthlyPaymentsActivity extends AppCompatActivity {
                     Calendar dueCalendar = Calendar.getInstance();
                     dueCalendar.set(year, month, dayOfMonth, 9, 0, 0);
                     dueCalendar.set(Calendar.MILLISECOND, 0);
-                    long dueDateMillis = dueCalendar.getTimeInMillis();
+                    //long dueDateMillis = System.currentTimeMillis() + (1 * 1000); // remove this
+                    long dueDateMillis = dueCalendar.getTimeInMillis(); // uncomment this
 
                     // Insert into DB
                     int paymentId = dbHelper.insertPayment(paymentName, dueDateMillis, false);

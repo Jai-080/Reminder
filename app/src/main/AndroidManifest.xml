@@ -3,9 +3,11 @@
     xmlns:tools="http://schemas.android.com/tools"
     package="com.example.remainder">
 
-    <!-- Permissions -->
+    <!-- ✅ All permissions OUTSIDE <application> -->
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
 
     <application
         android:allowBackup="false"
@@ -33,26 +35,29 @@
         </activity>
 
         <!-- Reminder Broadcast Receiver -->
-        <receiver
-            android:name=".ReminderReceiver"
-            android:exported="true" />
-        <receiver android:name=".PaymentAlarmReceiver" />
+        <receiver android:name=".ReminderReceiver" android:exported="true" />
+
+        <!-- ✅ Fixed capital R in PaymentAlarmReceiver -->
+        <receiver android:name=".Paymentalarmreceiver" android:exported="false" />
 
         <!-- Snooze Action Receiver -->
-        <receiver
-            android:name=".SnoozeReceiver"
-            android:exported="true" />
+        <receiver android:name=".SnoozeReceiver" android:exported="true" />
 
         <!-- Quick Notes Widget -->
         <receiver android:name=".QuickNotesWidgetProvider" android:exported="true">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>
-
             <meta-data
                 android:name="android.appwidget.provider"
                 android:resource="@xml/quick_notes_widget_info" />
         </receiver>
+
+        <!-- ✅ Payment Notification Service -->
+        <service
+            android:name=".PaymentNotificationService"
+            android:foregroundServiceType="shortService"
+            android:exported="false" />
 
     </application>
 

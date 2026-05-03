@@ -58,8 +58,9 @@ public class MonthlyPaymentAdapter extends RecyclerView.Adapter<MonthlyPaymentAd
                 dbHelper.updatePaymentStatus(currentPayment.getId(), isChecked);
 
                 if (isChecked) {
-                    // ✅ FIX: Cancel the SCHEDULED ALARM (not just a notification) when marked done
                     cancelScheduledAlarm(currentPayment.getId(), currentPayment.getName());
+                    // ✅ Tell service to remove only THIS payment's notification
+                    removePaymentNotification(currentPayment.getId());
                     Toast.makeText(context, "Payment marked as completed", Toast.LENGTH_SHORT).show();
                 } else {
                     Toast.makeText(context, "Payment marked as pending", Toast.LENGTH_SHORT).show();
@@ -75,8 +76,9 @@ public class MonthlyPaymentAdapter extends RecyclerView.Adapter<MonthlyPaymentAd
             if (pos != RecyclerView.NO_POSITION && pos < payments.size()) {
                 MonthlyPayment toDelete = payments.get(pos);
 
-                // ✅ FIX: Cancel the SCHEDULED ALARM before deleting
                 cancelScheduledAlarm(toDelete.getId(), toDelete.getName());
+                // ✅ Tell service to remove only THIS payment's notification
+                removePaymentNotification(toDelete.getId());
 
                 dbHelper.deletePayment(toDelete.getId());
                 payments.remove(pos);
@@ -93,6 +95,22 @@ public class MonthlyPaymentAdapter extends RecyclerView.Adapter<MonthlyPaymentAd
 
     private void sortPayments() {
         Collections.sort(payments, (p1, p2) -> Boolean.compare(p1.isCompleted(), p2.isCompleted()));
+    }
+
+    /**
+     * ✅ Sends ACTION_REMOVE to the service so it cancels only THIS payment's notification.
+     * Other payment notifications are not affected.
+     */
+    private void removePaymentNotification(int paymentId) {
+        Intent serviceIntent = new Intent(context, PaymentNotificationService.class);
+        serviceIntent.setAction(PaymentNotificationService.ACTION_REMOVE);
+        serviceIntent.putExtra(PaymentNotificationService.EXTRA_PAYMENT_ID, paymentId);
+
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            context.startForegroundService(serviceIntent);
+        } else {
+            context.startService(serviceIntent);
+        }
     }
 
     /**
