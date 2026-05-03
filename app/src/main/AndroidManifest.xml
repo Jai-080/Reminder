@@ -36,6 +36,7 @@
         <receiver
             android:name=".ReminderReceiver"
             android:exported="true" />
+        <receiver android:name=".PaymentAlarmReceiver" />
 
         <!-- Snooze Action Receiver -->
         <receiver

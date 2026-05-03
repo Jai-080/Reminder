@@ -1,6 +1,9 @@
 package com.example.remainder;
 
+import android.app.AlarmManager;
+import android.app.PendingIntent;
 import android.content.Context;
+import android.content.Intent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -40,7 +43,8 @@ public class MonthlyPaymentAdapter extends RecyclerView.Adapter<MonthlyPaymentAd
         MonthlyPayment payment = payments.get(position);
         holder.paymentName.setText(payment.getName());
 
-        String formattedDate = new SimpleDateFormat("dd MMM yyyy", Locale.getDefault()).format(payment.getDueDate());
+        String formattedDate = new SimpleDateFormat("dd MMM yyyy", Locale.getDefault())
+                .format(payment.getDueDate());
         holder.dueDateView.setText("Due: " + formattedDate);
 
         holder.checkBox.setOnCheckedChangeListener(null);
@@ -53,9 +57,9 @@ public class MonthlyPaymentAdapter extends RecyclerView.Adapter<MonthlyPaymentAd
                 currentPayment.setCompleted(isChecked);
                 dbHelper.updatePaymentStatus(currentPayment.getId(), isChecked);
 
-                // ✅ Cancel the permanent notification when marked as done
                 if (isChecked) {
-                    AlarmUtils.cancelNotification(context, currentPayment.getName().hashCode());
+                    // ✅ FIX: Cancel the SCHEDULED ALARM (not just a notification) when marked done
+                    cancelScheduledAlarm(currentPayment.getId(), currentPayment.getName());
                     Toast.makeText(context, "Payment marked as completed", Toast.LENGTH_SHORT).show();
                 } else {
                     Toast.makeText(context, "Payment marked as pending", Toast.LENGTH_SHORT).show();
@@ -69,11 +73,12 @@ public class MonthlyPaymentAdapter extends RecyclerView.Adapter<MonthlyPaymentAd
         holder.deleteButton.setOnClickListener(v -> {
             int pos = holder.getAdapterPosition();
             if (pos != RecyclerView.NO_POSITION && pos < payments.size()) {
-                dbHelper.deletePayment(payments.get(pos).getId());
+                MonthlyPayment toDelete = payments.get(pos);
 
-                // ✅ Cancel permanent notification
-                AlarmUtils.cancelNotification(context, payments.get(pos).getName().hashCode());
+                // ✅ FIX: Cancel the SCHEDULED ALARM before deleting
+                cancelScheduledAlarm(toDelete.getId(), toDelete.getName());
 
+                dbHelper.deletePayment(toDelete.getId());
                 payments.remove(pos);
                 notifyItemRemoved(pos);
                 Toast.makeText(context, "Payment deleted", Toast.LENGTH_SHORT).show();
@@ -88,6 +93,27 @@ public class MonthlyPaymentAdapter extends RecyclerView.Adapter<MonthlyPaymentAd
 
     private void sortPayments() {
         Collections.sort(payments, (p1, p2) -> Boolean.compare(p1.isCompleted(), p2.isCompleted()));
+    }
+
+    /**
+     * ✅ FIX: Cancel the AlarmManager alarm using the same paymentId request code used when scheduling.
+     */
+    private void cancelScheduledAlarm(int paymentId, String paymentName) {
+        AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+        if (alarmManager == null) return;
+
+        Intent intent = new Intent(context, Paymentalarmreceiver.class);
+        intent.putExtra("payment_id", paymentId);
+        intent.putExtra("payment_name", paymentName);
+
+        PendingIntent pendingIntent = PendingIntent.getBroadcast(
+                context,
+                paymentId,
+                intent,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+        );
+
+        alarmManager.cancel(pendingIntent);
     }
 
     public static class ViewHolder extends RecyclerView.ViewHolder {
