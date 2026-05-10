@@ -1,6 +1,7 @@
 package com.example.remainder;
 
 import android.app.AlarmManager;
+import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.content.Intent;
@@ -11,12 +12,9 @@ import android.provider.Settings;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
-import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.Toast;
-import android.app.Notification;
-
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
@@ -42,21 +40,21 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        getSupportActionBar().hide();
 
         createNotificationChannel();
         requestExactAlarmPermission();
         requestNotificationPermission();
 
-        Button btnMonthlyPayments = findViewById(R.id.monthlyPaymentsBtn);
+        // ✅ Fixed: View instead of Button — XML now uses LinearLayout
+        View btnMonthlyPayments = findViewById(R.id.monthlyPaymentsBtn);
         btnMonthlyPayments.setOnClickListener(v -> {
-            Intent intent = new Intent(MainActivity.this, MonthlyPaymentsActivity.class);
-            startActivity(intent);
+            startActivity(new Intent(MainActivity.this, MonthlyPaymentsActivity.class));
         });
 
-        Button btnTimedReminders = findViewById(R.id.timedRemindersBtn);
+        View btnTimedReminders = findViewById(R.id.timedRemindersBtn);
         btnTimedReminders.setOnClickListener(v -> {
-            Intent intent = new Intent(MainActivity.this, TimedRemindersActivity.class);
-            startActivity(intent);
+            startActivity(new Intent(MainActivity.this, TimedRemindersActivity.class));
         });
 
         noteDbHelper = new QuickNoteDatabaseHelper(this);
@@ -83,16 +81,12 @@ public class MainActivity extends AppCompatActivity {
                     quickNoteAdapter.notifyItemInserted(0);
                     quickNotesRecycler.scrollToPosition(0);
                     quickNoteInput.setText("");
-
-                    // ✅ Update the widget
                     QuickNotesWidgetProvider.updateWidget(getApplicationContext());
                 } else {
                     Toast.makeText(this, "Failed to add note", Toast.LENGTH_SHORT).show();
                 }
             }
         });
-
-
     }
 
     private void createNotificationChannel() {
@@ -118,7 +112,6 @@ public class MainActivity extends AppCompatActivity {
             }
         }
     }
-
 
     private void requestExactAlarmPermission() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {

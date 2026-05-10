@@ -1,78 +1,127 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/monthlyPaymentsLayout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:padding="16dp"
-    android:background="#121212"
+    android:background="@color/colorBackground"
     tools:context=".MonthlyPaymentsActivity">
 
-    <!-- Payment Input -->
-    <EditText
-        android:id="@+id/paymentInput"
-        android:layout_width="match_parent"
-        android:layout_height="60dp"
-        android:layout_alignParentTop="true"
-        android:layout_marginBottom="8dp"
-        android:background="@drawable/rounded_edittext"
-        android:hint="@string/payment_input_hint"
-        android:padding="12dp"
-        android:textColor="#FFFFFF"
-        android:textColorHint="#AAAAAA"
-        android:textSize="16sp" />
-
-    <!-- Buttons Row -->
-    <androidx.constraintlayout.widget.ConstraintLayout
-        android:id="@+id/buttonRow"
-        android:layout_width="match_parent"
+    <!-- Header -->
+    <LinearLayout
+        android:id="@+id/header"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_below="@id/paymentInput"
-        android:layout_marginBottom="8dp"
-        android:layout_marginTop="8dp">
+        android:orientation="vertical"
+        android:paddingHorizontal="20dp"
+        android:paddingTop="24dp"
+        android:paddingBottom="16dp"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
 
-        <!-- Clear All Button -->
-        <Button
-            android:id="@+id/clearAllBtn"
-            android:layout_width="0dp"
+        <TextView
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginEnd="8dp"
-            android:background="@drawable/rounded_secondary_button"
-            android:minWidth="48dp"
-            android:minHeight="48dp"
-            android:text="@string/clear_all"
-            android:textColor="@android:color/white"
-            android:textSize="16sp"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toStartOf="@+id/addPaymentButton" />
+            android:text="Monthly payments"
+            android:textColor="@color/colorTextPrimary"
+            android:textSize="22sp"
+            android:textStyle="bold" />
+    </LinearLayout>
 
-        <!-- Add Payment Button -->
+    <!-- Divider -->
+    <View
+        android:id="@+id/headerDivider"
+        android:layout_width="0dp"
+        android:layout_height="0.5dp"
+        android:background="@color/colorDivider"
+        app:layout_constraintTop_toBottomOf="@id/header"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <!-- Input row -->
+    <LinearLayout
+        android:id="@+id/inputRow"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingHorizontal="20dp"
+        android:paddingTop="20dp"
+        android:paddingBottom="12dp"
+        app:layout_constraintTop_toBottomOf="@id/headerDivider"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <EditText
+            android:id="@+id/paymentInput"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:background="@drawable/rounded_edittext"
+            android:hint="@string/payment_input_hint"
+            android:textColor="@color/colorTextSecondary"
+            android:textColorHint="@color/colorHint"
+            android:textSize="14sp"
+            android:paddingHorizontal="14dp"
+            android:paddingVertical="0dp"
+            android:inputType="text"
+            android:maxLines="1" />
+
         <Button
             android:id="@+id/addPaymentButton"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
+            android:layout_width="wrap_content"
+            android:layout_height="48dp"
+            android:layout_marginStart="10dp"
             android:background="@drawable/rounded_primary_button"
-            android:minWidth="48dp"
-            android:minHeight="48dp"
             android:text="@string/add_payment"
             android:textColor="#FFFFFF"
-            android:textSize="16sp"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintStart_toEndOf="@id/clearAllBtn"
-            app:layout_constraintEnd_toEndOf="parent" />
-    </androidx.constraintlayout.widget.ConstraintLayout>
+            android:textSize="13sp"
+            android:paddingHorizontal="18dp" />
+    </LinearLayout>
 
-    <!-- Payment List -->
+    <!-- Section label -->
+    <TextView
+        android:id="@+id/sectionLabel"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:text="THIS MONTH"
+        android:textColor="@color/colorTextMuted"
+        android:textSize="10sp"
+        android:letterSpacing="0.1"
+        android:paddingHorizontal="20dp"
+        android:paddingBottom="10dp"
+        app:layout_constraintTop_toBottomOf="@id/inputRow"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <!-- Payment list -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/paymentRecyclerView"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:layout_below="@id/buttonRow"
-        android:layout_marginTop="8dp"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:paddingHorizontal="20dp"
+        android:paddingBottom="80dp"
         android:clipToPadding="false"
-        android:paddingBottom="16dp" />
-</RelativeLayout>
+        app:layout_constraintTop_toBottomOf="@id/sectionLabel"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <!-- Clear all button pinned to bottom -->
+    <Button
+        android:id="@+id/clearAllBtn"
+        android:layout_width="0dp"
+        android:layout_height="48dp"
+        android:layout_marginHorizontal="20dp"
+        android:layout_marginBottom="24dp"
+        android:background="@drawable/rounded_secondary_button"
+        android:text="@string/clear_all"
+        android:textColor="#FFFFFF"
+        android:textSize="14sp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

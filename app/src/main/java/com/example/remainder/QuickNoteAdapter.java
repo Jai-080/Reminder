@@ -7,7 +7,6 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
-import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -39,38 +38,39 @@ public class QuickNoteAdapter extends RecyclerView.Adapter<QuickNoteAdapter.Note
         QuickNote note = notes.get(position);
         holder.noteText.setText(note.getText());
 
+        // Strikethrough if completed
         if (note.isCompleted()) {
             holder.noteText.setPaintFlags(holder.noteText.getPaintFlags() | android.graphics.Paint.STRIKE_THRU_TEXT_FLAG);
+            holder.noteText.setTextColor(0xFF555555);
         } else {
             holder.noteText.setPaintFlags(holder.noteText.getPaintFlags() & (~android.graphics.Paint.STRIKE_THRU_TEXT_FLAG));
+            holder.noteText.setTextColor(0xFFBBBBBB);
         }
 
-        // Toggle completion on bullet icon click
-        holder.bullet.setOnClickListener(v -> {
+        // ✅ Toggle completion on the whole item row click
+        holder.itemView.setOnLongClickListener(v -> {
             note.setCompleted(!note.isCompleted());
             noteDbHelper.updateNote(note.getId(), note.getText(), note.isCompleted());
-
-            // Move to bottom if completed
             notes.remove(position);
             notes.add(note);
             notifyDataSetChanged();
-
-            QuickNotesWidgetProvider.updateWidget(context);  // Refresh widget
+            QuickNotesWidgetProvider.updateWidget(context);
+            return true;
         });
 
-        // Single tap shows options (Edit/Delete)
+        // Single tap shows Edit/Delete options
         holder.noteText.setOnClickListener(v -> {
             String[] options = {"Edit", "Delete"};
             new AlertDialog.Builder(context)
                     .setTitle("Choose Action")
                     .setItems(options, (dialog, which) -> {
-                        if (which == 0) { // Edit
+                        if (which == 0) {
                             showEditDialog(position);
-                        } else { // Delete
+                        } else {
                             noteDbHelper.deleteNote(note.getId());
                             notes.remove(position);
                             notifyItemRemoved(position);
-                            QuickNotesWidgetProvider.updateWidget(context); // Refresh widget
+                            QuickNotesWidgetProvider.updateWidget(context);
                         }
                     })
                     .show();
@@ -92,7 +92,7 @@ public class QuickNoteAdapter extends RecyclerView.Adapter<QuickNoteAdapter.Note
                         note.setText(newText);
                         noteDbHelper.updateNote(note.getId(), newText, note.isCompleted());
                         notifyItemChanged(position);
-                        QuickNotesWidgetProvider.updateWidget(context); // Refresh widget
+                        QuickNotesWidgetProvider.updateWidget(context);
                     }
                 })
                 .setNegativeButton("Cancel", null)
@@ -106,12 +106,11 @@ public class QuickNoteAdapter extends RecyclerView.Adapter<QuickNoteAdapter.Note
 
     static class NoteViewHolder extends RecyclerView.ViewHolder {
         TextView noteText;
-        ImageView bullet;
 
         public NoteViewHolder(@NonNull View itemView) {
             super(itemView);
             noteText = itemView.findViewById(R.id.noteText);
-            bullet = itemView.findViewById(R.id.bulletIcon);
+            // ✅ bulletIcon removed — dot is now a decorative View, no ID needed
         }
     }
 }

@@ -19,7 +19,7 @@ public class ReminderAdapter extends RecyclerView.Adapter<ReminderAdapter.ViewHo
     private ReminderDatabaseHelper dbHelper;
     private Context context;
     private OnReminderDeletedListener deleteListener;
-    private boolean isExpiredList; // 🔹 To distinguish pending vs expired lists
+    private boolean isExpiredList;
 
     public interface OnReminderDeletedListener {
         void onReminderDeleted();
@@ -58,16 +58,15 @@ public class ReminderAdapter extends RecyclerView.Adapter<ReminderAdapter.ViewHo
         String formattedTime = DateFormat.getDateTimeInstance().format(reminder.getTime());
         holder.reminderTime.setText(formattedTime);
 
+        // ✅ expiredIcon is now a TextView badge
         boolean isExpired = reminder.getTime() <= System.currentTimeMillis();
         holder.expiredIcon.setVisibility(isExpired ? View.VISIBLE : View.GONE);
 
         holder.deleteButton.setOnClickListener(v -> {
-            // 🛑 Cancel the scheduled notification before deletion (only if it's a pending reminder)
             if (!isExpiredList) {
                 AlarmUtils.cancelReminder(context, reminder.getId());
             }
 
-            // ✅ Now delete from DB and update UI
             dbHelper.deleteReminder(reminder.getId());
             reminders.remove(position);
             notifyItemRemoved(position);
@@ -86,14 +85,15 @@ public class ReminderAdapter extends RecyclerView.Adapter<ReminderAdapter.ViewHo
 
     public static class ViewHolder extends RecyclerView.ViewHolder {
         TextView reminderText, reminderTime;
-        ImageView deleteButton, expiredIcon;
+        TextView expiredIcon;   // ✅ was ImageView, now TextView badge
+        ImageView deleteButton;
 
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
             reminderText = itemView.findViewById(R.id.reminderText);
             reminderTime = itemView.findViewById(R.id.reminderTime);
+            expiredIcon = itemView.findViewById(R.id.expiredIcon);   // ✅ TextView
             deleteButton = itemView.findViewById(R.id.deleteButton);
-            expiredIcon = itemView.findViewById(R.id.expiredIcon);
         }
     }
 }

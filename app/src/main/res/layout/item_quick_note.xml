@@ -1,35 +1,29 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:padding="12dp"
-    android:background="@drawable/rounded_item_background">
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
+    android:background="@drawable/rounded_item_background"
+    android:layout_marginBottom="10dp"
+    android:paddingHorizontal="14dp"
+    android:paddingVertical="12dp">
 
-    <!-- Bullet icon -->
-    <ImageView
-        android:id="@+id/bulletIcon"
-        android:layout_width="30dp"
-        android:layout_height="30dp"
-        android:layout_marginEnd="12dp"
-        android:src="@android:drawable/ic_menu_send"
-        app:tint="#FF5722"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent" />
+    <!-- Dot accent -->
+    <View
+        android:layout_width="6dp"
+        android:layout_height="6dp"
+        android:background="@drawable/rounded_primary_button"
+        android:layout_marginEnd="12dp" />
 
-    <!-- Note Text -->
+    <!-- Note text -->
     <TextView
         android:id="@+id/noteText"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:text="Sample Note"
-        android:textColor="#FFFFFF"
-        android:textSize="16sp"
-        android:padding="8dp"
-        app:layout_constraintStart_toEndOf="@id/bulletIcon"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent" />
+        android:layout_weight="1"
+        android:textColor="#BBBBBB"
+        android:textSize="14sp"
+        android:lineSpacingMultiplier="1.4" />
 
-</androidx.constraintlayout.widget.ConstraintLayout>
+</LinearLayout>

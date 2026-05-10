@@ -14,7 +14,6 @@ import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.util.Log;
-import android.view.ContextThemeWrapper;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
@@ -99,8 +98,8 @@ public class TimedRemindersActivity extends AppCompatActivity {
                 int hour = now.get(Calendar.HOUR_OF_DAY);
                 int minute = now.get(Calendar.MINUTE);
 
-                ContextThemeWrapper themedContext = new ContextThemeWrapper(this, android.R.style.Theme_Holo_Dialog_NoActionBar);
-                new TimePickerDialog(themedContext, (timeView, h, m) -> {
+                // ✅ Modern spinner style instead of old analog clock
+                new TimePickerDialog(this, R.style.TimePickerTheme, (timeView, h, m) -> {
                     selectedDateTime.set(Calendar.HOUR_OF_DAY, h);
                     selectedDateTime.set(Calendar.MINUTE, m);
                     selectedDateTime.set(Calendar.SECOND, 0);

@@ -1,5 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- Theme-aware (light mode values) -->
+    <color name="colorBackground">@color/light_background</color>
+    <color name="colorTextPrimary">@color/light_text_primary</color>
+    <color name="colorTextSecondary">@color/light_text_secondary</color>
+    <color name="colorTextMuted">@color/light_text_muted</color>
+    <color name="colorDivider">@color/light_divider</color>
+    <color name="colorHint">#AAAAAA</color>
+    <!-- Brand -->
     <color name="purple_200">#FFBB86FC</color>
     <color name="purple_500">#FF6200EE</color>
     <color name="purple_700">#FF3700B3</color>
@@ -7,4 +15,30 @@
     <color name="teal_700">#FF018786</color>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+
+    <!-- App accent -->
+    <color name="accent_purple">#7F77DD</color>
+    <color name="accent_red">#993C1D</color>
+
+    <!-- Dark theme -->
+    <color name="dark_background">#0F0F0F</color>
+    <color name="dark_surface">#1A1A1A</color>
+    <color name="dark_surface_border">#252525</color>
+    <color name="dark_text_primary">#F0F0F0</color>
+    <color name="dark_text_secondary">#CCCCCC</color>
+    <color name="dark_text_muted">#555555</color>
+    <color name="dark_input_bg">#1A1A1A</color>
+    <color name="dark_input_border">#2A2A2A</color>
+    <color name="dark_divider">#1F1F1F</color>
+
+    <!-- Light theme -->
+    <color name="light_background">#F5F5F5</color>
+    <color name="light_surface">#FFFFFF</color>
+    <color name="light_surface_border">#E0E0E0</color>
+    <color name="light_text_primary">#111111</color>
+    <color name="light_text_secondary">#333333</color>
+    <color name="light_text_muted">#999999</color>
+    <color name="light_input_bg">#FFFFFF</color>
+    <color name="light_input_border">#DDDDDD</color>
+    <color name="light_divider">#E8E8E8</color>
 </resources>

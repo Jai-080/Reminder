@@ -2,9 +2,9 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:orientation="horizontal"
-    android:padding="16dp"
+    android:padding="14dp"
     android:background="@drawable/rounded_item_background"
-    android:layout_marginBottom="12dp"
+    android:layout_marginBottom="10dp"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:gravity="center_vertical">
@@ -13,8 +13,8 @@
         android:id="@+id/paymentCheckBox"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:buttonTint="#90EE90"
-        android:layout_marginEnd="12dp" />
+        android:buttonTint="#7F77DD"
+        android:layout_marginEnd="14dp" />
 
     <LinearLayout
         android:layout_width="0dp"
@@ -26,26 +26,28 @@
             android:id="@+id/paymentNameTextView"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textColor="#FBEBD7"
-            android:textSize="18sp" />
+            android:textColor="#CCCCCC"
+            android:textSize="15sp"
+            android:textStyle="bold" />
 
         <TextView
             android:id="@+id/dueDateTextView"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textColor="#AAAAAA"
-            android:textSize="14sp" />
+            android:textColor="#555555"
+            android:textSize="12sp"
+            android:layout_marginTop="3dp" />
     </LinearLayout>
 
     <ImageButton
         android:id="@+id/deletePaymentBtn"
-        android:layout_width="48dp"
-        android:layout_height="48dp"
+        android:layout_width="36dp"
+        android:layout_height="36dp"
         android:background="?attr/selectableItemBackgroundBorderless"
         android:contentDescription="Delete Payment"
         android:scaleType="centerInside"
         android:src="@android:drawable/ic_menu_delete"
-        app:tint="@android:color/holo_red_dark"
-        android:padding="8dp" />
+        android:padding="6dp"
+        app:tint="#993C1D" />
 
 </LinearLayout>
