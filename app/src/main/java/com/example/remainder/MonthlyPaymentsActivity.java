@@ -5,7 +5,6 @@ import android.app.DatePickerDialog;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
-import android.os.Build;
 import android.os.Bundle;
 import android.widget.Button;
 import android.widget.EditText;
@@ -25,7 +24,6 @@ public class MonthlyPaymentsActivity extends AppCompatActivity {
     private ArrayList<MonthlyPayment> payments;
 
     private EditText paymentInput;
-    private Button addButton, clearAllButton;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -34,8 +32,8 @@ public class MonthlyPaymentsActivity extends AppCompatActivity {
 
         dbHelper = new PaymentDatabaseHelper(this);
         paymentInput = findViewById(R.id.paymentInput);
-        addButton = findViewById(R.id.addPaymentButton);
-        clearAllButton = findViewById(R.id.clearAllBtn);
+        Button addButton = findViewById(R.id.addPaymentButton);
+        Button clearAllButton = findViewById(R.id.clearAllBtn);
         RecyclerView recyclerView = findViewById(R.id.paymentRecyclerView);
 
         payments = dbHelper.getAllPayments();
@@ -80,8 +78,7 @@ public class MonthlyPaymentsActivity extends AppCompatActivity {
                     Calendar dueCalendar = Calendar.getInstance();
                     dueCalendar.set(year, month, dayOfMonth, 9, 0, 0);
                     dueCalendar.set(Calendar.MILLISECOND, 0);
-                    //long dueDateMillis = System.currentTimeMillis() + (1 * 1000); // remove this
-                    long dueDateMillis = dueCalendar.getTimeInMillis(); // uncomment this
+                    long dueDateMillis = dueCalendar.getTimeInMillis();
 
                     // Insert into DB
                     int paymentId = dbHelper.insertPayment(paymentName, dueDateMillis, false);
@@ -126,11 +123,7 @@ public class MonthlyPaymentsActivity extends AppCompatActivity {
         );
 
         // Use setExactAndAllowWhileIdle for reliable delivery even in Doze mode
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, dueDateMillis, pendingIntent);
-        } else {
-            alarmManager.setExact(AlarmManager.RTC_WAKEUP, dueDateMillis, pendingIntent);
-        }
+        alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, dueDateMillis, pendingIntent);
     }
 
     /**

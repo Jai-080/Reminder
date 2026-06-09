@@ -10,7 +10,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
-import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.util.Log;
@@ -35,11 +34,9 @@ import java.util.concurrent.TimeUnit;
 public class TimedRemindersActivity extends AppCompatActivity {
 
     private EditText editTextReminder;
-    private Button btnSetReminderFull;
-    private RecyclerView rvPending, rvExpired;
     private ReminderAdapter pendingAdapter, expiredAdapter;
     private ReminderDatabaseHelper dbHelper;
-    private Calendar selectedDateTime = Calendar.getInstance();
+    private final Calendar selectedDateTime = Calendar.getInstance();
 
     private TextView pendingLabel, expiredLabel;
 
@@ -47,8 +44,8 @@ public class TimedRemindersActivity extends AppCompatActivity {
     private static final String CHANNEL_ID = "reminder_channel";
     private static final String TAG = "TimedRemindersActivity";
 
-    private ArrayList<Reminder> pendingReminders = new ArrayList<>();
-    private ArrayList<Reminder> expiredReminders = new ArrayList<>();
+    private final ArrayList<Reminder> pendingReminders = new ArrayList<>();
+    private final ArrayList<Reminder> expiredReminders = new ArrayList<>();
 
     private BroadcastReceiver reminderExpiredReceiver;
 
@@ -62,9 +59,9 @@ public class TimedRemindersActivity extends AppCompatActivity {
         requestNotificationPermission();
 
         editTextReminder = findViewById(R.id.editTextReminder);
-        btnSetReminderFull = findViewById(R.id.btnSetReminderFull);
-        rvPending = findViewById(R.id.rv_pending_reminders);
-        rvExpired = findViewById(R.id.rv_expired_reminders);
+        Button btnSetReminderFull = findViewById(R.id.btnSetReminderFull);
+        RecyclerView rvPending = findViewById(R.id.rv_pending_reminders);
+        RecyclerView rvExpired = findViewById(R.id.rv_expired_reminders);
         pendingLabel = findViewById(R.id.pendingLabel);
         expiredLabel = findViewById(R.id.expiredLabel);
 
@@ -141,7 +138,7 @@ public class TimedRemindersActivity extends AppCompatActivity {
             }
         };
         registerReceiver(reminderExpiredReceiver, new IntentFilter("com.example.remainder.REMINDER_EXPIRED"),
-                Context.RECEIVER_EXPORTED);
+                Context.RECEIVER_NOT_EXPORTED);
     }
 
     private void loadReminders() {
@@ -175,41 +172,35 @@ public class TimedRemindersActivity extends AppCompatActivity {
     }
 
     private void createNotificationChannel() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            NotificationChannel channel = new NotificationChannel(
-                    CHANNEL_ID,
-                    "Reminders",
-                    NotificationManager.IMPORTANCE_HIGH
-            );
-            channel.setDescription("Channel for reminder notifications");
+        NotificationChannel channel = new NotificationChannel(
+                CHANNEL_ID,
+                "Reminders",
+                NotificationManager.IMPORTANCE_HIGH
+        );
+        channel.setDescription("Channel for reminder notifications");
 
-            NotificationManager manager = getSystemService(NotificationManager.class);
-            if (manager != null) {
-                manager.createNotificationChannel(channel);
-                Log.d(TAG, "Notification channel created: " + CHANNEL_ID);
-            }
+        NotificationManager manager = getSystemService(NotificationManager.class);
+        if (manager != null) {
+            manager.createNotificationChannel(channel);
+            Log.d(TAG, "Notification channel created: " + CHANNEL_ID);
         }
     }
 
     private void requestExactAlarmPermission() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            AlarmManager alarmManager = (AlarmManager) getSystemService(ALARM_SERVICE);
-            if (alarmManager != null && !alarmManager.canScheduleExactAlarms()) {
-                Intent intent = new Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM);
-                startActivity(intent);
-            }
+        AlarmManager alarmManager = (AlarmManager) getSystemService(ALARM_SERVICE);
+        if (alarmManager != null && !alarmManager.canScheduleExactAlarms()) {
+            Intent intent = new Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM);
+            startActivity(intent);
         }
     }
 
     private void requestNotificationPermission() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS)
-                    != PackageManager.PERMISSION_GRANTED) {
-                requestPermissions(
-                        new String[]{android.Manifest.permission.POST_NOTIFICATIONS},
-                        REQUEST_NOTIFICATION_PERMISSION
-                );
-            }
+        if (checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS)
+                != PackageManager.PERMISSION_GRANTED) {
+            requestPermissions(
+                    new String[]{android.Manifest.permission.POST_NOTIFICATIONS},
+                    REQUEST_NOTIFICATION_PERMISSION
+            );
         }
     }
 

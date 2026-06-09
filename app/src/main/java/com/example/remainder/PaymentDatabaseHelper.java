@@ -86,16 +86,4 @@ public class PaymentDatabaseHelper extends SQLiteOpenHelper {
         SQLiteDatabase db = this.getWritableDatabase();
         db.delete(TABLE_NAME, null, null);
     }
-
-    // 🔄 New method to get payment name by ID (used for canceling notification)
-    public String getPaymentNameById(int id) {
-        SQLiteDatabase db = getReadableDatabase();
-        Cursor cursor = db.query(TABLE_NAME, new String[]{COL_NAME}, COL_ID + " = ?", new String[]{String.valueOf(id)}, null, null, null);
-        if (cursor != null && cursor.moveToFirst()) {
-            String name = cursor.getString(cursor.getColumnIndexOrThrow(COL_NAME));
-            cursor.close();
-            return name;
-        }
-        return null;
-    }
 }

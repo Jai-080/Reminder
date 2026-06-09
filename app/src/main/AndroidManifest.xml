@@ -35,13 +35,13 @@
         </activity>
 
         <!-- Reminder Broadcast Receiver -->
-        <receiver android:name=".ReminderReceiver" android:exported="true" />
+        <receiver android:name=".ReminderReceiver" android:exported="false" />
 
         <!-- ✅ Fixed capital R in PaymentAlarmReceiver -->
         <receiver android:name=".Paymentalarmreceiver" android:exported="false" />
 
         <!-- Snooze Action Receiver -->
-        <receiver android:name=".SnoozeReceiver" android:exported="true" />
+        <receiver android:name=".SnoozeReceiver" android:exported="false" />
 
         <!-- Quick Notes Widget -->
         <receiver android:name=".QuickNotesWidgetProvider" android:exported="true">

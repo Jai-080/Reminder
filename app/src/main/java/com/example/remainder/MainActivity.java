@@ -6,7 +6,6 @@ import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.text.TextUtils;
@@ -30,8 +29,6 @@ public class MainActivity extends AppCompatActivity {
     private static final String TAG = "MainActivity";
 
     private EditText quickNoteInput;
-    private ImageView addNoteButton;
-    private RecyclerView quickNotesRecycler;
     private QuickNoteAdapter quickNoteAdapter;
     private ArrayList<QuickNote> noteList = new ArrayList<>();
     private QuickNoteDatabaseHelper noteDbHelper;
@@ -40,7 +37,9 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        getSupportActionBar().hide();
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().hide();
+        }
 
         createNotificationChannel();
         requestExactAlarmPermission();
@@ -63,8 +62,8 @@ public class MainActivity extends AppCompatActivity {
 
     private void setupQuickNotes() {
         quickNoteInput = findViewById(R.id.editTextQuickNote);
-        addNoteButton = findViewById(R.id.btnAddQuickNote);
-        quickNotesRecycler = findViewById(R.id.recyclerQuickNotes);
+        ImageView addNoteButton = findViewById(R.id.btnAddQuickNote);
+        RecyclerView quickNotesRecycler = findViewById(R.id.recyclerQuickNotes);
 
         noteList = noteDbHelper.getAllNotes();
         quickNoteAdapter = new QuickNoteAdapter(this, noteList, noteDbHelper);
@@ -90,48 +89,42 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void createNotificationChannel() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            NotificationManager manager = getSystemService(NotificationManager.class);
-            if (manager != null) {
-                NotificationChannel existingChannel = manager.getNotificationChannel(CHANNEL_ID);
-                if (existingChannel == null) {
-                    NotificationChannel channel = new NotificationChannel(
-                            CHANNEL_ID,
-                            "Reminders",
-                            NotificationManager.IMPORTANCE_HIGH
-                    );
-                    channel.setDescription("Channel for reminder notifications");
-                    channel.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
-                    channel.enableLights(true);
-                    channel.enableVibration(true);
-                    manager.createNotificationChannel(channel);
-                    Log.d(TAG, "Notification channel created: " + CHANNEL_ID);
-                } else {
-                    Log.d(TAG, "Notification channel already exists: " + CHANNEL_ID);
-                }
+        NotificationManager manager = getSystemService(NotificationManager.class);
+        if (manager != null) {
+            NotificationChannel existingChannel = manager.getNotificationChannel(CHANNEL_ID);
+            if (existingChannel == null) {
+                NotificationChannel channel = new NotificationChannel(
+                        CHANNEL_ID,
+                        "Reminders",
+                        NotificationManager.IMPORTANCE_HIGH
+                );
+                channel.setDescription("Channel for reminder notifications");
+                channel.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
+                channel.enableLights(true);
+                channel.enableVibration(true);
+                manager.createNotificationChannel(channel);
+                Log.d(TAG, "Notification channel created: " + CHANNEL_ID);
+            } else {
+                Log.d(TAG, "Notification channel already exists: " + CHANNEL_ID);
             }
         }
     }
 
     private void requestExactAlarmPermission() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            AlarmManager alarmManager = (AlarmManager) getSystemService(ALARM_SERVICE);
-            if (alarmManager != null && !alarmManager.canScheduleExactAlarms()) {
-                Intent intent = new Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM);
-                startActivity(intent);
-            }
+        AlarmManager alarmManager = (AlarmManager) getSystemService(ALARM_SERVICE);
+        if (alarmManager != null && !alarmManager.canScheduleExactAlarms()) {
+            Intent intent = new Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM);
+            startActivity(intent);
         }
     }
 
     private void requestNotificationPermission() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS)
-                    != PackageManager.PERMISSION_GRANTED) {
-                requestPermissions(
-                        new String[]{android.Manifest.permission.POST_NOTIFICATIONS},
-                        REQUEST_NOTIFICATION_PERMISSION
-                );
-            }
+        if (checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS)
+                != PackageManager.PERMISSION_GRANTED) {
+            requestPermissions(
+                    new String[]{android.Manifest.permission.POST_NOTIFICATIONS},
+                    REQUEST_NOTIFICATION_PERMISSION
+            );
         }
     }
 

@@ -9,4 +9,13 @@
     <string name="payment_input_hint">Enter payment name</string>
     <string name="clear_all">Clear All</string>
     <string name="add_payment">Add Payment</string>
+    <string name="quick_notes">QUICK NOTES</string>
+    <string name="add_note_hint">Add a note...</string>
+    <string name="add_note_desc">Add Note</string>
+    <string name="timed_reminders_title">Timed reminders</string>
+    <string name="monthly_payments_title">Monthly payments</string>
+    <string name="due_date_format">Due: %1$s</string>
+    <string name="clock_emoji">⏰</string>
+    <string name="card_emoji">💳</string>
+    <string name="arrow_right">›</string>
 </resources>

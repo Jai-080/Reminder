@@ -12,11 +12,11 @@ import android.widget.CheckBox;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Locale;
 
 public class MonthlyPaymentAdapter extends RecyclerView.Adapter<MonthlyPaymentAdapter.ViewHolder> {
@@ -32,20 +32,21 @@ public class MonthlyPaymentAdapter extends RecyclerView.Adapter<MonthlyPaymentAd
         sortPayments();
     }
 
+    @NonNull
     @Override
-    public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+    public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         View view = LayoutInflater.from(context).inflate(R.layout.item_payment, parent, false);
         return new ViewHolder(view);
     }
 
     @Override
-    public void onBindViewHolder(ViewHolder holder, int position) {
+    public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         MonthlyPayment payment = payments.get(position);
         holder.paymentName.setText(payment.getName());
 
         String formattedDate = new SimpleDateFormat("dd MMM yyyy", Locale.getDefault())
                 .format(payment.getDueDate());
-        holder.dueDateView.setText("Due: " + formattedDate);
+        holder.dueDateView.setText(context.getString(R.string.due_date_format, formattedDate));
 
         holder.checkBox.setOnCheckedChangeListener(null);
         holder.checkBox.setChecked(payment.isCompleted());
@@ -94,7 +95,7 @@ public class MonthlyPaymentAdapter extends RecyclerView.Adapter<MonthlyPaymentAd
     }
 
     private void sortPayments() {
-        Collections.sort(payments, (p1, p2) -> Boolean.compare(p1.isCompleted(), p2.isCompleted()));
+        payments.sort((p1, p2) -> Boolean.compare(p1.isCompleted(), p2.isCompleted()));
     }
 
     /**
@@ -106,9 +107,7 @@ public class MonthlyPaymentAdapter extends RecyclerView.Adapter<MonthlyPaymentAd
         serviceIntent.setAction(PaymentNotificationService.ACTION_REMOVE);
         serviceIntent.putExtra(PaymentNotificationService.EXTRA_PAYMENT_ID, paymentId);
 
-        // ✅ Use startService since we are just sending a command. 
-        // startForegroundService is only needed when we are sure we want to enter foreground 
-        // from background and will call startForeground within 5 seconds.
+        // ✅ Use startService since we are just sending a command.
         context.startService(serviceIntent);
     }
 
