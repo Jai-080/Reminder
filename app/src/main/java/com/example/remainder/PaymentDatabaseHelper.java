@@ -80,13 +80,11 @@ public class PaymentDatabaseHelper extends SQLiteOpenHelper {
     public void deletePayment(int id) {
         SQLiteDatabase db = this.getWritableDatabase();
         db.delete(TABLE_NAME, "id = ?", new String[]{String.valueOf(id)});
-        db.close();
     }
 
     public void deleteAllPayments() {
         SQLiteDatabase db = this.getWritableDatabase();
         db.delete(TABLE_NAME, null, null);
-        db.close();
     }
 
     // 🔄 New method to get payment name by ID (used for canceling notification)

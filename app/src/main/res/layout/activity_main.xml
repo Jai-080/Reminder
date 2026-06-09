@@ -163,13 +163,7 @@
                     android:textColor="?android:attr/textColorPrimary"
                     android:textSize="14sp"
                     android:textStyle="bold" />
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Schedule alerts at a time"
-                    android:textColor="@color/light_text_muted"
-                    android:textSize="11sp"
-                    android:layout_marginTop="2dp" />
+
             </LinearLayout>
 
             <TextView
@@ -216,13 +210,7 @@
                     android:textColor="?android:attr/textColorPrimary"
                     android:textSize="14sp"
                     android:textStyle="bold" />
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Track recurring bills"
-                    android:textColor="@color/light_text_muted"
-                    android:textSize="11sp"
-                    android:layout_marginTop="2dp" />
+
             </LinearLayout>
 
             <TextView

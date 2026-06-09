@@ -106,11 +106,10 @@ public class MonthlyPaymentAdapter extends RecyclerView.Adapter<MonthlyPaymentAd
         serviceIntent.setAction(PaymentNotificationService.ACTION_REMOVE);
         serviceIntent.putExtra(PaymentNotificationService.EXTRA_PAYMENT_ID, paymentId);
 
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-            context.startForegroundService(serviceIntent);
-        } else {
-            context.startService(serviceIntent);
-        }
+        // ✅ Use startService since we are just sending a command. 
+        // startForegroundService is only needed when we are sure we want to enter foreground 
+        // from background and will call startForeground within 5 seconds.
+        context.startService(serviceIntent);
     }
 
     /**

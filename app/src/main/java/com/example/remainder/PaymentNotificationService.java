@@ -10,8 +10,8 @@ import android.os.IBinder;
 
 import androidx.core.app.NotificationCompat;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.HashMap;
+import java.util.Map;
 
 public class PaymentNotificationService extends Service {
 
@@ -19,9 +19,11 @@ public class PaymentNotificationService extends Service {
     public static final String EXTRA_PAYMENT_NAME = "payment_name";
     public static final String EXTRA_PAYMENT_ID = "payment_id";
     public static final String ACTION_REMOVE = "action_remove_notification";
+    public static final String ACTION_STOP_SERVICE = "action_stop_service";
 
-    // ✅ Track all active payment notification IDs
-    private static final Set<Integer> activePaymentIds = new HashSet<>();
+    // ✅ Track all active payment notification IDs and their names
+    private static final Map<Integer, String> activePayments = new HashMap<>();
+    private static int foregroundId = -1;
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
@@ -31,11 +33,14 @@ public class PaymentNotificationService extends Service {
         int paymentId = intent.getIntExtra(EXTRA_PAYMENT_ID, -1);
         String paymentName = intent.getStringExtra(EXTRA_PAYMENT_NAME);
 
+        if (ACTION_STOP_SERVICE.equals(action)) {
+            stopForegroundAndService();
+            return START_NOT_STICKY;
+        }
+
         if (ACTION_REMOVE.equals(action)) {
-            // ✅ Remove only the specific payment notification
             removePaymentNotification(paymentId);
         } else {
-            // ✅ Show a new payment notification
             showPaymentNotification(paymentId, paymentName);
         }
 
@@ -46,41 +51,57 @@ public class PaymentNotificationService extends Service {
         if (paymentId == -1 || paymentName == null) return;
 
         createNotificationChannel();
+        activePayments.put(paymentId, paymentName);
 
-        Notification notification = new NotificationCompat.Builder(this, CHANNEL_ID)
-                .setSmallIcon(R.drawable.ic_notification)
-                .setContentTitle("💳 Payment Due Today!")
-                .setContentText(paymentName + " is due today. Don't forget to pay!")
-                .setPriority(NotificationCompat.PRIORITY_LOW)  // ✅ Silent
-                .setSound(null)                                 // ✅ No sound
-                .setVibrate(null)                               // ✅ No vibration
-                .setOngoing(true)                               // ✅ Can't be swiped
-                .build();
+        Notification notification = createNotification(paymentName);
 
-        activePaymentIds.add(paymentId);
-
-        // ✅ First payment uses startForeground, rest use notifyManager directly
-        if (activePaymentIds.size() == 1) {
-            startForeground(paymentId, notification);
-        } else {
-            NotificationManager manager = getSystemService(NotificationManager.class);
-            if (manager != null) manager.notify(paymentId, notification);
-        }
+        // ✅ Always call startForeground to satisfy Android 14+ requirements
+        startForeground(paymentId, notification);
+        foregroundId = paymentId;
     }
 
     private void removePaymentNotification(int paymentId) {
         if (paymentId == -1) return;
 
-        // ✅ Cancel this specific notification
         NotificationManager manager = getSystemService(NotificationManager.class);
         if (manager != null) manager.cancel(paymentId);
 
-        activePaymentIds.remove(paymentId);
+        activePayments.remove(paymentId);
 
-        // ✅ If no more active payments, stop the service entirely
-        if (activePaymentIds.isEmpty()) {
-            stopSelf();
+        if (activePayments.isEmpty()) {
+            stopForegroundAndService();
+        } else if (paymentId == foregroundId) {
+            // If we removed the one currently used for foreground, pick another one to maintain foreground status
+            int nextId = activePayments.keySet().iterator().next();
+            String nextName = activePayments.get(nextId);
+            if (nextName != null) {
+                startForeground(nextId, createNotification(nextName));
+                foregroundId = nextId;
+            }
         }
+    }
+
+    private Notification createNotification(String paymentName) {
+        return new NotificationCompat.Builder(this, CHANNEL_ID)
+                .setSmallIcon(R.drawable.ic_notification)
+                .setContentTitle("💳 Payment Due Today!")
+                .setContentText(paymentName + " is due today. Don't forget to pay!")
+                .setPriority(NotificationCompat.PRIORITY_LOW)
+                .setSound(null)
+                .setVibrate(null)
+                .setOngoing(true)
+                .build();
+    }
+
+    private void stopForegroundAndService() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            stopForeground(STOP_FOREGROUND_REMOVE);
+        } else {
+            stopForeground(true);
+        }
+        stopSelf();
+        activePayments.clear();
+        foregroundId = -1;
     }
 
     private void createNotificationChannel() {
@@ -88,10 +109,10 @@ public class PaymentNotificationService extends Service {
             NotificationChannel channel = new NotificationChannel(
                     CHANNEL_ID,
                     "Payment Reminders",
-                    NotificationManager.IMPORTANCE_LOW  // ✅ Silent channel
+                    NotificationManager.IMPORTANCE_LOW
             );
-            channel.setSound(null, null);       // ✅ No sound
-            channel.enableVibration(false);     // ✅ No vibration
+            channel.setSound(null, null);
+            channel.enableVibration(false);
             NotificationManager manager = getSystemService(NotificationManager.class);
             if (manager != null) manager.createNotificationChannel(channel);
         }

@@ -61,6 +61,12 @@ public class MonthlyPaymentsActivity extends AppCompatActivity {
             dbHelper.deleteAllPayments();
             payments.clear();
             adapter.notifyDataSetChanged();
+
+            // ✅ Stop the notification service and clear all active notifications
+            Intent stopIntent = new Intent(this, PaymentNotificationService.class);
+            stopIntent.setAction(PaymentNotificationService.ACTION_STOP_SERVICE);
+            startService(stopIntent);
+
             Toast.makeText(this, "All payments deleted", Toast.LENGTH_SHORT).show();
         });
     }
@@ -74,8 +80,8 @@ public class MonthlyPaymentsActivity extends AppCompatActivity {
                     Calendar dueCalendar = Calendar.getInstance();
                     dueCalendar.set(year, month, dayOfMonth, 9, 0, 0);
                     dueCalendar.set(Calendar.MILLISECOND, 0);
-                    long dueDateMillis = System.currentTimeMillis() + (1 * 1000); // remove this
-                    //long dueDateMillis = dueCalendar.getTimeInMillis(); // uncomment this
+                    //long dueDateMillis = System.currentTimeMillis() + (1 * 1000); // remove this
+                    long dueDateMillis = dueCalendar.getTimeInMillis(); // uncomment this
 
                     // Insert into DB
                     int paymentId = dbHelper.insertPayment(paymentName, dueDateMillis, false);
