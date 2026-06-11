@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="colorBackground">@color/dark_background</color>
+    <color name="colorTextPrimary">@color/dark_text_primary</color>
+    <color name="colorTextSecondary">@color/dark_text_secondary</color>
+    <color name="colorTextMuted">@color/dark_text_muted</color>
+    <color name="colorDivider">@color/dark_divider</color>
+    <color name="colorHint">#444444</color>
+</resources>

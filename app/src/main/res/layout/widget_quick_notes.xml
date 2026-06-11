@@ -19,15 +19,22 @@
         android:gravity="start"
         android:padding="10dp"/>
 
-    <TextView
-        android:id="@+id/widget_quick_notes_text"
+    <ListView
+        android:id="@+id/widget_list"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
+        android:divider="@android:color/transparent"
+        android:dividerHeight="0dp"/>
+
+    <TextView
+        android:id="@+id/widget_empty_view"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
         android:text="No notes"
         android:textSize="18sp"
         android:textColor="@android:color/white"
-        android:paddingTop="8dp"
-        android:paddingStart="8dp"/>
+        android:padding="8dp"
+        android:visibility="gone"/>
 
 </LinearLayout>
