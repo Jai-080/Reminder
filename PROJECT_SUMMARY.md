@@ -1,4 +1,4 @@
-# Remainder — Android App: Full Project Summary
+# Reminder — Android App: Full Project Summary
 
 ## Table of Contents
 1. [Project Overview](#1-project-overview)
@@ -21,7 +21,7 @@
 | Field | Value |
 |---|---|
 | App Name | **Reminder** |
-| Package ID | `com.example.remainder` |
+| Package ID | `com.example.Reminder` |
 | Language | Java |
 | Min SDK | 33 (Android 13) |
 | Target SDK | 34 (Android 14) |
@@ -59,7 +59,7 @@ implementation 'com.google.android.material:material:1.12.0'
 ## 3. Package Structure
 
 ```
-com.example.remainder/
+com.example.Reminder/
 ├── MainActivity.java                  — App entry point, Quick Notes host
 ├── TimedRemindersActivity.java        — Create/manage timed reminders
 ├── MonthlyPaymentsActivity.java       — Create/manage monthly payment reminders
@@ -104,7 +104,7 @@ com.example.remainder/
 - When alarm fires → `ReminderReceiver` shows a high-priority notification with a **Snooze** action button
 - Tapping Snooze opens `SnoozeOptionsActivity` (1, 5, or 10 minutes)
 - Reminders are split into **Pending** and **Expired** lists in `TimedRemindersActivity`
-- A local broadcast (`com.example.remainder.REMINDER_EXPIRED`) is sent when a reminder fires so the UI updates live
+- A local broadcast (`com.example.Reminder.REMINDER_EXPIRED`) is sent when a reminder fires so the UI updates live
 
 ### 4.3 Monthly Payments
 - User enters a payment name and selects a due date via `DatePickerDialog`
@@ -236,7 +236,7 @@ CREATE TABLE monthly_payments (
 ### `TimedRemindersActivity` (`activity_timed_reminder.xml`)
 - Date + Time picker flow to create a reminder
 - Two RecyclerViews: Pending and Expired (labels hidden when empty)
-- Registers a local `BroadcastReceiver` for `com.example.remainder.REMINDER_EXPIRED` to live-refresh list
+- Registers a local `BroadcastReceiver` for `com.example.Reminder.REMINDER_EXPIRED` to live-refresh list
 - Unregisters receiver in `onDestroy()`
 
 ### `MonthlyPaymentsActivity` (`activity_monthly_payments.xml`)
@@ -268,7 +268,7 @@ Central utility class for all alarm and notification operations:
 ### `ReminderReceiver` (BroadcastReceiver)
 Fired when a timed reminder alarm triggers:
 1. Marks reminder as expired in DB
-2. Sends `com.example.remainder.REMINDER_EXPIRED` broadcast
+2. Sends `com.example.Reminder.REMINDER_EXPIRED` broadcast
 3. Builds a `HIGH` priority notification with a **Snooze** action (opens `SnoozeOptionsActivity`)
 4. Notification taps open `TimedRemindersActivity`
 
@@ -378,9 +378,9 @@ This section covers everything needed to sync data between this Android app and 
 
 The Android SQLite databases are stored at:
 ```
-/data/data/com.example.remainder/databases/quick_notes.db
-/data/data/com.example.remainder/databases/reminders.db
-/data/data/com.example.remainder/databases/payments.db
+/data/data/com.example.Reminder/databases/quick_notes.db
+/data/data/com.example.Reminder/databases/reminders.db
+/data/data/com.example.Reminder/databases/payments.db
 ```
 These are only directly accessible on **rooted devices** or via **ADB** in debug builds.
 
