@@ -12,7 +12,7 @@ import java.util.ArrayList;
 public class QuickNoteDatabaseHelper extends SQLiteOpenHelper {
 
     private static final String DATABASE_NAME = "quick_notes.db";
-    private static final int DATABASE_VERSION = 2;
+    private static final int DATABASE_VERSION = 3;
     private static final String TABLE_NAME = "quick_notes";
     private static final String TAG = "QuickNoteDB";
 
@@ -24,16 +24,32 @@ public class QuickNoteDatabaseHelper extends SQLiteOpenHelper {
     public void onCreate(SQLiteDatabase db) {
         db.execSQL("CREATE TABLE " + TABLE_NAME + " (" +
                 "id INTEGER PRIMARY KEY AUTOINCREMENT, " +
+                "server_id BIGINT, " +
                 "text TEXT NOT NULL, " +
                 "is_completed INTEGER DEFAULT 0, " +
-                "position INTEGER DEFAULT 0)");
+                "position INTEGER DEFAULT 0, " +
+                "updated_at BIGINT, " +
+                "sync_status TEXT)");
         Log.d(TAG, "Database and table created.");
     }
 
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
         if (oldVersion < 2) {
-            db.execSQL("ALTER TABLE " + TABLE_NAME + " ADD COLUMN position INTEGER DEFAULT 0");
+            try {
+                db.execSQL("ALTER TABLE " + TABLE_NAME + " ADD COLUMN position INTEGER DEFAULT 0");
+            } catch (Exception e) {
+                Log.w(TAG, "Column position may already exist.");
+            }
+        }
+        if (oldVersion < 3) {
+            try {
+                db.execSQL("ALTER TABLE " + TABLE_NAME + " ADD COLUMN server_id BIGINT");
+                db.execSQL("ALTER TABLE " + TABLE_NAME + " ADD COLUMN updated_at BIGINT");
+                db.execSQL("ALTER TABLE " + TABLE_NAME + " ADD COLUMN sync_status TEXT");
+            } catch (Exception e) {
+                Log.w(TAG, "Sync columns may already exist.");
+            }
         }
     }
 
@@ -52,6 +68,8 @@ public class QuickNoteDatabaseHelper extends SQLiteOpenHelper {
         values.put("text", text);
         values.put("is_completed", isCompleted ? 1 : 0);
         values.put("position", maxPos + 1);
+        values.put("updated_at", System.currentTimeMillis());
+        values.put("sync_status", "PENDING");
         long id = db.insert(TABLE_NAME, null, values);
         db.close();
         return id;
@@ -72,6 +90,8 @@ public class QuickNoteDatabaseHelper extends SQLiteOpenHelper {
         ContentValues values = new ContentValues();
         values.put("text", newText);
         values.put("is_completed", isCompleted ? 1 : 0);
+        values.put("updated_at", System.currentTimeMillis());
+        values.put("sync_status", "PENDING");
         db.update(TABLE_NAME, values, "id = ?", new String[]{String.valueOf(id)});
         db.close();
     }
@@ -94,19 +114,10 @@ public class QuickNoteDatabaseHelper extends SQLiteOpenHelper {
         return notes;
     }
 
-    public void updateNotePosition(int id, int newPosition) {
-        SQLiteDatabase db = getWritableDatabase();
-        ContentValues values = new ContentValues();
-        values.put("position", newPosition);
-        db.update(TABLE_NAME, values, "id = ?", new String[]{String.valueOf(id)});
-        db.close();
-    }
-
-    // ✅ Add this method to support the app widget
     public ArrayList<String> getNoteTexts() {
         ArrayList<String> noteTexts = new ArrayList<>();
         SQLiteDatabase db = getReadableDatabase();
-        Cursor cursor = db.query(TABLE_NAME, new String[]{"text"}, null, null, null, null, null);
+        Cursor cursor = db.query(TABLE_NAME, new String[]{"text"}, "is_completed = 0", null, null, null, "position ASC");
 
         while (cursor.moveToNext()) {
             noteTexts.add(cursor.getString(cursor.getColumnIndexOrThrow("text")));
@@ -115,5 +126,15 @@ public class QuickNoteDatabaseHelper extends SQLiteOpenHelper {
         cursor.close();
         db.close();
         return noteTexts;
+    }
+
+    public void updateNotePosition(int id, int newPosition) {
+        SQLiteDatabase db = getWritableDatabase();
+        ContentValues values = new ContentValues();
+        values.put("position", newPosition);
+        values.put("updated_at", System.currentTimeMillis());
+        values.put("sync_status", "PENDING");
+        db.update(TABLE_NAME, values, "id = ?", new String[]{String.valueOf(id)});
+        db.close();
     }
 }
