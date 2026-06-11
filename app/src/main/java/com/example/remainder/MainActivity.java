@@ -17,6 +17,7 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -70,15 +71,31 @@ public class MainActivity extends AppCompatActivity {
         quickNotesRecycler.setAdapter(quickNoteAdapter);
         quickNotesRecycler.setLayoutManager(new LinearLayoutManager(this));
 
+        ItemTouchHelper itemTouchHelper = new ItemTouchHelper(new ItemTouchHelper.SimpleCallback(ItemTouchHelper.UP | ItemTouchHelper.DOWN, 0) {
+            @Override
+            public boolean onMove(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder, @NonNull RecyclerView.ViewHolder target) {
+                int fromPosition = viewHolder.getAdapterPosition();
+                int toPosition = target.getAdapterPosition();
+                quickNoteAdapter.onItemMove(fromPosition, toPosition);
+                return true;
+            }
+
+            @Override
+            public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {
+                // Not implemented
+            }
+        });
+        itemTouchHelper.attachToRecyclerView(quickNotesRecycler);
+
         addNoteButton.setOnClickListener(v -> {
             String noteText = quickNoteInput.getText().toString().trim();
             if (!TextUtils.isEmpty(noteText)) {
                 long id = noteDbHelper.addNote(noteText);
                 if (id != -1) {
-                    QuickNote note = new QuickNote((int) id, noteText, false);
-                    noteList.add(0, note);
-                    quickNoteAdapter.notifyItemInserted(0);
-                    quickNotesRecycler.scrollToPosition(0);
+                    QuickNote note = new QuickNote((int) id, noteText, false, noteList.size() + 1);
+                    noteList.add(note);
+                    quickNoteAdapter.notifyItemInserted(noteList.size() - 1);
+                    quickNotesRecycler.scrollToPosition(noteList.size() - 1);
                     quickNoteInput.setText("");
                     QuickNotesWidgetProvider.updateWidget(getApplicationContext());
                 } else {

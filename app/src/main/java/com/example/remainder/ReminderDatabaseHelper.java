@@ -260,7 +260,7 @@ public class ReminderDatabaseHelper extends SQLiteOpenHelper {
                 int id = cursor.getInt(cursor.getColumnIndexOrThrow("id"));
                 String text = cursor.getString(cursor.getColumnIndexOrThrow("text"));
                 int isCompleted = cursor.getInt(cursor.getColumnIndexOrThrow("is_completed"));
-                notes.add(new QuickNote(id, text, isCompleted == 1));
+                notes.add(new QuickNote(id, text, isCompleted == 1,0));
             }
         }
 

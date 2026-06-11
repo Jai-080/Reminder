@@ -13,6 +13,7 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import java.util.ArrayList;
+import java.util.Collections;
 
 public class QuickNoteAdapter extends RecyclerView.Adapter<QuickNoteAdapter.NoteViewHolder> {
 
@@ -102,6 +103,27 @@ public class QuickNoteAdapter extends RecyclerView.Adapter<QuickNoteAdapter.Note
     @Override
     public int getItemCount() {
         return notes.size();
+    }
+
+    public void onItemMove(int fromPosition, int toPosition) {
+        if (fromPosition < toPosition) {
+            for (int i = fromPosition; i < toPosition; i++) {
+                Collections.swap(notes, i, i + 1);
+            }
+        } else {
+            for (int i = fromPosition; i > toPosition; i--) {
+                Collections.swap(notes, i, i - 1);
+            }
+        }
+        notifyItemMoved(fromPosition, toPosition);
+        
+        // Update positions in database
+        for (int i = 0; i < notes.size(); i++) {
+            QuickNote note = notes.get(i);
+            note.setPosition(i);
+            noteDbHelper.updateNotePosition(note.getId(), i);
+        }
+        QuickNotesWidgetProvider.updateWidget(context);
     }
 
     static class NoteViewHolder extends RecyclerView.ViewHolder {

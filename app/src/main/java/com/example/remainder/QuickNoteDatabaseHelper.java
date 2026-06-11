@@ -12,7 +12,7 @@ import java.util.ArrayList;
 public class QuickNoteDatabaseHelper extends SQLiteOpenHelper {
 
     private static final String DATABASE_NAME = "quick_notes.db";
-    private static final int DATABASE_VERSION = 1;
+    private static final int DATABASE_VERSION = 2;
     private static final String TABLE_NAME = "quick_notes";
     private static final String TAG = "QuickNoteDB";
 
@@ -25,20 +25,33 @@ public class QuickNoteDatabaseHelper extends SQLiteOpenHelper {
         db.execSQL("CREATE TABLE " + TABLE_NAME + " (" +
                 "id INTEGER PRIMARY KEY AUTOINCREMENT, " +
                 "text TEXT NOT NULL, " +
-                "is_completed INTEGER DEFAULT 0)");
+                "is_completed INTEGER DEFAULT 0, " +
+                "position INTEGER DEFAULT 0)");
         Log.d(TAG, "Database and table created.");
     }
 
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-        // Handle upgrades if needed
+        if (oldVersion < 2) {
+            db.execSQL("ALTER TABLE " + TABLE_NAME + " ADD COLUMN position INTEGER DEFAULT 0");
+        }
     }
 
     public long addNote(String text, boolean isCompleted) {
         SQLiteDatabase db = getWritableDatabase();
+        
+        // Get current max position
+        int maxPos = 0;
+        Cursor cursor = db.rawQuery("SELECT MAX(position) FROM " + TABLE_NAME, null);
+        if (cursor.moveToFirst()) {
+            maxPos = cursor.getInt(0);
+        }
+        cursor.close();
+
         ContentValues values = new ContentValues();
         values.put("text", text);
         values.put("is_completed", isCompleted ? 1 : 0);
+        values.put("position", maxPos + 1);
         long id = db.insert(TABLE_NAME, null, values);
         db.close();
         return id;
@@ -66,18 +79,27 @@ public class QuickNoteDatabaseHelper extends SQLiteOpenHelper {
     public ArrayList<QuickNote> getAllNotes() {
         ArrayList<QuickNote> notes = new ArrayList<>();
         SQLiteDatabase db = getReadableDatabase();
-        Cursor cursor = db.query(TABLE_NAME, null, null, null, null, null, null);
+        Cursor cursor = db.query(TABLE_NAME, null, null, null, null, null, "position ASC");
 
         while (cursor.moveToNext()) {
             int id = cursor.getInt(cursor.getColumnIndexOrThrow("id"));
             String text = cursor.getString(cursor.getColumnIndexOrThrow("text"));
             boolean isCompleted = cursor.getInt(cursor.getColumnIndexOrThrow("is_completed")) == 1;
-            notes.add(new QuickNote(id, text, isCompleted));
+            int position = cursor.getInt(cursor.getColumnIndexOrThrow("position"));
+            notes.add(new QuickNote(id, text, isCompleted, position));
         }
 
         cursor.close();
         db.close();
         return notes;
+    }
+
+    public void updateNotePosition(int id, int newPosition) {
+        SQLiteDatabase db = getWritableDatabase();
+        ContentValues values = new ContentValues();
+        values.put("position", newPosition);
+        db.update(TABLE_NAME, values, "id = ?", new String[]{String.valueOf(id)});
+        db.close();
     }
 
     // ✅ Add this method to support the app widget

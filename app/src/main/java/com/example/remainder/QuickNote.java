@@ -4,11 +4,13 @@ public class QuickNote {
     private int id;
     private String text;
     private boolean isCompleted;
+    private int position;
 
-    public QuickNote(int id, String text, boolean isCompleted) {
+    public QuickNote(int id, String text, boolean isCompleted, int position) {
         this.id = id;
         this.text = text;
         this.isCompleted = isCompleted;
+        this.position = position;
     }
 
     // Getter for id
@@ -32,5 +34,13 @@ public class QuickNote {
 
     public void setCompleted(boolean completed) {
         isCompleted = completed;
+    }
+
+    public int getPosition() {
+        return position;
+    }
+
+    public void setPosition(int position) {
+        this.position = position;
     }
 }
