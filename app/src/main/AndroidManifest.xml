@@ -53,6 +53,11 @@
                 android:resource="@xml/quick_notes_widget_info" />
         </receiver>
 
+        <service
+            android:name=".QuickNotesWidgetService"
+            android:permission="android.permission.BIND_REMOTEVIEWS"
+            android:exported="false" />
+
         <!-- ✅ Payment Notification Service -->
         <service
             android:name=".PaymentNotificationService"
