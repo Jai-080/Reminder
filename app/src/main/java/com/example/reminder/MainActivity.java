@@ -81,6 +81,36 @@ public class MainActivity extends AppCompatActivity {
             });
         }
 
+        // Setup Sync Button
+        View btnSync = findViewById(R.id.btnSync);
+        if (btnSync != null) {
+            btnSync.setOnClickListener(v -> {
+                btnSync.setEnabled(false);
+                Toast.makeText(this, "Syncing...", Toast.LENGTH_SHORT).show();
+                SyncManager.getInstance(this).performFullSync(new SyncManager.SyncCallback<Void>() {
+                    @Override
+                    public void onSuccess(Void result) {
+                        runOnUiThread(() -> {
+                            btnSync.setEnabled(true);
+                            noteList.clear();
+                            noteList.addAll(noteDbHelper.getAllNotes());
+                            quickNoteAdapter.notifyDataSetChanged();
+                            QuickNotesWidgetProvider.updateWidget(getApplicationContext());
+                            Toast.makeText(MainActivity.this, "Sync completed!", Toast.LENGTH_SHORT).show();
+                        });
+                    }
+
+                    @Override
+                    public void onError(String error) {
+                        runOnUiThread(() -> {
+                            btnSync.setEnabled(true);
+                            Toast.makeText(MainActivity.this, "Sync failed: " + error, Toast.LENGTH_LONG).show();
+                        });
+                    }
+                });
+            });
+        }
+
         // ✅ Fixed: View instead of Button — XML now uses LinearLayout
         View btnMonthlyPayments = findViewById(R.id.monthlyPaymentsBtn);
         btnMonthlyPayments.setOnClickListener(v -> {
@@ -222,6 +252,40 @@ public class MainActivity extends AppCompatActivity {
             String message = (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED)
                     ? "Notifications enabled" : "Notifications are disabled";
             Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        TokenManager tokenManager = TokenManager.getInstance(this);
+        if (tokenManager.isLoggedIn()) {
+            // Reload local list first in case details changed offline or on another screen
+            noteList.clear();
+            noteList.addAll(noteDbHelper.getAllNotes());
+            quickNoteAdapter.notifyDataSetChanged();
+
+            // Rate-limit auto-sync to once every 5 minutes (300000ms)
+            long lastSync = tokenManager.getLastSyncTimestamp();
+            if (System.currentTimeMillis() - lastSync > 300000) {
+                Log.d(TAG, "Rate limit passed, starting auto-sync...");
+                SyncManager.getInstance(this).performFullSync(new SyncManager.SyncCallback<Void>() {
+                    @Override
+                    public void onSuccess(Void result) {
+                        runOnUiThread(() -> {
+                            noteList.clear();
+                            noteList.addAll(noteDbHelper.getAllNotes());
+                            quickNoteAdapter.notifyDataSetChanged();
+                            QuickNotesWidgetProvider.updateWidget(getApplicationContext());
+                        });
+                    }
+
+                    @Override
+                    public void onError(String error) {
+                        Log.e(TAG, "Auto-sync failed: " + error);
+                    }
+                });
+            }
         }
     }
 }

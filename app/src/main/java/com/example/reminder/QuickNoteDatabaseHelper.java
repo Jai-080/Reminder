@@ -187,4 +187,16 @@ public class QuickNoteDatabaseHelper extends SQLiteOpenHelper {
         db.update(TABLE_NAME, values, "id = ?", new String[]{String.valueOf(localId)});
         db.close();
     }
+
+    public long getNoteUpdatedAt(int id) {
+        SQLiteDatabase db = getReadableDatabase();
+        long updatedAt = 0;
+        Cursor cursor = db.query(TABLE_NAME, new String[]{"updated_at"}, "id = ?", new String[]{String.valueOf(id)}, null, null, null);
+        if (cursor.moveToFirst()) {
+            updatedAt = cursor.getLong(cursor.getColumnIndexOrThrow("updated_at"));
+        }
+        cursor.close();
+        db.close();
+        return updatedAt;
+    }
 }

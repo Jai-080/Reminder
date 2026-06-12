@@ -308,4 +308,16 @@ public class ReminderDatabaseHelper extends SQLiteOpenHelper {
         db.update("reminders", values, "id = ?", new String[]{String.valueOf(localId)});
         db.close();
     }
+
+    public long getReminderUpdatedAt(int id) {
+        SQLiteDatabase db = getReadableDatabase();
+        long updatedAt = 0;
+        Cursor cursor = db.query("reminders", new String[]{"updated_at"}, "id = ?", new String[]{String.valueOf(id)}, null, null, null);
+        if (cursor.moveToFirst()) {
+            updatedAt = cursor.getLong(cursor.getColumnIndexOrThrow("updated_at"));
+        }
+        cursor.close();
+        db.close();
+        return updatedAt;
+    }
 }

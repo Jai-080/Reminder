@@ -170,4 +170,38 @@ public class MonthlyPaymentsActivity extends AppCompatActivity {
 
         alarmManager.cancel(pendingIntent);
     }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (payments != null && dbHelper != null && adapter != null) {
+            payments.clear();
+            payments.addAll(dbHelper.getAllPayments());
+            adapter.notifyDataSetChanged();
+        }
+
+        com.example.reminder.auth.TokenManager tokenManager = com.example.reminder.auth.TokenManager.getInstance(this);
+        if (tokenManager.isLoggedIn()) {
+            long lastSync = tokenManager.getLastSyncTimestamp();
+            if (System.currentTimeMillis() - lastSync > 300000) {
+                SyncManager.getInstance(this).performFullSync(new SyncManager.SyncCallback<Void>() {
+                    @Override
+                    public void onSuccess(Void result) {
+                        runOnUiThread(() -> {
+                            if (payments != null && dbHelper != null && adapter != null) {
+                                payments.clear();
+                                payments.addAll(dbHelper.getAllPayments());
+                                adapter.notifyDataSetChanged();
+                            }
+                        });
+                    }
+
+                    @Override
+                    public void onError(String error) {
+                        Log.e("MonthlyPaymentsActivity", "Auto-sync failed: " + error);
+                    }
+                });
+            }
+        }
+    }
 }

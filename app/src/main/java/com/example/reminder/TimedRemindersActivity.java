@@ -249,6 +249,30 @@ public class TimedRemindersActivity extends AppCompatActivity {
     }
 
     @Override
+    protected void onResume() {
+        super.onResume();
+        loadReminders();
+        
+        com.example.reminder.auth.TokenManager tokenManager = com.example.reminder.auth.TokenManager.getInstance(this);
+        if (tokenManager.isLoggedIn()) {
+            long lastSync = tokenManager.getLastSyncTimestamp();
+            if (System.currentTimeMillis() - lastSync > 300000) {
+                SyncManager.getInstance(this).performFullSync(new SyncManager.SyncCallback<Void>() {
+                    @Override
+                    public void onSuccess(Void result) {
+                        runOnUiThread(() -> loadReminders());
+                    }
+
+                    @Override
+                    public void onError(String error) {
+                        Log.e(TAG, "Auto-sync failed in TimedRemindersActivity: " + error);
+                    }
+                });
+            }
+        }
+    }
+
+    @Override
     protected void onDestroy() {
         super.onDestroy();
         if (reminderExpiredReceiver != null) {

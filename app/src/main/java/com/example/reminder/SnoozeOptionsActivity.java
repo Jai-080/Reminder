@@ -12,6 +12,9 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.example.reminder.sync.SyncManager;
+import java.util.ArrayList;
+
 import java.util.Calendar;
 
 public class SnoozeOptionsActivity extends AppCompatActivity {
@@ -82,6 +85,40 @@ public class SnoozeOptionsActivity extends AppCompatActivity {
         } else {
             Log.e(TAG, "AlarmManager is null");
             Toast.makeText(this, "Failed to snooze reminder", Toast.LENGTH_SHORT).show();
+        }
+
+        // Update local DB status and sync
+        ReminderDatabaseHelper dbHelper = new ReminderDatabaseHelper(this);
+        dbHelper.snoozeReminder(reminderId, snoozeTimeMillis);
+
+        ArrayList<Reminder> allReminders = dbHelper.getAllReminders();
+        Reminder snoozed = null;
+        for (Reminder r : allReminders) {
+            if (r.getId() == reminderId) {
+                snoozed = r;
+                break;
+            }
+        }
+        if (snoozed != null) {
+            SyncManager.getInstance(getApplicationContext()).uploadReminder(
+                    snoozed.getId(),
+                    snoozed.getText(),
+                    snoozeTimeMillis,
+                    false,
+                    snoozeTimeMillis,
+                    snoozed.getServerId(),
+                    new SyncManager.SyncCallback<Long>() {
+                        @Override
+                        public void onSuccess(Long result) {
+                            Log.d(TAG, "Snooze sync succeeded");
+                        }
+
+                        @Override
+                        public void onError(String error) {
+                            Log.e(TAG, "Snooze sync failed: " + error);
+                        }
+                    }
+            );
         }
 
         finish();

@@ -154,4 +154,16 @@ public class PaymentDatabaseHelper extends SQLiteOpenHelper {
         db.update(TABLE_NAME, values, "id = ?", new String[]{String.valueOf(localId)});
         db.close();
     }
+
+    public long getPaymentUpdatedAt(int id) {
+        SQLiteDatabase db = getReadableDatabase();
+        long updatedAt = 0;
+        Cursor cursor = db.query(TABLE_NAME, new String[]{COL_UPDATED_AT}, COL_ID + " = ?", new String[]{String.valueOf(id)}, null, null, null);
+        if (cursor.moveToFirst()) {
+            updatedAt = cursor.getLong(cursor.getColumnIndexOrThrow(COL_UPDATED_AT));
+        }
+        cursor.close();
+        db.close();
+        return updatedAt;
+    }
 }

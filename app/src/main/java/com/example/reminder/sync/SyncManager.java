@@ -6,6 +6,9 @@ import android.util.Log;
 import com.example.reminder.PaymentDatabaseHelper;
 import com.example.reminder.QuickNoteDatabaseHelper;
 import com.example.reminder.ReminderDatabaseHelper;
+import com.example.reminder.QuickNote;
+import com.example.reminder.Reminder;
+import com.example.reminder.MonthlyPayment;
 import com.example.reminder.auth.TokenManager;
 import com.example.reminder.network.NoteRequest;
 import com.example.reminder.network.NoteResponse;
@@ -377,6 +380,357 @@ public class SyncManager {
             @Override
             public void onFailure(Call<Void> call, Throwable t) {
                 callback.onSuccess(null);
+            }
+        });
+    }
+
+    private long parseInstant(String instantStr) {
+        if (instantStr == null || instantStr.isEmpty()) {
+            return System.currentTimeMillis();
+        }
+        try {
+            return java.time.Instant.parse(instantStr).toEpochMilli();
+        } catch (Exception e) {
+            try {
+                return Long.parseLong(instantStr);
+            } catch (Exception ex) {
+                return System.currentTimeMillis();
+            }
+        }
+    }
+
+    public void performFullSync(SyncCallback<Void> callback) {
+        if (!tokenManager.isLoggedIn()) {
+            if (callback != null) callback.onError("Not authenticated.");
+            return;
+        }
+        Log.d(TAG, "Starting bidirectional sync...");
+
+        syncNotes(new SyncCallback<Void>() {
+            @Override
+            public void onSuccess(Void result) {
+                syncRemindersBidirectional(new SyncCallback<Void>() {
+                    @Override
+                    public void onSuccess(Void result) {
+                        syncPaymentsBidirectional(new SyncCallback<Void>() {
+                            @Override
+                            public void onSuccess(Void result) {
+                                tokenManager.setLastSyncTimestamp(System.currentTimeMillis());
+                                if (callback != null) callback.onSuccess(null);
+                            }
+
+                            @Override
+                            public void onError(String error) {
+                                if (callback != null) callback.onError("Payment sync failed: " + error);
+                            }
+                        });
+                    }
+
+                    @Override
+                    public void onError(String error) {
+                        if (callback != null) callback.onError("Reminder sync failed: " + error);
+                    }
+                });
+            }
+
+            @Override
+            public void onError(String error) {
+                if (callback != null) callback.onError("Notes sync failed: " + error);
+            }
+        });
+    }
+
+    private void syncNotes(SyncCallback<Void> callback) {
+        repository.getNotes(new Callback<List<NoteResponse>>() {
+            @Override
+            public void onResponse(Call<List<NoteResponse>> call, Response<List<NoteResponse>> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    List<NoteResponse> serverNotes = response.body();
+                    java.util.Set<Long> serverIds = new java.util.HashSet<>();
+                    for (NoteResponse note : serverNotes) {
+                        if (note.getId() != null) {
+                            serverIds.add(note.getId());
+                        }
+                    }
+
+                    // Prune local SYNCED records missing on server
+                    List<QuickNote> localNotes = noteDb.getAllNotes();
+                    for (QuickNote local : localNotes) {
+                        if (local.getServerId() != null && "SYNCED".equals(local.getSyncStatus())) {
+                            if (!serverIds.contains(local.getServerId())) {
+                                noteDb.deleteNote(local.getId());
+                            }
+                        }
+                    }
+
+                    // Upsert server notes
+                    for (NoteResponse serverNote : serverNotes) {
+                        QuickNote localNote = null;
+                        for (QuickNote n : localNotes) {
+                            if (n.getServerId() != null && n.getServerId().equals(serverNote.getId())) {
+                                localNote = n;
+                                break;
+                            }
+                        }
+
+                        long serverMillis = parseInstant(serverNote.getUpdatedAt());
+                        if (localNote != null) {
+                            long localMillis = noteDb.getNoteUpdatedAt(localNote.getId());
+                            if (serverMillis >= localMillis) {
+                                noteDb.insertOrUpdateSyncedNote(
+                                        serverNote.getId(),
+                                        serverNote.getText(),
+                                        serverNote.getIsCompleted() != null && serverNote.getIsCompleted(),
+                                        serverNote.getPosition() != null ? serverNote.getPosition() : 0,
+                                        serverMillis
+                                );
+                            }
+                        } else {
+                            noteDb.insertOrUpdateSyncedNote(
+                                    serverNote.getId(),
+                                    serverNote.getText(),
+                                    serverNote.getIsCompleted() != null && serverNote.getIsCompleted(),
+                                    serverNote.getPosition() != null ? serverNote.getPosition() : 0,
+                                    serverMillis
+                            );
+                        }
+                    }
+
+                    // Push pending changes to server
+                    List<QuickNote> pendingNotes = new java.util.ArrayList<>();
+                    for (QuickNote local : noteDb.getAllNotes()) {
+                        if ("PENDING".equals(local.getSyncStatus())) {
+                            pendingNotes.add(local);
+                        }
+                    }
+                    uploadPendingNotes(pendingNotes, 0, () -> callback.onSuccess(null));
+                } else {
+                    callback.onError("HTTP error " + response.code());
+                }
+            }
+
+            @Override
+            public void onFailure(Call<List<NoteResponse>> call, Throwable t) {
+                callback.onError(t.getMessage());
+            }
+        });
+    }
+
+    private void uploadPendingNotes(List<QuickNote> pending, int index, Runnable onFinished) {
+        if (index >= pending.size()) {
+            onFinished.run();
+            return;
+        }
+        QuickNote note = pending.get(index);
+        uploadNote(note.getId(), note.getText(), note.isCompleted(), note.getPosition(), note.getServerId(), new SyncCallback<Long>() {
+            @Override
+            public void onSuccess(Long result) {
+                uploadPendingNotes(pending, index + 1, onFinished);
+            }
+
+            @Override
+            public void onError(String error) {
+                Log.e(TAG, "Failed to upload pending note: " + error);
+                uploadPendingNotes(pending, index + 1, onFinished);
+            }
+        });
+    }
+
+    private void syncRemindersBidirectional(SyncCallback<Void> callback) {
+        repository.getReminders(new Callback<List<ReminderResponse>>() {
+            @Override
+            public void onResponse(Call<List<ReminderResponse>> call, Response<List<ReminderResponse>> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    List<ReminderResponse> serverReminders = response.body();
+                    java.util.Set<Long> serverIds = new java.util.HashSet<>();
+                    for (ReminderResponse reminder : serverReminders) {
+                        if (reminder.getId() != null) {
+                            serverIds.add(reminder.getId());
+                        }
+                    }
+
+                    // Prune local SYNCED records missing on server
+                    List<Reminder> localReminders = reminderDb.getAllReminders();
+                    for (Reminder local : localReminders) {
+                        if (local.getServerId() != null && "SYNCED".equals(local.getSyncStatus())) {
+                            if (!serverIds.contains(local.getServerId())) {
+                                reminderDb.deleteReminder(local.getId());
+                            }
+                        }
+                    }
+
+                    // Upsert server reminders
+                    for (ReminderResponse serverReminder : serverReminders) {
+                        Reminder localReminder = null;
+                        for (Reminder r : localReminders) {
+                            if (r.getServerId() != null && r.getServerId().equals(serverReminder.getId())) {
+                                localReminder = r;
+                                break;
+                            }
+                        }
+
+                        long serverMillis = parseInstant(serverReminder.getUpdatedAt());
+                        boolean isExpired = serverReminder.getIsExpired() != null && serverReminder.getIsExpired();
+                        long snoozedTime = serverReminder.getSnoozedTime() != null ? serverReminder.getSnoozedTime() : 0L;
+
+                        if (localReminder != null) {
+                            long localMillis = reminderDb.getReminderUpdatedAt(localReminder.getId());
+                            if (serverMillis >= localMillis) {
+                                reminderDb.insertOrUpdateSyncedReminder(
+                                        serverReminder.getId(),
+                                        serverReminder.getText(),
+                                        serverReminder.getReminderTime(),
+                                        isExpired,
+                                        snoozedTime,
+                                        serverMillis
+                                );
+                            }
+                        } else {
+                            reminderDb.insertOrUpdateSyncedReminder(
+                                    serverReminder.getId(),
+                                    serverReminder.getText(),
+                                    serverReminder.getReminderTime(),
+                                    isExpired,
+                                    snoozedTime,
+                                    serverMillis
+                            );
+                        }
+                    }
+
+                    // Push pending changes to server
+                    List<Reminder> pendingReminders = new java.util.ArrayList<>();
+                    for (Reminder local : reminderDb.getAllReminders()) {
+                        if ("PENDING".equals(local.getSyncStatus())) {
+                            pendingReminders.add(local);
+                        }
+                    }
+                    uploadPendingReminders(pendingReminders, 0, () -> callback.onSuccess(null));
+                } else {
+                    callback.onError("HTTP error " + response.code());
+                }
+            }
+
+            @Override
+            public void onFailure(Call<List<ReminderResponse>> call, Throwable t) {
+                callback.onError(t.getMessage());
+            }
+        });
+    }
+
+    private void uploadPendingReminders(List<Reminder> pending, int index, Runnable onFinished) {
+        if (index >= pending.size()) {
+            onFinished.run();
+            return;
+        }
+        Reminder reminder = pending.get(index);
+        uploadReminder(reminder.getId(), reminder.getText(), reminder.getTime(), reminder.isExpired(), reminder.getSnoozedUntil(), reminder.getServerId(), new SyncCallback<Long>() {
+            @Override
+            public void onSuccess(Long result) {
+                uploadPendingReminders(pending, index + 1, onFinished);
+            }
+
+            @Override
+            public void onError(String error) {
+                Log.e(TAG, "Failed to upload pending reminder: " + error);
+                uploadPendingReminders(pending, index + 1, onFinished);
+            }
+        });
+    }
+
+    private void syncPaymentsBidirectional(SyncCallback<Void> callback) {
+        repository.getPayments(new Callback<List<PaymentResponse>>() {
+            @Override
+            public void onResponse(Call<List<PaymentResponse>> call, Response<List<PaymentResponse>> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    List<PaymentResponse> serverPayments = response.body();
+                    java.util.Set<Long> serverIds = new java.util.HashSet<>();
+                    for (PaymentResponse payment : serverPayments) {
+                        if (payment.getId() != null) {
+                            serverIds.add(payment.getId());
+                        }
+                    }
+
+                    // Prune local SYNCED records missing on server
+                    List<MonthlyPayment> localPayments = paymentDb.getAllPayments();
+                    for (MonthlyPayment local : localPayments) {
+                        if (local.getServerId() != null && "SYNCED".equals(local.getSyncStatus())) {
+                            if (!serverIds.contains(local.getServerId())) {
+                                paymentDb.deletePayment(local.getId());
+                            }
+                        }
+                    }
+
+                    // Upsert server payments
+                    for (PaymentResponse serverPayment : serverPayments) {
+                        MonthlyPayment localPayment = null;
+                        for (MonthlyPayment p : localPayments) {
+                            if (p.getServerId() != null && p.getServerId().equals(serverPayment.getId())) {
+                                localPayment = p;
+                                break;
+                            }
+                        }
+
+                        long serverMillis = parseInstant(serverPayment.getUpdatedAt());
+                        boolean completed = serverPayment.getCompleted() != null && serverPayment.getCompleted();
+
+                        if (localPayment != null) {
+                            long localMillis = paymentDb.getPaymentUpdatedAt(localPayment.getId());
+                            if (serverMillis >= localMillis) {
+                                paymentDb.insertOrUpdateSyncedPayment(
+                                        serverPayment.getId(),
+                                        serverPayment.getName(),
+                                        serverPayment.getDueDate(),
+                                        completed,
+                                        serverMillis
+                                );
+                            }
+                        } else {
+                            paymentDb.insertOrUpdateSyncedPayment(
+                                    serverPayment.getId(),
+                                    serverPayment.getName(),
+                                    serverPayment.getDueDate(),
+                                    completed,
+                                    serverMillis
+                            );
+                        }
+                    }
+
+                    // Push pending changes to server
+                    List<MonthlyPayment> pendingPayments = new java.util.ArrayList<>();
+                    for (MonthlyPayment local : paymentDb.getAllPayments()) {
+                        if ("PENDING".equals(local.getSyncStatus())) {
+                            pendingPayments.add(local);
+                        }
+                    }
+                    uploadPendingPayments(pendingPayments, 0, () -> callback.onSuccess(null));
+                } else {
+                    callback.onError("HTTP error " + response.code());
+                }
+            }
+
+            @Override
+            public void onFailure(Call<List<PaymentResponse>> call, Throwable t) {
+                callback.onError(t.getMessage());
+            }
+        });
+    }
+
+    private void uploadPendingPayments(List<MonthlyPayment> pending, int index, Runnable onFinished) {
+        if (index >= pending.size()) {
+            onFinished.run();
+            return;
+        }
+        MonthlyPayment payment = pending.get(index);
+        uploadPayment(payment.getId(), payment.getName(), payment.getDueDate(), payment.isCompleted(), payment.getServerId(), new SyncCallback<Long>() {
+            @Override
+            public void onSuccess(Long result) {
+                uploadPendingPayments(pending, index + 1, onFinished);
+            }
+
+            @Override
+            public void onError(String error) {
+                Log.e(TAG, "Failed to upload pending payment: " + error);
+                uploadPendingPayments(pending, index + 1, onFinished);
             }
         });
     }
