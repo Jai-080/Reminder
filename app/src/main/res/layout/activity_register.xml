@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="24dp"
+    android:gravity="center"
+    android:background="?android:attr/windowBackground">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Create Account"
+        android:textSize="28sp"
+        android:textColor="?android:attr/textColorPrimary"
+        android:textStyle="bold"
+        android:layout_marginBottom="8dp" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Sign up to start synchronizing"
+        android:textSize="14sp"
+        android:textColor="@color/light_text_muted"
+        android:layout_marginBottom="24dp" />
+
+    <EditText
+        android:id="@+id/usernameInput"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:hint="Username"
+        android:inputType="textPersonName"
+        android:background="@drawable/rounded_edittext"
+        android:paddingHorizontal="16dp"
+        android:textColor="?android:attr/textColorPrimary"
+        android:textColorHint="@color/light_text_muted"
+        android:layout_marginBottom="12dp" />
+
+    <EditText
+        android:id="@+id/emailInput"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:hint="Email"
+        android:inputType="textEmailAddress"
+        android:background="@drawable/rounded_edittext"
+        android:paddingHorizontal="16dp"
+        android:textColor="?android:attr/textColorPrimary"
+        android:textColorHint="@color/light_text_muted"
+        android:layout_marginBottom="12dp" />
+
+    <EditText
+        android:id="@+id/passwordInput"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:hint="Password"
+        android:inputType="textPassword"
+        android:background="@drawable/rounded_edittext"
+        android:paddingHorizontal="16dp"
+        android:textColor="?android:attr/textColorPrimary"
+        android:textColorHint="@color/light_text_muted"
+        android:layout_marginBottom="12dp" />
+
+    <EditText
+        android:id="@+id/deviceNameInput"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:hint="Device Name"
+        android:inputType="text"
+        android:background="@drawable/rounded_edittext"
+        android:paddingHorizontal="16dp"
+        android:textColor="?android:attr/textColorPrimary"
+        android:textColorHint="@color/light_text_muted"
+        android:layout_marginBottom="12dp" />
+
+    <EditText
+        android:id="@+id/baseUrlInput"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:hint="Base Server URL"
+        android:inputType="textUri"
+        android:background="@drawable/rounded_edittext"
+        android:paddingHorizontal="16dp"
+        android:textColor="?android:attr/textColorPrimary"
+        android:textColorHint="@color/light_text_muted"
+        android:layout_marginBottom="20dp" />
+
+    <Button
+        android:id="@+id/btnRegister"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:text="Register"
+        android:background="@drawable/rounded_primary_button"
+        android:textColor="@android:color/white"
+        android:textStyle="bold"
+        android:layout_marginBottom="12dp" />
+
+    <TextView
+        android:id="@+id/btnBackToLogin"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Already have an account? Login"
+        android:textColor="@color/accent_purple"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        android:padding="8dp"
+        android:layout_marginBottom="16dp"
+        android:clickable="true"
+        android:focusable="true" />
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="@color/light_divider"
+        android:layout_marginBottom="16dp" />
+
+    <Button
+        android:id="@+id/btnBypass"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:text="Skip Registration (Developer Bypass)"
+        android:background="@drawable/rounded_secondary_button"
+        android:textColor="?android:attr/textColorPrimary"
+        android:textStyle="bold"
+        android:layout_marginBottom="12dp" />
+
+    <ProgressBar
+        android:id="@+id/progressBar"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:visibility="gone"
+        android:layout_marginTop="8dp"/>
+
+</LinearLayout>

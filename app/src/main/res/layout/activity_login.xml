@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="24dp"
+    android:gravity="center"
+    android:background="?android:attr/windowBackground">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Reminder App"
+        android:textSize="28sp"
+        android:textColor="?android:attr/textColorPrimary"
+        android:textStyle="bold"
+        android:layout_marginBottom="8dp" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Sign in to synchronize reminders"
+        android:textSize="14sp"
+        android:textColor="@color/light_text_muted"
+        android:layout_marginBottom="32dp" />
+
+    <EditText
+        android:id="@+id/emailInput"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:hint="Email"
+        android:inputType="textEmailAddress"
+        android:background="@drawable/rounded_edittext"
+        android:paddingHorizontal="16dp"
+        android:textColor="?android:attr/textColorPrimary"
+        android:textColorHint="@color/light_text_muted"
+        android:layout_marginBottom="16dp" />
+
+    <EditText
+        android:id="@+id/passwordInput"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:hint="Password"
+        android:inputType="textPassword"
+        android:background="@drawable/rounded_edittext"
+        android:paddingHorizontal="16dp"
+        android:textColor="?android:attr/textColorPrimary"
+        android:textColorHint="@color/light_text_muted"
+        android:layout_marginBottom="16dp" />
+
+    <EditText
+        android:id="@+id/baseUrlInput"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:hint="Base Server URL"
+        android:inputType="textUri"
+        android:background="@drawable/rounded_edittext"
+        android:paddingHorizontal="16dp"
+        android:textColor="?android:attr/textColorPrimary"
+        android:textColorHint="@color/light_text_muted"
+        android:layout_marginBottom="24dp" />
+
+    <Button
+        android:id="@+id/btnLogin"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:text="Login"
+        android:background="@drawable/rounded_primary_button"
+        android:textColor="@android:color/white"
+        android:textStyle="bold"
+        android:layout_marginBottom="16dp" />
+
+    <TextView
+        android:id="@+id/btnGoToRegister"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Don't have an account? Register"
+        android:textColor="@color/accent_purple"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        android:padding="8dp"
+        android:layout_marginBottom="24dp"
+        android:clickable="true"
+        android:focusable="true" />
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="@color/light_divider"
+        android:layout_marginBottom="24dp" />
+
+    <Button
+        android:id="@+id/btnBypass"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:text="Skip Login (Developer Bypass)"
+        android:background="@drawable/rounded_secondary_button"
+        android:textColor="?android:attr/textColorPrimary"
+        android:textStyle="bold"
+        android:layout_marginBottom="16dp" />
+
+    <ProgressBar
+        android:id="@+id/progressBar"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:visibility="gone"
+        android:layout_marginTop="8dp"/>
+
+</LinearLayout>
