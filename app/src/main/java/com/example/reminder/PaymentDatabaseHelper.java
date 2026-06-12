@@ -74,7 +74,43 @@ public class PaymentDatabaseHelper extends SQLiteOpenHelper {
     public ArrayList<MonthlyPayment> getAllPayments() {
         ArrayList<MonthlyPayment> list = new ArrayList<>();
         SQLiteDatabase db = getReadableDatabase();
-        Cursor cursor = db.query(TABLE_NAME, null, null, null, null, null, null);
+        Cursor cursor = db.query(TABLE_NAME, null, COL_SYNC_STATUS + " IS NULL OR " + COL_SYNC_STATUS + " != ?", new String[]{"DELETED"}, null, null, null);
+
+        while (cursor.moveToNext()) {
+            int id = cursor.getInt(cursor.getColumnIndexOrThrow(COL_ID));
+            
+            Long serverId = null;
+            int serverIdIdx = cursor.getColumnIndexOrThrow(COL_SERVER_ID);
+            if (!cursor.isNull(serverIdIdx)) {
+                serverId = cursor.getLong(serverIdIdx);
+            }
+            
+            String name = cursor.getString(cursor.getColumnIndexOrThrow(COL_NAME));
+            long dueDate = cursor.getLong(cursor.getColumnIndexOrThrow(COL_DUE_DATE));
+            boolean completed = cursor.getInt(cursor.getColumnIndexOrThrow(COL_COMPLETED)) == 1;
+            String syncStatus = cursor.getString(cursor.getColumnIndexOrThrow(COL_SYNC_STATUS));
+
+            list.add(new MonthlyPayment(id, serverId, name, completed, dueDate, syncStatus));
+        }
+
+        cursor.close();
+        db.close();
+        return list;
+    }
+
+    public void softDeletePayment(int id) {
+        SQLiteDatabase db = getWritableDatabase();
+        ContentValues values = new ContentValues();
+        values.put(COL_SYNC_STATUS, "DELETED");
+        values.put(COL_UPDATED_AT, System.currentTimeMillis());
+        db.update(TABLE_NAME, values, COL_ID + " = ?", new String[]{String.valueOf(id)});
+        db.close();
+    }
+
+    public ArrayList<MonthlyPayment> getDeletedPayments() {
+        ArrayList<MonthlyPayment> list = new ArrayList<>();
+        SQLiteDatabase db = getReadableDatabase();
+        Cursor cursor = db.query(TABLE_NAME, null, COL_SYNC_STATUS + " = ?", new String[]{"DELETED"}, null, null, null);
 
         while (cursor.moveToNext()) {
             int id = cursor.getInt(cursor.getColumnIndexOrThrow(COL_ID));

@@ -37,6 +37,47 @@ public class AlarmUtils {
         scheduleAlarm(context, reminderId, reminderText, triggerAtMillis, false);
     }
 
+    // ✅ Centralized method to schedule monthly payment alarm using Paymentalarmreceiver
+    public static void schedulePaymentAlarm(Context context, int paymentId, String paymentName, long dueDateMillis) {
+        if (dueDateMillis <= System.currentTimeMillis()) {
+            return;
+        }
+        AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+        if (alarmManager == null) return;
+
+        Intent intent = new Intent(context, Paymentalarmreceiver.class);
+        intent.putExtra("payment_id", paymentId);
+        intent.putExtra("payment_name", paymentName);
+
+        PendingIntent pendingIntent = PendingIntent.getBroadcast(
+                context,
+                paymentId,
+                intent,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+        );
+
+        alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, dueDateMillis, pendingIntent);
+    }
+
+    // ✅ Centralized method to cancel monthly payment alarm using Paymentalarmreceiver
+    public static void cancelPaymentAlarm(Context context, int paymentId, String paymentName) {
+        AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+        if (alarmManager == null) return;
+
+        Intent intent = new Intent(context, Paymentalarmreceiver.class);
+        intent.putExtra("payment_id", paymentId);
+        intent.putExtra("payment_name", paymentName);
+
+        PendingIntent pendingIntent = PendingIntent.getBroadcast(
+                context,
+                paymentId,
+                intent,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+        );
+
+        alarmManager.cancel(pendingIntent);
+    }
+
     // ✅ Schedule a monthly payment reminder (trigger at 9 AM on the due day)
     public static void schedulePaymentReminder(Context context, int paymentId, String paymentName, int dayOfMonth) {
         long triggerAtMillis = getPaymentTriggerMillis(dayOfMonth);
@@ -88,6 +129,19 @@ public class AlarmUtils {
 
     // ✅ Show permanent notification for monthly payments
     public static void showMonthlyPaymentNotification(Context context, int paymentId, String paymentName) {
+        NotificationManager manager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+        if (manager != null) {
+            try {
+                for (android.service.notification.StatusBarNotification sbn : manager.getActiveNotifications()) {
+                    if (sbn.getId() == paymentId) {
+                        return; // Already active, skip displaying again
+                    }
+                }
+            } catch (Exception e) {
+                // Fallback in case of unexpected errors reading notifications
+            }
+        }
+
         createNotificationChannel(context);
 
         Notification notification = new NotificationCompat.Builder(context, CHANNEL_ID)
@@ -98,7 +152,6 @@ public class AlarmUtils {
                 .setOngoing(true) // Permanent notification
                 .build();
 
-        NotificationManager manager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
         if (manager != null) {
             manager.notify(paymentId, notification);
         }

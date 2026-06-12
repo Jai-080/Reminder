@@ -9,6 +9,7 @@ import com.example.reminder.ReminderDatabaseHelper;
 import com.example.reminder.QuickNote;
 import com.example.reminder.Reminder;
 import com.example.reminder.MonthlyPayment;
+import com.example.reminder.AlarmUtils;
 import com.example.reminder.auth.TokenManager;
 import com.example.reminder.network.NoteRequest;
 import com.example.reminder.network.NoteResponse;
@@ -102,7 +103,7 @@ public class SyncManager {
                 if (response.isSuccessful() && response.body() != null) {
                     List<ReminderResponse> serverReminders = response.body();
                     for (ReminderResponse reminder : serverReminders) {
-                        reminderDb.insertOrUpdateSyncedReminder(
+                        long localId = reminderDb.insertOrUpdateSyncedReminder(
                                 reminder.getId(),
                                 reminder.getText(),
                                 reminder.getReminderTime(),
@@ -110,6 +111,12 @@ public class SyncManager {
                                 reminder.getSnoozedTime() != null ? reminder.getSnoozedTime() : 0L,
                                 System.currentTimeMillis()
                         );
+                        // Schedule alarm if not expired and in the future
+                        boolean isExpired = reminder.getIsExpired() != null ? reminder.getIsExpired() : false;
+                        if (!isExpired && reminder.getReminderTime() > System.currentTimeMillis()) {
+                            Log.d("REMINDER SCHEDULER", "Scheduling reminder:\nlocalId=" + localId + "\nserverId=" + reminder.getId() + "\ntime=" + reminder.getReminderTime() + "\nsuccess=true");
+                            com.example.reminder.AlarmUtils.scheduleReminder(context, (int) localId, reminder.getText(), reminder.getReminderTime());
+                        }
                     }
                     Log.d(TAG, "Reminders synced: " + serverReminders.size() + " items.");
 
@@ -133,14 +140,31 @@ public class SyncManager {
             public void onResponse(Call<List<PaymentResponse>> call, Response<List<PaymentResponse>> response) {
                 if (response.isSuccessful() && response.body() != null) {
                     List<PaymentResponse> serverPayments = response.body();
+                    java.util.Calendar cal = java.util.Calendar.getInstance();
+                    cal.set(java.util.Calendar.HOUR_OF_DAY, 0);
+                    cal.set(java.util.Calendar.MINUTE, 0);
+                    cal.set(java.util.Calendar.SECOND, 0);
+                    cal.set(java.util.Calendar.MILLISECOND, 0);
+                    long startOfToday = cal.getTimeInMillis();
+
                     for (PaymentResponse payment : serverPayments) {
-                        paymentDb.insertOrUpdateSyncedPayment(
+                        long localId = paymentDb.insertOrUpdateSyncedPayment(
                                 payment.getId(),
                                 payment.getName(),
                                 payment.getDueDate(),
                                 payment.getCompleted() != null ? payment.getCompleted() : false,
                                 System.currentTimeMillis()
                         );
+                        boolean completed = payment.getCompleted() != null ? payment.getCompleted() : false;
+                        if (!completed) {
+                            if (payment.getDueDate() > System.currentTimeMillis()) {
+                                Log.d("PAYMENT SCHEDULER", "Scheduling payment:\nlocalId=" + localId + "\nserverId=" + payment.getId() + "\ndueDate=" + payment.getDueDate() + "\nsuccess=true");
+                                AlarmUtils.schedulePaymentAlarm(context, (int) localId, payment.getName(), payment.getDueDate());
+                            } else if (payment.getDueDate() >= startOfToday) {
+                                Log.d("PAYMENT SCHEDULER", "Triggering immediate payment notification (due today):\nlocalId=" + localId + "\nserverId=" + payment.getId() + "\ndueDate=" + payment.getDueDate());
+                                AlarmUtils.showMonthlyPaymentNotification(context, (int) localId, payment.getName());
+                            }
+                        }
                     }
                     Log.d(TAG, "Payments synced: " + serverPayments.size() + " items.");
 
@@ -360,17 +384,22 @@ public class SyncManager {
     }
 
     public void deletePayment(int localId, Long serverId, SyncCallback<Void> callback) {
-        paymentDb.deletePayment(localId); // Wipe locally first
-
         if (serverId == null || serverId <= 0) {
+            // Local-only payment, no server call needed, hard delete immediately
+            paymentDb.deletePayment(localId);
             callback.onSuccess(null);
             return;
         }
+
+        // Soft-delete locally first so it persists even if we are offline
+        paymentDb.softDeletePayment(localId);
 
         repository.deletePayment(serverId, new Callback<Void>() {
             @Override
             public void onResponse(Call<Void> call, Response<Void> response) {
                 if (response.isSuccessful() || response.code() == 404) {
+                    // Hard-delete locally on success or if it's already deleted on server
+                    paymentDb.deletePayment(localId);
                     callback.onSuccess(null);
                 } else {
                     callback.onError("Server delete failed: HTTP " + response.code());
@@ -379,7 +408,8 @@ public class SyncManager {
 
             @Override
             public void onFailure(Call<Void> call, Throwable t) {
-                callback.onSuccess(null);
+                // Keep soft-deleted locally for synchronization retry later
+                callback.onError("Network failure on delete: " + t.getMessage());
             }
         });
     }
@@ -555,6 +585,8 @@ public class SyncManager {
                         if (local.getServerId() != null && "SYNCED".equals(local.getSyncStatus())) {
                             if (!serverIds.contains(local.getServerId())) {
                                 reminderDb.deleteReminder(local.getId());
+                                Log.d("REMINDER SCHEDULER", "Cancelling reminder: localId=" + local.getId());
+                                com.example.reminder.AlarmUtils.cancelReminder(context, local.getId());
                             }
                         }
                     }
@@ -576,7 +608,7 @@ public class SyncManager {
                         if (localReminder != null) {
                             long localMillis = reminderDb.getReminderUpdatedAt(localReminder.getId());
                             if (serverMillis >= localMillis) {
-                                reminderDb.insertOrUpdateSyncedReminder(
+                                long localId = reminderDb.insertOrUpdateSyncedReminder(
                                         serverReminder.getId(),
                                         serverReminder.getText(),
                                         serverReminder.getReminderTime(),
@@ -584,9 +616,15 @@ public class SyncManager {
                                         snoozedTime,
                                         serverMillis
                                 );
+                                Log.d("REMINDER SCHEDULER", "Cancelling reminder: localId=" + localId);
+                                com.example.reminder.AlarmUtils.cancelReminder(context, (int) localId);
+                                if (!isExpired && serverReminder.getReminderTime() > System.currentTimeMillis()) {
+                                    Log.d("REMINDER SCHEDULER", "Scheduling reminder:\nlocalId=" + localId + "\nserverId=" + serverReminder.getId() + "\ntime=" + serverReminder.getReminderTime() + "\nsuccess=true");
+                                    com.example.reminder.AlarmUtils.scheduleReminder(context, (int) localId, serverReminder.getText(), serverReminder.getReminderTime());
+                                }
                             }
                         } else {
-                            reminderDb.insertOrUpdateSyncedReminder(
+                            long localId = reminderDb.insertOrUpdateSyncedReminder(
                                     serverReminder.getId(),
                                     serverReminder.getText(),
                                     serverReminder.getReminderTime(),
@@ -594,6 +632,10 @@ public class SyncManager {
                                     snoozedTime,
                                     serverMillis
                             );
+                            if (!isExpired && serverReminder.getReminderTime() > System.currentTimeMillis()) {
+                                Log.d("REMINDER SCHEDULER", "Scheduling reminder:\nlocalId=" + localId + "\nserverId=" + serverReminder.getId() + "\ntime=" + serverReminder.getReminderTime() + "\nsuccess=true");
+                                com.example.reminder.AlarmUtils.scheduleReminder(context, (int) localId, serverReminder.getText(), serverReminder.getReminderTime());
+                            }
                         }
                     }
 
@@ -637,81 +679,155 @@ public class SyncManager {
         });
     }
 
-    private void syncPaymentsBidirectional(SyncCallback<Void> callback) {
-        repository.getPayments(new Callback<List<PaymentResponse>>() {
+    private void syncDeletedPayments(List<MonthlyPayment> deletedPayments, int index, Runnable onFinished) {
+        if (index >= deletedPayments.size()) {
+            onFinished.run();
+            return;
+        }
+        MonthlyPayment payment = deletedPayments.get(index);
+        if (payment.getServerId() == null || payment.getServerId() <= 0) {
+            paymentDb.deletePayment(payment.getId());
+            syncDeletedPayments(deletedPayments, index + 1, onFinished);
+            return;
+        }
+        repository.deletePayment(payment.getServerId(), new Callback<Void>() {
             @Override
-            public void onResponse(Call<List<PaymentResponse>> call, Response<List<PaymentResponse>> response) {
-                if (response.isSuccessful() && response.body() != null) {
-                    List<PaymentResponse> serverPayments = response.body();
-                    java.util.Set<Long> serverIds = new java.util.HashSet<>();
-                    for (PaymentResponse payment : serverPayments) {
-                        if (payment.getId() != null) {
-                            serverIds.add(payment.getId());
-                        }
-                    }
+            public void onResponse(Call<Void> call, Response<Void> response) {
+                if (response.isSuccessful() || response.code() == 404) {
+                    paymentDb.deletePayment(payment.getId());
+                }
+                syncDeletedPayments(deletedPayments, index + 1, onFinished);
+            }
 
-                    // Prune local SYNCED records missing on server
-                    List<MonthlyPayment> localPayments = paymentDb.getAllPayments();
-                    for (MonthlyPayment local : localPayments) {
-                        if (local.getServerId() != null && "SYNCED".equals(local.getSyncStatus())) {
-                            if (!serverIds.contains(local.getServerId())) {
-                                paymentDb.deletePayment(local.getId());
+            @Override
+            public void onFailure(Call<Void> call, Throwable t) {
+                // Keep soft-deleted locally, retry next time
+                syncDeletedPayments(deletedPayments, index + 1, onFinished);
+            }
+        });
+    }
+
+    private void syncPaymentsBidirectional(SyncCallback<Void> callback) {
+        List<MonthlyPayment> deletedPayments = paymentDb.getDeletedPayments();
+        syncDeletedPayments(deletedPayments, 0, () -> {
+            java.util.Set<Long> localDeletedServerIds = new java.util.HashSet<>();
+            for (MonthlyPayment dp : deletedPayments) {
+                if (dp.getServerId() != null) {
+                    localDeletedServerIds.add(dp.getServerId());
+                }
+            }
+
+            repository.getPayments(new Callback<List<PaymentResponse>>() {
+                @Override
+                public void onResponse(Call<List<PaymentResponse>> call, Response<List<PaymentResponse>> response) {
+                    if (response.isSuccessful() && response.body() != null) {
+                        List<PaymentResponse> serverPayments = response.body();
+                        java.util.Set<Long> serverIds = new java.util.HashSet<>();
+                        for (PaymentResponse payment : serverPayments) {
+                            if (payment.getId() != null) {
+                                serverIds.add(payment.getId());
                             }
                         }
-                    }
 
-                    // Upsert server payments
-                    for (PaymentResponse serverPayment : serverPayments) {
-                        MonthlyPayment localPayment = null;
-                        for (MonthlyPayment p : localPayments) {
-                            if (p.getServerId() != null && p.getServerId().equals(serverPayment.getId())) {
-                                localPayment = p;
-                                break;
+                        // Prune local SYNCED records missing on server
+                        List<MonthlyPayment> localPayments = paymentDb.getAllPayments();
+                        for (MonthlyPayment local : localPayments) {
+                            if (local.getServerId() != null && "SYNCED".equals(local.getSyncStatus())) {
+                                if (!serverIds.contains(local.getServerId())) {
+                                    paymentDb.deletePayment(local.getId());
+                                    Log.d("PAYMENT SCHEDULER", "Cancelling payment alarm: localId=" + local.getId());
+                                    AlarmUtils.cancelPaymentAlarm(context, local.getId(), local.getName());
+                                    AlarmUtils.cancelNotification(context, local.getId());
+                                }
                             }
                         }
 
-                        long serverMillis = parseInstant(serverPayment.getUpdatedAt());
-                        boolean completed = serverPayment.getCompleted() != null && serverPayment.getCompleted();
+                        java.util.Calendar cal = java.util.Calendar.getInstance();
+                        cal.set(java.util.Calendar.HOUR_OF_DAY, 0);
+                        cal.set(java.util.Calendar.MINUTE, 0);
+                        cal.set(java.util.Calendar.SECOND, 0);
+                        cal.set(java.util.Calendar.MILLISECOND, 0);
+                        long startOfToday = cal.getTimeInMillis();
 
-                        if (localPayment != null) {
-                            long localMillis = paymentDb.getPaymentUpdatedAt(localPayment.getId());
-                            if (serverMillis >= localMillis) {
-                                paymentDb.insertOrUpdateSyncedPayment(
+                        // Upsert server payments
+                        for (PaymentResponse serverPayment : serverPayments) {
+                            if (serverPayment.getId() != null && localDeletedServerIds.contains(serverPayment.getId())) {
+                                continue; // Skip deleted payments
+                            }
+
+                            MonthlyPayment localPayment = null;
+                            for (MonthlyPayment p : localPayments) {
+                                if (p.getServerId() != null && p.getServerId().equals(serverPayment.getId())) {
+                                    localPayment = p;
+                                    break;
+                                }
+                            }
+
+                            long serverMillis = parseInstant(serverPayment.getUpdatedAt());
+                            boolean completed = serverPayment.getCompleted() != null && serverPayment.getCompleted();
+
+                            if (localPayment != null) {
+                                long localMillis = paymentDb.getPaymentUpdatedAt(localPayment.getId());
+                                if (serverMillis >= localMillis) {
+                                    long localId = paymentDb.insertOrUpdateSyncedPayment(
+                                            serverPayment.getId(),
+                                            serverPayment.getName(),
+                                            serverPayment.getDueDate(),
+                                            completed,
+                                            serverMillis
+                                    );
+                                    Log.d("PAYMENT SCHEDULER", "Cancelling previous payment alarm: localId=" + localId);
+                                    AlarmUtils.cancelPaymentAlarm(context, (int) localId, serverPayment.getName());
+                                    if (completed) {
+                                        AlarmUtils.cancelNotification(context, (int) localId);
+                                    } else {
+                                        if (serverPayment.getDueDate() > System.currentTimeMillis()) {
+                                            Log.d("PAYMENT SCHEDULER", "Scheduling payment:\nlocalId=" + localId + "\nserverId=" + serverPayment.getId() + "\ndueDate=" + serverPayment.getDueDate() + "\nsuccess=true");
+                                            AlarmUtils.schedulePaymentAlarm(context, (int) localId, serverPayment.getName(), serverPayment.getDueDate());
+                                        } else if (serverPayment.getDueDate() >= startOfToday) {
+                                            Log.d("PAYMENT SCHEDULER", "Triggering immediate payment notification (due today):\nlocalId=" + localId + "\nserverId=" + serverPayment.getId() + "\ndueDate=" + serverPayment.getDueDate());
+                                            AlarmUtils.showMonthlyPaymentNotification(context, (int) localId, serverPayment.getName());
+                                        }
+                                    }
+                                }
+                            } else {
+                                long localId = paymentDb.insertOrUpdateSyncedPayment(
                                         serverPayment.getId(),
                                         serverPayment.getName(),
                                         serverPayment.getDueDate(),
                                         completed,
                                         serverMillis
                                 );
+                                if (!completed) {
+                                    if (serverPayment.getDueDate() > System.currentTimeMillis()) {
+                                        Log.d("PAYMENT SCHEDULER", "Scheduling payment:\nlocalId=" + localId + "\nserverId=" + serverPayment.getId() + "\ndueDate=" + serverPayment.getDueDate() + "\nsuccess=true");
+                                        AlarmUtils.schedulePaymentAlarm(context, (int) localId, serverPayment.getName(), serverPayment.getDueDate());
+                                    } else if (serverPayment.getDueDate() >= startOfToday) {
+                                        Log.d("PAYMENT SCHEDULER", "Triggering immediate payment notification (due today):\nlocalId=" + localId + "\nserverId=" + serverPayment.getId() + "\ndueDate=" + serverPayment.getDueDate());
+                                        AlarmUtils.showMonthlyPaymentNotification(context, (int) localId, serverPayment.getName());
+                                    }
+                                }
                             }
-                        } else {
-                            paymentDb.insertOrUpdateSyncedPayment(
-                                    serverPayment.getId(),
-                                    serverPayment.getName(),
-                                    serverPayment.getDueDate(),
-                                    completed,
-                                    serverMillis
-                            );
                         }
-                    }
 
-                    // Push pending changes to server
-                    List<MonthlyPayment> pendingPayments = new java.util.ArrayList<>();
-                    for (MonthlyPayment local : paymentDb.getAllPayments()) {
-                        if ("PENDING".equals(local.getSyncStatus())) {
-                            pendingPayments.add(local);
+                        // Push pending changes to server
+                        List<MonthlyPayment> pendingPayments = new java.util.ArrayList<>();
+                        for (MonthlyPayment local : paymentDb.getAllPayments()) {
+                            if ("PENDING".equals(local.getSyncStatus())) {
+                                pendingPayments.add(local);
+                            }
                         }
+                        uploadPendingPayments(pendingPayments, 0, () -> callback.onSuccess(null));
+                    } else {
+                        callback.onError("HTTP error " + response.code());
                     }
-                    uploadPendingPayments(pendingPayments, 0, () -> callback.onSuccess(null));
-                } else {
-                    callback.onError("HTTP error " + response.code());
                 }
-            }
 
-            @Override
-            public void onFailure(Call<List<PaymentResponse>> call, Throwable t) {
-                callback.onError(t.getMessage());
-            }
+                @Override
+                public void onFailure(Call<List<PaymentResponse>> call, Throwable t) {
+                    callback.onError(t.getMessage());
+                }
+            });
         });
     }
 

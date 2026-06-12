@@ -13,11 +13,7 @@ public class Paymentalarmreceiver extends BroadcastReceiver {
 
         if (paymentId == -1 || paymentName == null || paymentName.isEmpty()) return;
 
-        // ✅ Start the foreground service which shows the persistent silent notification
-        Intent serviceIntent = new Intent(context, PaymentNotificationService.class);
-        serviceIntent.putExtra(PaymentNotificationService.EXTRA_PAYMENT_NAME, paymentName);
-        serviceIntent.putExtra(PaymentNotificationService.EXTRA_PAYMENT_ID, paymentId);
-
-        context.startForegroundService(serviceIntent);
+        // ✅ Directly show persistent notification to bypass foreground service background limits
+        AlarmUtils.showMonthlyPaymentNotification(context, paymentId, paymentName);
     }
 }

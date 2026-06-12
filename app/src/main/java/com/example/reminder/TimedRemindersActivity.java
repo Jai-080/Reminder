@@ -114,7 +114,7 @@ public class TimedRemindersActivity extends AppCompatActivity {
                     List<Reminder> updatedReminders = dbHelper.getAllReminders();
                     Reminder newReminder = updatedReminders.get(updatedReminders.size() - 1);
 
-                    Log.d(TAG, "Scheduling reminder: ID=" + newReminder.getId() + ", Text=" + reminderText + ", Time=" + triggerTime);
+                    Log.d("REMINDER SCHEDULER", "Scheduling reminder:\nlocalId=" + newReminder.getId() + "\nserverId=-1\ntime=" + triggerTime + "\nsuccess=true");
                     AlarmUtils.scheduleReminder(this, newReminder.getId(), reminderText, triggerTime);
 
                     editTextReminder.setText("");

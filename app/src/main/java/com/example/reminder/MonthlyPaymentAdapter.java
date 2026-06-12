@@ -82,41 +82,53 @@ public class MonthlyPaymentAdapter extends RecyclerView.Adapter<MonthlyPaymentAd
                 );
 
                 if (isChecked) {
-                    cancelScheduledAlarm(currentPayment.getId(), currentPayment.getName());
-                    // ✅ Tell service to remove only THIS payment's notification
-                    removePaymentNotification(currentPayment.getId());
+                    AlarmUtils.cancelPaymentAlarm(context, currentPayment.getId(), currentPayment.getName());
+                    AlarmUtils.cancelNotification(context, currentPayment.getId());
                     Toast.makeText(context, "Payment marked as completed", Toast.LENGTH_SHORT).show();
                 } else {
+                    java.util.Calendar cal = java.util.Calendar.getInstance();
+                    cal.set(java.util.Calendar.HOUR_OF_DAY, 0);
+                    cal.set(java.util.Calendar.MINUTE, 0);
+                    cal.set(java.util.Calendar.SECOND, 0);
+                    cal.set(java.util.Calendar.MILLISECOND, 0);
+                    long startOfToday = cal.getTimeInMillis();
+
+                    if (currentPayment.getDueDate() > System.currentTimeMillis()) {
+                        Log.d("PAYMENT SCHEDULER", "Scheduling payment:\nlocalId=" + currentPayment.getId() + "\nserverId=" + (currentPayment.getServerId() != null ? currentPayment.getServerId() : -1) + "\ndueDate=" + currentPayment.getDueDate() + "\nsuccess=true");
+                        AlarmUtils.schedulePaymentAlarm(context, currentPayment.getId(), currentPayment.getName(), currentPayment.getDueDate());
+                    } else if (currentPayment.getDueDate() >= startOfToday) {
+                        Log.d("PAYMENT SCHEDULER", "Triggering immediate payment notification (due today):\nlocalId=" + currentPayment.getId() + "\nserverId=" + (currentPayment.getServerId() != null ? currentPayment.getServerId() : -1) + "\ndueDate=" + currentPayment.getDueDate());
+                        AlarmUtils.showMonthlyPaymentNotification(context, currentPayment.getId(), currentPayment.getName());
+                    }
                     Toast.makeText(context, "Payment marked as pending", Toast.LENGTH_SHORT).show();
                 }
-
+ 
                 sortPayments();
                 notifyDataSetChanged();
             }
         });
-
+ 
         holder.deleteButton.setOnClickListener(v -> {
             int pos = holder.getAdapterPosition();
             if (pos != RecyclerView.NO_POSITION && pos < payments.size()) {
                 MonthlyPayment toDelete = payments.get(pos);
-
-                cancelScheduledAlarm(toDelete.getId(), toDelete.getName());
-                // ✅ Tell service to remove only THIS payment's notification
-                removePaymentNotification(toDelete.getId());
-
+ 
+                AlarmUtils.cancelPaymentAlarm(context, toDelete.getId(), toDelete.getName());
+                AlarmUtils.cancelNotification(context, toDelete.getId());
+ 
                 // Sync deletion to server
                 SyncManager.getInstance(context).deletePayment(toDelete.getId(), toDelete.getServerId(), new SyncManager.SyncCallback<Void>() {
                     @Override
                     public void onSuccess(Void result) {
                         Log.d("MonthlyPaymentAdapter", "Payment deletion synced to server");
                     }
-
+ 
                     @Override
                     public void onError(String error) {
                         Log.e("MonthlyPaymentAdapter", "Failed to sync payment deletion: " + error);
                     }
                 });
-
+ 
                 payments.remove(pos);
                 notifyItemRemoved(pos);
                 Toast.makeText(context, "Payment deleted", Toast.LENGTH_SHORT).show();
@@ -131,40 +143,6 @@ public class MonthlyPaymentAdapter extends RecyclerView.Adapter<MonthlyPaymentAd
 
     private void sortPayments() {
         payments.sort((p1, p2) -> Boolean.compare(p1.isCompleted(), p2.isCompleted()));
-    }
-
-    /**
-     * ✅ Sends ACTION_REMOVE to the service so it cancels only THIS payment's notification.
-     * Other payment notifications are not affected.
-     */
-    private void removePaymentNotification(int paymentId) {
-        Intent serviceIntent = new Intent(context, PaymentNotificationService.class);
-        serviceIntent.setAction(PaymentNotificationService.ACTION_REMOVE);
-        serviceIntent.putExtra(PaymentNotificationService.EXTRA_PAYMENT_ID, paymentId);
-
-        // ✅ Use startService since we are just sending a command.
-        context.startService(serviceIntent);
-    }
-
-    /**
-     * ✅ FIX: Cancel the AlarmManager alarm using the same paymentId request code used when scheduling.
-     */
-    private void cancelScheduledAlarm(int paymentId, String paymentName) {
-        AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
-        if (alarmManager == null) return;
-
-        Intent intent = new Intent(context, Paymentalarmreceiver.class);
-        intent.putExtra("payment_id", paymentId);
-        intent.putExtra("payment_name", paymentName);
-
-        PendingIntent pendingIntent = PendingIntent.getBroadcast(
-                context,
-                paymentId,
-                intent,
-                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
-        );
-
-        alarmManager.cancel(pendingIntent);
     }
 
     public static class ViewHolder extends RecyclerView.ViewHolder {
