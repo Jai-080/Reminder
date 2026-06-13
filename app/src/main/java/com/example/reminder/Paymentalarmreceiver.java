@@ -13,6 +13,14 @@ public class Paymentalarmreceiver extends BroadcastReceiver {
 
         if (paymentId == -1 || paymentName == null || paymentName.isEmpty()) return;
 
+        long scheduledTime = intent.getLongExtra("scheduled_time", -1L);
+        long actualTime = System.currentTimeMillis();
+        android.util.Log.d("Paymentalarmreceiver", "Alarm fired: reminder id=" + paymentId + ", actual fire time=" + actualTime);
+        if (scheduledTime != -1L) {
+            long delay = actualTime - scheduledTime;
+            android.util.Log.d("Paymentalarmreceiver", "Delay: " + delay + " ms");
+        }
+
         // ✅ Directly show persistent notification to bypass foreground service background limits
         AlarmUtils.showMonthlyPaymentNotification(context, paymentId, paymentName);
     }

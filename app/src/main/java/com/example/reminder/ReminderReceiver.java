@@ -20,6 +20,14 @@ public class ReminderReceiver extends BroadcastReceiver {
 
         if (reminderId == -1 || title == null) return;
 
+        long scheduledTime = intent.getLongExtra("scheduled_time", -1L);
+        long actualTime = System.currentTimeMillis();
+        android.util.Log.d("ReminderReceiver", "Alarm fired: reminder id=" + reminderId + ", actual fire time=" + actualTime);
+        if (scheduledTime != -1L) {
+            long delay = actualTime - scheduledTime;
+            android.util.Log.d("ReminderReceiver", "Delay: " + delay + " ms");
+        }
+
         if (isPayment) {
             // ✅ Monthly payment notification (permanent)
             AlarmUtils.showMonthlyPaymentNotification(context, reminderId, title);

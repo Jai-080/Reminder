@@ -37,7 +37,7 @@ public class AlarmUtils {
         scheduleAlarm(context, reminderId, reminderText, triggerAtMillis, false);
     }
 
-    // ✅ Centralized method to schedule monthly payment alarm using Paymentalarmreceiver
+    // Centralized method to schedule monthly payment alarm using Paymentalarmreceiver
     public static void schedulePaymentAlarm(Context context, int paymentId, String paymentName, long dueDateMillis) {
         if (dueDateMillis <= System.currentTimeMillis()) {
             return;
@@ -48,6 +48,7 @@ public class AlarmUtils {
         Intent intent = new Intent(context, Paymentalarmreceiver.class);
         intent.putExtra("payment_id", paymentId);
         intent.putExtra("payment_name", paymentName);
+        intent.putExtra("scheduled_time", dueDateMillis);
 
         PendingIntent pendingIntent = PendingIntent.getBroadcast(
                 context,
@@ -56,6 +57,7 @@ public class AlarmUtils {
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
         );
 
+        android.util.Log.d("AlarmUtils", "Alarm scheduled: reminder id=" + paymentId + ", scheduled trigger time=" + dueDateMillis);
         alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, dueDateMillis, pendingIntent);
     }
 
@@ -84,12 +86,13 @@ public class AlarmUtils {
         scheduleAlarm(context, paymentId, paymentName, triggerAtMillis, true);
     }
 
-    // ✅ Generic method to schedule any alarm
+    // Generic method to schedule any alarm
     private static void scheduleAlarm(Context context, int id, String text, long triggerAtMillis, boolean isPayment) {
         Intent intent = new Intent(context, ReminderReceiver.class);
         intent.putExtra("reminder_id", id);
         intent.putExtra("reminder_text", text);
         intent.putExtra("is_payment", isPayment);
+        intent.putExtra("scheduled_time", triggerAtMillis);
 
         PendingIntent pendingIntent = PendingIntent.getBroadcast(
                 context,
@@ -100,10 +103,11 @@ public class AlarmUtils {
 
         AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
         if (alarmManager != null) {
+            android.util.Log.d("AlarmUtils", "Alarm scheduled: reminder id=" + id + ", scheduled trigger time=" + triggerAtMillis);
             if (alarmManager.canScheduleExactAlarms()) {
-                alarmManager.setExact(AlarmManager.RTC_WAKEUP, triggerAtMillis, pendingIntent);
+                alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAtMillis, pendingIntent);
             } else {
-                alarmManager.set(AlarmManager.RTC_WAKEUP, triggerAtMillis, pendingIntent);
+                alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAtMillis, pendingIntent);
             }
         }
     }
