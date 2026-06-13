@@ -189,7 +189,8 @@ public class SyncManager {
 
     // --- Notes CRUD ---
     public void uploadNote(int localId, String text, boolean completed, int position, Long serverId, SyncCallback<Long> callback) {
-        NoteRequest request = new NoteRequest(text, completed, position);
+        long localUpdatedAt = noteDb.getNoteUpdatedAt(localId);
+        NoteRequest request = new NoteRequest(text, completed, position, localUpdatedAt);
 
         if (serverId != null && serverId > 0) {
             // Update (PUT)
@@ -264,7 +265,8 @@ public class SyncManager {
 
     // --- Reminders CRUD ---
     public void uploadReminder(int localId, String text, long time, boolean expired, long snoozedTime, Long serverId, SyncCallback<Long> callback) {
-        ReminderRequest request = new ReminderRequest(text, time, expired, snoozedTime);
+        long localUpdatedAt = reminderDb.getReminderUpdatedAt(localId);
+        ReminderRequest request = new ReminderRequest(text, time, expired, snoozedTime, localUpdatedAt);
 
         if (serverId != null && serverId > 0) {
             // Update (PUT)
@@ -337,7 +339,8 @@ public class SyncManager {
 
     // --- Payments CRUD ---
     public void uploadPayment(int localId, String name, long dueDate, boolean completed, Long serverId, SyncCallback<Long> callback) {
-        PaymentRequest request = new PaymentRequest(name, dueDate, completed);
+        long localUpdatedAt = paymentDb.getPaymentUpdatedAt(localId);
+        PaymentRequest request = new PaymentRequest(name, dueDate, completed, localUpdatedAt);
 
         if (serverId != null && serverId > 0) {
             // Update (PUT)
@@ -506,7 +509,7 @@ public class SyncManager {
                         long serverMillis = parseInstant(serverNote.getUpdatedAt());
                         if (localNote != null) {
                             long localMillis = noteDb.getNoteUpdatedAt(localNote.getId());
-                            if (serverMillis >= localMillis) {
+                            if (serverMillis > localMillis) {
                                 noteDb.insertOrUpdateSyncedNote(
                                         serverNote.getId(),
                                         serverNote.getText(),
@@ -607,7 +610,7 @@ public class SyncManager {
 
                         if (localReminder != null) {
                             long localMillis = reminderDb.getReminderUpdatedAt(localReminder.getId());
-                            if (serverMillis >= localMillis) {
+                            if (serverMillis > localMillis) {
                                 long localId = reminderDb.insertOrUpdateSyncedReminder(
                                         serverReminder.getId(),
                                         serverReminder.getText(),
@@ -768,7 +771,7 @@ public class SyncManager {
 
                             if (localPayment != null) {
                                 long localMillis = paymentDb.getPaymentUpdatedAt(localPayment.getId());
-                                if (serverMillis >= localMillis) {
+                                if (serverMillis > localMillis) {
                                     long localId = paymentDb.insertOrUpdateSyncedPayment(
                                             serverPayment.getId(),
                                             serverPayment.getName(),
