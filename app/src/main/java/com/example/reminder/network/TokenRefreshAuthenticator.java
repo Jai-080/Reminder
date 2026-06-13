@@ -56,6 +56,7 @@ public class TokenRefreshAuthenticator implements Authenticator {
             }
 
             Log.d(TAG, "Access token expired. Attempting token refresh...");
+            Log.d("TokenRefreshAuthenticator", "Received 401. Attempting token refresh.");
 
             // Use the unauthenticated client to prevent interceptor/authenticator loop
             AuthApi authApi = ApiClient.getAuthServiceNoAuth(context);
@@ -64,6 +65,7 @@ public class TokenRefreshAuthenticator implements Authenticator {
             if (refreshResponse.isSuccessful() && refreshResponse.body() != null) {
                 AuthResponse newTokens = refreshResponse.body();
                 Log.d(TAG, "Token refresh succeeded. Saving new access token.");
+                Log.d("TokenRefreshAuthenticator", "Token refresh successful. Retrying request.");
                 tokenManager.saveSession(
                         newTokens.getAccessToken(),
                         newTokens.getRefreshToken(),
