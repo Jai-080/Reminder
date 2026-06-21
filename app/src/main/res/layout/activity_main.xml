@@ -189,96 +189,40 @@
         <LinearLayout
             android:id="@+id/timedRemindersBtn"
             android:layout_width="match_parent"
-            android:layout_height="64dp"
+            android:layout_height="56dp"
             android:orientation="horizontal"
-            android:gravity="center_vertical"
+            android:gravity="center"
             android:background="@drawable/rounded_item_background"
-            android:paddingHorizontal="16dp"
             android:layout_marginBottom="10dp"
             android:clickable="true"
             android:focusable="true">
 
-            <LinearLayout
-                android:layout_width="36dp"
-                android:layout_height="36dp"
-                android:background="@drawable/rounded_primary_button"
-                android:gravity="center">
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/clock_emoji"
-                    android:textSize="16sp" />
-            </LinearLayout>
-
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:orientation="vertical"
-                android:layout_marginStart="14dp">
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/timed_reminders_title"
-                    android:textColor="?android:attr/textColorPrimary"
-                    android:textSize="14sp"
-                    android:textStyle="bold" />
-
-            </LinearLayout>
-
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="@string/arrow_right"
-                android:textColor="@color/light_text_muted"
-                android:textSize="22sp" />
+                android:text="@string/timed_reminders_title"
+                android:textColor="?android:attr/textColorPrimary"
+                android:textSize="15sp"
+                android:textStyle="bold" />
         </LinearLayout>
 
         <LinearLayout
             android:id="@+id/monthlyPaymentsBtn"
             android:layout_width="match_parent"
-            android:layout_height="64dp"
+            android:layout_height="56dp"
             android:orientation="horizontal"
-            android:gravity="center_vertical"
+            android:gravity="center"
             android:background="@drawable/rounded_item_background"
-            android:paddingHorizontal="16dp"
             android:clickable="true"
             android:focusable="true">
-
-            <LinearLayout
-                android:layout_width="36dp"
-                android:layout_height="36dp"
-                android:background="@drawable/rounded_secondary_button"
-                android:gravity="center">
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/card_emoji"
-                    android:textSize="16sp" />
-            </LinearLayout>
-
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:orientation="vertical"
-                android:layout_marginStart="14dp">
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/monthly_payments_title"
-                    android:textColor="?android:attr/textColorPrimary"
-                    android:textSize="14sp"
-                    android:textStyle="bold" />
-
-            </LinearLayout>
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="@string/arrow_right"
-                android:textColor="@color/light_text_muted"
-                android:textSize="22sp" />
+                android:text="@string/monthly_payments_title"
+                android:textColor="?android:attr/textColorPrimary"
+                android:textSize="15sp"
+                android:textStyle="bold" />
         </LinearLayout>
 
     </LinearLayout>

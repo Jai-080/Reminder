@@ -24,8 +24,8 @@
         <item name="android:timePickerMode">spinner</item>
         <item name="colorPrimary">@color/accent_purple</item>
         <item name="colorAccent">@color/accent_purple</item>
-        <item name="buttonBarPositiveButtonStyle">@style/TimePickerButtonStyle</item>
-        <item name="buttonBarNegativeButtonStyle">@style/TimePickerButtonStyle</item>
+        <item name="android:buttonBarPositiveButtonStyle">@style/TimePickerButtonStyle</item>
+        <item name="android:buttonBarNegativeButtonStyle">@style/TimePickerButtonStyle</item>
     </style>
 
     <style name="TimePickerButtonStyle" parent="Widget.MaterialComponents.Button.TextButton.Dialog">
