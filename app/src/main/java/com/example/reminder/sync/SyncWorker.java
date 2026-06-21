@@ -19,6 +19,7 @@ public class SyncWorker extends Worker {
     @NonNull
     @Override
     public Result doWork() {
+        Log.d(TAG, "SyncWorker started");
         Log.d(TAG, "SyncWorker executing background synchronization...");
         CountDownLatch latch = new CountDownLatch(1);
         final boolean[] success = {false};

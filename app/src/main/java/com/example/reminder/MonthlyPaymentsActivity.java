@@ -17,6 +17,9 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import android.content.BroadcastReceiver;
+import android.content.IntentFilter;
+
 import java.util.ArrayList;
 import java.util.Calendar;
 
@@ -27,6 +30,7 @@ public class MonthlyPaymentsActivity extends AppCompatActivity {
     private ArrayList<MonthlyPayment> payments;
 
     private EditText paymentInput;
+    private BroadcastReceiver syncCompletedReceiver;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -66,6 +70,22 @@ public class MonthlyPaymentsActivity extends AppCompatActivity {
 
             Toast.makeText(this, "All payments deleted", Toast.LENGTH_SHORT).show();
         });
+
+        syncCompletedReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                Log.d("MonthlyPayments", "Sync completed broadcast received. Refreshing payments UI.");
+                runOnUiThread(() -> {
+                    if (payments != null && dbHelper != null && adapter != null) {
+                        payments.clear();
+                        payments.addAll(dbHelper.getAllPayments());
+                        adapter.notifyDataSetChanged();
+                    }
+                });
+            }
+        };
+        registerReceiver(syncCompletedReceiver, new IntentFilter(SyncManager.ACTION_SYNC_COMPLETED),
+                Context.RECEIVER_NOT_EXPORTED);
     }
 
     private void showDatePickerAndAdd(String paymentName) {
@@ -170,6 +190,14 @@ public class MonthlyPaymentsActivity extends AppCompatActivity {
                     }
                 });
             }
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (syncCompletedReceiver != null) {
+            unregisterReceiver(syncCompletedReceiver);
         }
     }
 }
