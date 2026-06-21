@@ -90,13 +90,13 @@ public class WebSocketManager {
         webSocket = client.newWebSocket(request, new WebSocketListener() {
             @Override
             public void onOpen(WebSocket ws, Response response) {
-                Log.d(TAG, "WebSocket transport opened. Sending STOMP CONNECT frame.");
                 String connectFrame = "CONNECT\n" +
                         "accept-version:1.1,1.2\n" +
                         "heart-beat:0,0\n" +
                         "Authorization:Bearer " + token + "\n" +
                         "\n" +
                         "\u0000";
+                Log.d(TAG, "STOMP Frame Outgoing [CONNECT]:\n" + connectFrame);
                 ws.send(connectFrame);
             }
 
@@ -143,17 +143,18 @@ public class WebSocketManager {
         Log.d(TAG, "Received STOMP command: " + command);
 
         if ("CONNECTED".equals(command)) {
+            Log.d(TAG, "STOMP Frame Incoming [CONNECTED]:\n" + frameText);
             synchronized (this) {
                 isConnected = true;
                 isConnecting = false;
                 reconnectAttempts = 0;
             }
-            Log.d(TAG, "STOMP Connection established. Subscribing to user sync channel.");
             String subscribeFrame = "SUBSCRIBE\n" +
                     "id:sub-0\n" +
                     "destination:/user/topic/sync\n" +
                     "\n" +
                     "\u0000";
+            Log.d(TAG, "STOMP Frame Outgoing [SUBSCRIBE]:\n" + subscribeFrame);
             if (webSocket != null) {
                 webSocket.send(subscribeFrame);
             }
@@ -163,6 +164,7 @@ public class WebSocketManager {
             handler.post(() -> ReminderApplication.enqueueSyncWorker(context));
 
         } else if ("MESSAGE".equals(command)) {
+            Log.d(TAG, "STOMP Frame Incoming [MESSAGE]:\n" + frameText);
             int bodyStartIndex = -1;
             for (int i = 1; i < lines.length; i++) {
                 if (lines[i].trim().isEmpty()) {
@@ -186,15 +188,15 @@ public class WebSocketManager {
                 });
             }
         } else if ("ERROR".equals(command)) {
-            Log.e(TAG, "STOMP Error frame received: " + frameText);
+            Log.e(TAG, "STOMP Frame Incoming [ERROR]:\n" + frameText);
         }
     }
 
     public synchronized void disconnect() {
         userWantsConnection = false;
         if (webSocket != null) {
-            Log.d(TAG, "Disconnecting WebSocket...");
             String disconnectFrame = "DISCONNECT\n\n\u0000";
+            Log.d(TAG, "STOMP Frame Outgoing [DISCONNECT]:\n" + disconnectFrame);
             try {
                 webSocket.send(disconnectFrame);
             } catch (Exception ignored) {}
