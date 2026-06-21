@@ -11,12 +11,15 @@ import android.util.Log;
 import androidx.annotation.NonNull;
 import androidx.work.BackoffPolicy;
 import androidx.work.Constraints;
+import androidx.work.ExistingPeriodicWorkPolicy;
 import androidx.work.ExistingWorkPolicy;
 import androidx.work.NetworkType;
 import androidx.work.OneTimeWorkRequest;
+import androidx.work.PeriodicWorkRequest;
 import androidx.work.WorkManager;
 
 import com.example.reminder.sync.SyncWorker;
+import com.example.reminder.sync.WebSocketManager;
 
 import java.util.concurrent.TimeUnit;
 
@@ -27,6 +30,15 @@ public class ReminderApplication extends Application {
     public void onCreate() {
         super.onCreate();
         registerConnectivityMonitor();
+
+        // Phase 13: Startup Sync and schedule Periodic Sync
+        enqueueSyncWorker(this);
+        schedulePeriodicSync(this);
+
+        // Phase 11: Connect WebSocket on startup if already authenticated
+        if (com.example.reminder.auth.TokenManager.getInstance(this).isLoggedIn()) {
+            WebSocketManager.getInstance(this).connect();
+        }
     }
 
     private void registerConnectivityMonitor() {
@@ -80,5 +92,30 @@ public class ReminderApplication extends Application {
                 request
         );
         Log.d(TAG, "Enqueued unique SyncWorker with network constraints.");
+    }
+
+    public static void schedulePeriodicSync(Context context) {
+        Constraints constraints = new Constraints.Builder()
+                .setRequiredNetworkType(NetworkType.CONNECTED)
+                .build();
+
+        PeriodicWorkRequest periodicRequest = new PeriodicWorkRequest.Builder(
+                SyncWorker.class,
+                15, TimeUnit.MINUTES
+        )
+                .setConstraints(constraints)
+                .setBackoffCriteria(
+                        BackoffPolicy.EXPONENTIAL,
+                        10,
+                        TimeUnit.SECONDS
+                )
+                .build();
+
+        WorkManager.getInstance(context).enqueueUniquePeriodicWork(
+                "periodic_sync",
+                ExistingPeriodicWorkPolicy.KEEP,
+                periodicRequest
+        );
+        Log.d(TAG, "Enqueued periodic sync worker (15 minutes interval) with network constraints.");
     }
 }

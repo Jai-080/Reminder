@@ -94,6 +94,7 @@ public class TokenRefreshAuthenticator implements Authenticator {
 
     private void forceLogout() {
         tokenManager.clearSession();
+        com.example.reminder.sync.WebSocketManager.getInstance(context).disconnect();
         Intent intent = new Intent(context, LoginActivity.class);
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         context.startActivity(intent);

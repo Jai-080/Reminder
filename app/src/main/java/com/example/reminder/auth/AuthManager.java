@@ -58,6 +58,7 @@ public class AuthManager {
                             authResponse.getUserId(),
                             authResponse.getUsername()
                     );
+                    com.example.reminder.sync.WebSocketManager.getInstance(context).connect();
                     callback.onSuccess();
                 } else {
                     String errMsg = "Login failed: " + response.code();
@@ -93,6 +94,7 @@ public class AuthManager {
                             authResponse.getUserId(),
                             authResponse.getUsername()
                     );
+                    com.example.reminder.sync.WebSocketManager.getInstance(context).connect();
                     callback.onSuccess();
                 } else {
                     String errMsg = "Registration failed: " + response.code();
@@ -118,6 +120,7 @@ public class AuthManager {
         if (refreshToken == null) {
             // Already logged out locally
             tokenManager.clearSession();
+            com.example.reminder.sync.WebSocketManager.getInstance(context).disconnect();
             callback.onSuccess();
             return;
         }
@@ -128,6 +131,7 @@ public class AuthManager {
             public void onResponse(Call<Map<String, String>> call, Response<Map<String, String>> response) {
                 // Regardless of backend response status, wipe credentials locally for security
                 tokenManager.clearSession();
+                com.example.reminder.sync.WebSocketManager.getInstance(context).disconnect();
                 callback.onSuccess();
             }
 
@@ -135,6 +139,7 @@ public class AuthManager {
             public void onFailure(Call<Map<String, String>> call, Throwable t) {
                 Log.w(TAG, "Logout backend call failed, wiping local session anyway", t);
                 tokenManager.clearSession();
+                com.example.reminder.sync.WebSocketManager.getInstance(context).disconnect();
                 callback.onSuccess();
             }
         });
