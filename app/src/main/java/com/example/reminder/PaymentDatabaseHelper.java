@@ -236,6 +236,25 @@ public class PaymentDatabaseHelper extends SQLiteOpenHelper {
         db.close();
     }
 
+    public void updatePayment(MonthlyPayment payment) {
+        SQLiteDatabase db = getWritableDatabase();
+        ContentValues values = new ContentValues();
+        values.put(COL_NAME, payment.getName());
+        values.put(COL_DUE_DATE, payment.getDueDate());
+        values.put(COL_COMPLETED, payment.isCompleted() ? 1 : 0);
+        if (payment.getAmount() != null) {
+            values.put(COL_AMOUNT, payment.getAmount());
+        } else {
+            values.putNull(COL_AMOUNT);
+        }
+        values.put(COL_RECURRENCE, payment.getRecurrence() != null ? payment.getRecurrence().name() : RecurrenceType.MONTHLY.name());
+        values.put(COL_NOTIFICATION_OFFSETS, payment.getNotificationOffsets() != null ? payment.getNotificationOffsets() : "0");
+        values.put(COL_UPDATED_AT, System.currentTimeMillis());
+        values.put(COL_SYNC_STATUS, "PENDING");
+        db.update(TABLE_NAME, values, COL_ID + " = ?", new String[]{String.valueOf(payment.getId())});
+        db.close();
+    }
+
     public void deletePayment(int id) {
         SQLiteDatabase db = this.getWritableDatabase();
         db.delete(TABLE_NAME, COL_ID + " = ?", new String[]{String.valueOf(id)});
