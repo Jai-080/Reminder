@@ -20,6 +20,8 @@ import com.example.reminder.network.ReminderRequest;
 import com.example.reminder.network.ReminderResponse;
 
 import java.util.List;
+import java.util.ArrayList;
+import com.example.reminder.RecurrenceType;
 
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -150,12 +152,25 @@ public class SyncManager {
                     long startOfToday = cal.getTimeInMillis();
 
                     for (PaymentResponse payment : serverPayments) {
+                        Double amt = payment.getAmount();
+                        String recStr = payment.getRecurrence();
+                        RecurrenceType rec = RecurrenceType.MONTHLY;
+                        if (recStr != null) {
+                            try {
+                                rec = RecurrenceType.valueOf(recStr.toUpperCase());
+                            } catch (IllegalArgumentException ignored) {}
+                        }
+                        String offsets = payment.getNotificationOffsets() != null ? payment.getNotificationOffsets() : "0";
+
                         long localId = paymentDb.insertOrUpdateSyncedPayment(
                                 payment.getId(),
                                 payment.getName(),
                                 payment.getDueDate(),
                                 payment.getCompleted() != null ? payment.getCompleted() : false,
-                                System.currentTimeMillis()
+                                System.currentTimeMillis(),
+                                amt,
+                                rec,
+                                offsets
                         );
                         boolean completed = payment.getCompleted() != null ? payment.getCompleted() : false;
                         if (!completed) {
@@ -353,9 +368,45 @@ public class SyncManager {
 
     // --- Payments CRUD ---
     public void uploadPayment(int localId, String name, long dueDate, boolean completed, Long serverId, SyncCallback<Long> callback) {
+        ArrayList<MonthlyPayment> all = paymentDb.getAllPayments();
+        MonthlyPayment target = null;
+        for (MonthlyPayment p : all) {
+            if (p.getId() == localId) {
+                target = p;
+                break;
+            }
+        }
+        if (target == null) {
+            ArrayList<MonthlyPayment> deleted = paymentDb.getDeletedPayments();
+            for (MonthlyPayment p : deleted) {
+                if (p.getId() == localId) {
+                    target = p;
+                    break;
+                }
+            }
+        }
+        if (target != null) {
+            uploadPayment(target, callback);
+        } else {
+            MonthlyPayment fallback = new MonthlyPayment(localId, serverId, name, completed, dueDate, "PENDING", null, RecurrenceType.MONTHLY, "0");
+            uploadPayment(fallback, callback);
+        }
+    }
+
+    public void uploadPayment(MonthlyPayment payment, SyncCallback<Long> callback) {
         ReminderApplication.enqueueSyncWorker(context);
+        int localId = payment.getId();
         long localUpdatedAt = paymentDb.getPaymentUpdatedAt(localId);
-        PaymentRequest request = new PaymentRequest(name, dueDate, completed, localUpdatedAt);
+        PaymentRequest request = new PaymentRequest(
+                payment.getName(),
+                payment.getDueDate(),
+                payment.isCompleted(),
+                localUpdatedAt,
+                payment.getAmount(),
+                payment.getRecurrence() != null ? payment.getRecurrence().name() : "MONTHLY",
+                payment.getNotificationOffsets() != null ? payment.getNotificationOffsets() : "0"
+        );
+        Long serverId = payment.getServerId();
 
         if (serverId != null && serverId > 0) {
             // Update (PUT)
@@ -894,12 +945,25 @@ public class SyncManager {
                             if (localPayment != null) {
                                 long localMillis = paymentDb.getPaymentUpdatedAt(localPayment.getId());
                                 if (serverMillis > localMillis) {
+                                    Double amt = serverPayment.getAmount();
+                                    String recStr = serverPayment.getRecurrence();
+                                    RecurrenceType rec = RecurrenceType.MONTHLY;
+                                    if (recStr != null) {
+                                        try {
+                                            rec = RecurrenceType.valueOf(recStr.toUpperCase());
+                                        } catch (IllegalArgumentException ignored) {}
+                                    }
+                                    String offsets = serverPayment.getNotificationOffsets() != null ? serverPayment.getNotificationOffsets() : "0";
+
                                     long localId = paymentDb.insertOrUpdateSyncedPayment(
                                             serverPayment.getId(),
                                             serverPayment.getName(),
                                             serverPayment.getDueDate(),
                                             completed,
-                                            serverMillis
+                                            serverMillis,
+                                            amt,
+                                            rec,
+                                            offsets
                                     );
                                     Log.d("PAYMENT SCHEDULER", "Cancelling previous payment alarm: localId=" + localId);
                                     AlarmUtils.cancelPaymentAlarm(context, (int) localId, serverPayment.getName());
@@ -916,12 +980,25 @@ public class SyncManager {
                                     }
                                 }
                             } else {
+                                Double amt = serverPayment.getAmount();
+                                String recStr = serverPayment.getRecurrence();
+                                RecurrenceType rec = RecurrenceType.MONTHLY;
+                                if (recStr != null) {
+                                    try {
+                                        rec = RecurrenceType.valueOf(recStr.toUpperCase());
+                                    } catch (IllegalArgumentException ignored) {}
+                                }
+                                String offsets = serverPayment.getNotificationOffsets() != null ? serverPayment.getNotificationOffsets() : "0";
+
                                 long localId = paymentDb.insertOrUpdateSyncedPayment(
                                         serverPayment.getId(),
                                         serverPayment.getName(),
                                         serverPayment.getDueDate(),
                                         completed,
-                                        serverMillis
+                                        serverMillis,
+                                        amt,
+                                        rec,
+                                        offsets
                                 );
                                 if (!completed) {
                                     if (serverPayment.getDueDate() > System.currentTimeMillis()) {
@@ -962,7 +1039,7 @@ public class SyncManager {
             return;
         }
         MonthlyPayment payment = pending.get(index);
-        uploadPayment(payment.getId(), payment.getName(), payment.getDueDate(), payment.isCompleted(), payment.getServerId(), new SyncCallback<Long>() {
+        uploadPayment(payment, new SyncCallback<Long>() {
             @Override
             public void onSuccess(Long result) {
                 uploadPendingPayments(pending, index + 1, onFinished);
