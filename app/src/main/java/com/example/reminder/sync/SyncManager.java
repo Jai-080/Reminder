@@ -10,6 +10,7 @@ import com.example.reminder.QuickNote;
 import com.example.reminder.Reminder;
 import com.example.reminder.MonthlyPayment;
 import com.example.reminder.AlarmUtils;
+import com.example.reminder.ReminderApplication;
 import com.example.reminder.auth.TokenManager;
 import com.example.reminder.network.NoteRequest;
 import com.example.reminder.network.NoteResponse;
@@ -189,6 +190,7 @@ public class SyncManager {
 
     // --- Notes CRUD ---
     public void uploadNote(int localId, String text, boolean completed, int position, Long serverId, SyncCallback<Long> callback) {
+        ReminderApplication.enqueueSyncWorker(context);
         long localUpdatedAt = noteDb.getNoteUpdatedAt(localId);
         NoteRequest request = new NoteRequest(text, completed, position, localUpdatedAt);
 
@@ -237,18 +239,23 @@ public class SyncManager {
     }
 
     public void deleteNote(int localId, Long serverId, SyncCallback<Void> callback) {
-        noteDb.deleteNote(localId); // Wipe locally first
-
+        ReminderApplication.enqueueSyncWorker(context);
         if (serverId == null || serverId <= 0) {
-            // Local-only note, no server call needed
+            // Local-only note, no server call needed, hard delete immediately
+            noteDb.deleteNote(localId);
             callback.onSuccess(null);
             return;
         }
+
+        // Soft-delete locally first so it persists even if we are offline
+        noteDb.softDeleteNote(localId);
 
         repository.deleteNote(serverId, new Callback<Void>() {
             @Override
             public void onResponse(Call<Void> call, Response<Void> response) {
                 if (response.isSuccessful() || response.code() == 404) {
+                    noteDb.updateSyncStatus(localId, serverId, "DELETE_SYNCED");
+                    noteDb.deleteNote(localId); // Hard-delete locally on success or 404
                     callback.onSuccess(null);
                 } else {
                     callback.onError("Server delete failed: HTTP " + response.code());
@@ -257,14 +264,14 @@ public class SyncManager {
 
             @Override
             public void onFailure(Call<Void> call, Throwable t) {
-                // Ignore sync failures on deletion as local record is already deleted
-                callback.onSuccess(null);
+                callback.onError("Network failure on delete: " + t.getMessage());
             }
         });
     }
 
     // --- Reminders CRUD ---
     public void uploadReminder(int localId, String text, long time, boolean expired, long snoozedTime, Long serverId, SyncCallback<Long> callback) {
+        ReminderApplication.enqueueSyncWorker(context);
         long localUpdatedAt = reminderDb.getReminderUpdatedAt(localId);
         ReminderRequest request = new ReminderRequest(text, time, expired, snoozedTime, localUpdatedAt);
 
@@ -313,17 +320,23 @@ public class SyncManager {
     }
 
     public void deleteReminder(int localId, Long serverId, SyncCallback<Void> callback) {
-        reminderDb.deleteReminder(localId); // Wipe locally first
-
+        ReminderApplication.enqueueSyncWorker(context);
         if (serverId == null || serverId <= 0) {
+            // Local-only reminder, no server call needed, hard delete immediately
+            reminderDb.deleteReminder(localId);
             callback.onSuccess(null);
             return;
         }
+
+        // Soft-delete locally first so it persists even if we are offline
+        reminderDb.softDeleteReminder(localId);
 
         repository.deleteReminder(serverId, new Callback<Void>() {
             @Override
             public void onResponse(Call<Void> call, Response<Void> response) {
                 if (response.isSuccessful() || response.code() == 404) {
+                    reminderDb.updateSyncStatus(localId, serverId, "DELETE_SYNCED");
+                    reminderDb.deleteReminder(localId); // Hard-delete locally on success or 404
                     callback.onSuccess(null);
                 } else {
                     callback.onError("Server delete failed: HTTP " + response.code());
@@ -332,13 +345,14 @@ public class SyncManager {
 
             @Override
             public void onFailure(Call<Void> call, Throwable t) {
-                callback.onSuccess(null);
+                callback.onError("Network failure on delete: " + t.getMessage());
             }
         });
     }
 
     // --- Payments CRUD ---
     public void uploadPayment(int localId, String name, long dueDate, boolean completed, Long serverId, SyncCallback<Long> callback) {
+        ReminderApplication.enqueueSyncWorker(context);
         long localUpdatedAt = paymentDb.getPaymentUpdatedAt(localId);
         PaymentRequest request = new PaymentRequest(name, dueDate, completed, localUpdatedAt);
 
@@ -387,6 +401,7 @@ public class SyncManager {
     }
 
     public void deletePayment(int localId, Long serverId, SyncCallback<Void> callback) {
+        ReminderApplication.enqueueSyncWorker(context);
         if (serverId == null || serverId <= 0) {
             // Local-only payment, no server call needed, hard delete immediately
             paymentDb.deletePayment(localId);
@@ -401,8 +416,8 @@ public class SyncManager {
             @Override
             public void onResponse(Call<Void> call, Response<Void> response) {
                 if (response.isSuccessful() || response.code() == 404) {
-                    // Hard-delete locally on success or if it's already deleted on server
-                    paymentDb.deletePayment(localId);
+                    paymentDb.updateSyncStatus(localId, serverId, "DELETE_SYNCED");
+                    paymentDb.deletePayment(localId); // Hard-delete locally on success or 404
                     callback.onSuccess(null);
                 } else {
                     callback.onError("Server delete failed: HTTP " + response.code());
@@ -411,7 +426,6 @@ public class SyncManager {
 
             @Override
             public void onFailure(Call<Void> call, Throwable t) {
-                // Keep soft-deleted locally for synchronization retry later
                 callback.onError("Network failure on delete: " + t.getMessage());
             }
         });
@@ -473,43 +487,94 @@ public class SyncManager {
         });
     }
 
-    private void syncNotes(SyncCallback<Void> callback) {
-        repository.getNotes(new Callback<List<NoteResponse>>() {
+    private void syncDeletedNotes(List<QuickNote> deleted, int index, Runnable onFinished) {
+        if (index >= deleted.size()) {
+            onFinished.run();
+            return;
+        }
+        QuickNote note = deleted.get(index);
+        if (note.getServerId() == null || note.getServerId() <= 0) {
+            noteDb.deleteNote(note.getId());
+            syncDeletedNotes(deleted, index + 1, onFinished);
+            return;
+        }
+        repository.deleteNote(note.getServerId(), new Callback<Void>() {
             @Override
-            public void onResponse(Call<List<NoteResponse>> call, Response<List<NoteResponse>> response) {
-                if (response.isSuccessful() && response.body() != null) {
-                    List<NoteResponse> serverNotes = response.body();
-                    java.util.Set<Long> serverIds = new java.util.HashSet<>();
-                    for (NoteResponse note : serverNotes) {
-                        if (note.getId() != null) {
-                            serverIds.add(note.getId());
-                        }
-                    }
+            public void onResponse(Call<Void> call, Response<Void> response) {
+                if (response.isSuccessful() || response.code() == 404) {
+                    noteDb.updateSyncStatus(note.getId(), note.getServerId(), "DELETE_SYNCED");
+                    noteDb.deleteNote(note.getId());
+                }
+                syncDeletedNotes(deleted, index + 1, onFinished);
+            }
 
-                    // Prune local SYNCED records missing on server
-                    List<QuickNote> localNotes = noteDb.getAllNotes();
-                    for (QuickNote local : localNotes) {
-                        if (local.getServerId() != null && "SYNCED".equals(local.getSyncStatus())) {
-                            if (!serverIds.contains(local.getServerId())) {
-                                noteDb.deleteNote(local.getId());
+            @Override
+            public void onFailure(Call<Void> call, Throwable t) {
+                Log.e(TAG, "Failed to sync delete note offline: " + t.getMessage());
+                syncDeletedNotes(deleted, index + 1, onFinished);
+            }
+        });
+    }
+
+    private void syncNotes(SyncCallback<Void> callback) {
+        List<QuickNote> deleted = noteDb.getDeletedNotes();
+        syncDeletedNotes(deleted, 0, () -> {
+            java.util.Set<Long> deletedServerIds = new java.util.HashSet<>();
+            for (QuickNote dn : deleted) {
+                if (dn.getServerId() != null) {
+                    deletedServerIds.add(dn.getServerId());
+                }
+            }
+
+            repository.getNotes(new Callback<List<NoteResponse>>() {
+                @Override
+                public void onResponse(Call<List<NoteResponse>> call, Response<List<NoteResponse>> response) {
+                    if (response.isSuccessful() && response.body() != null) {
+                        List<NoteResponse> serverNotes = response.body();
+                        java.util.Set<Long> serverIds = new java.util.HashSet<>();
+                        for (NoteResponse note : serverNotes) {
+                            if (note.getId() != null) {
+                                serverIds.add(note.getId());
                             }
                         }
-                    }
 
-                    // Upsert server notes
-                    for (NoteResponse serverNote : serverNotes) {
-                        QuickNote localNote = null;
-                        for (QuickNote n : localNotes) {
-                            if (n.getServerId() != null && n.getServerId().equals(serverNote.getId())) {
-                                localNote = n;
-                                break;
+                        // Prune local SYNCED records missing on server
+                        List<QuickNote> localNotes = noteDb.getAllNotes();
+                        for (QuickNote local : localNotes) {
+                            if (local.getServerId() != null && "SYNCED".equals(local.getSyncStatus())) {
+                                if (!serverIds.contains(local.getServerId())) {
+                                    noteDb.deleteNote(local.getId());
+                                }
                             }
                         }
 
-                        long serverMillis = parseInstant(serverNote.getUpdatedAt());
-                        if (localNote != null) {
-                            long localMillis = noteDb.getNoteUpdatedAt(localNote.getId());
-                            if (serverMillis > localMillis) {
+                        // Upsert server notes
+                        for (NoteResponse serverNote : serverNotes) {
+                            if (serverNote.getId() != null && deletedServerIds.contains(serverNote.getId())) {
+                                continue; // Skip since it's locally deleted and pending deletion sync
+                            }
+
+                            QuickNote localNote = null;
+                            for (QuickNote n : localNotes) {
+                                if (n.getServerId() != null && n.getServerId().equals(serverNote.getId())) {
+                                    localNote = n;
+                                    break;
+                                }
+                            }
+
+                            long serverMillis = parseInstant(serverNote.getUpdatedAt());
+                            if (localNote != null) {
+                                long localMillis = noteDb.getNoteUpdatedAt(localNote.getId());
+                                if (serverMillis > localMillis) {
+                                    noteDb.insertOrUpdateSyncedNote(
+                                            serverNote.getId(),
+                                            serverNote.getText(),
+                                            serverNote.getIsCompleted() != null && serverNote.getIsCompleted(),
+                                            serverNote.getPosition() != null ? serverNote.getPosition() : 0,
+                                            serverMillis
+                                    );
+                                }
+                            } else {
                                 noteDb.insertOrUpdateSyncedNote(
                                         serverNote.getId(),
                                         serverNote.getText(),
@@ -518,34 +583,26 @@ public class SyncManager {
                                         serverMillis
                                 );
                             }
-                        } else {
-                            noteDb.insertOrUpdateSyncedNote(
-                                    serverNote.getId(),
-                                    serverNote.getText(),
-                                    serverNote.getIsCompleted() != null && serverNote.getIsCompleted(),
-                                    serverNote.getPosition() != null ? serverNote.getPosition() : 0,
-                                    serverMillis
-                            );
                         }
-                    }
 
-                    // Push pending changes to server
-                    List<QuickNote> pendingNotes = new java.util.ArrayList<>();
-                    for (QuickNote local : noteDb.getAllNotes()) {
-                        if ("PENDING".equals(local.getSyncStatus())) {
-                            pendingNotes.add(local);
+                        // Push pending changes to server
+                        List<QuickNote> pendingNotes = new java.util.ArrayList<>();
+                        for (QuickNote local : noteDb.getAllNotes()) {
+                            if ("PENDING".equals(local.getSyncStatus())) {
+                                pendingNotes.add(local);
+                            }
                         }
+                        uploadPendingNotes(pendingNotes, 0, () -> callback.onSuccess(null));
+                    } else {
+                        callback.onError("HTTP error " + response.code());
                     }
-                    uploadPendingNotes(pendingNotes, 0, () -> callback.onSuccess(null));
-                } else {
-                    callback.onError("HTTP error " + response.code());
                 }
-            }
 
-            @Override
-            public void onFailure(Call<List<NoteResponse>> call, Throwable t) {
-                callback.onError(t.getMessage());
-            }
+                @Override
+                public void onFailure(Call<List<NoteResponse>> call, Throwable t) {
+                    callback.onError(t.getMessage());
+                }
+            });
         });
     }
 
@@ -569,48 +626,106 @@ public class SyncManager {
         });
     }
 
-    private void syncRemindersBidirectional(SyncCallback<Void> callback) {
-        repository.getReminders(new Callback<List<ReminderResponse>>() {
+    private void syncDeletedReminders(List<Reminder> deleted, int index, Runnable onFinished) {
+        if (index >= deleted.size()) {
+            onFinished.run();
+            return;
+        }
+        Reminder reminder = deleted.get(index);
+        if (reminder.getServerId() == null || reminder.getServerId() <= 0) {
+            reminderDb.deleteReminder(reminder.getId());
+            syncDeletedReminders(deleted, index + 1, onFinished);
+            return;
+        }
+        repository.deleteReminder(reminder.getServerId(), new Callback<Void>() {
             @Override
-            public void onResponse(Call<List<ReminderResponse>> call, Response<List<ReminderResponse>> response) {
-                if (response.isSuccessful() && response.body() != null) {
-                    List<ReminderResponse> serverReminders = response.body();
-                    java.util.Set<Long> serverIds = new java.util.HashSet<>();
-                    for (ReminderResponse reminder : serverReminders) {
-                        if (reminder.getId() != null) {
-                            serverIds.add(reminder.getId());
-                        }
-                    }
+            public void onResponse(Call<Void> call, Response<Void> response) {
+                if (response.isSuccessful() || response.code() == 404) {
+                    reminderDb.updateSyncStatus(reminder.getId(), reminder.getServerId(), "DELETE_SYNCED");
+                    reminderDb.deleteReminder(reminder.getId());
+                }
+                syncDeletedReminders(deleted, index + 1, onFinished);
+            }
 
-                    // Prune local SYNCED records missing on server
-                    List<Reminder> localReminders = reminderDb.getAllReminders();
-                    for (Reminder local : localReminders) {
-                        if (local.getServerId() != null && "SYNCED".equals(local.getSyncStatus())) {
-                            if (!serverIds.contains(local.getServerId())) {
-                                reminderDb.deleteReminder(local.getId());
-                                Log.d("REMINDER SCHEDULER", "Cancelling reminder: localId=" + local.getId());
-                                com.example.reminder.AlarmUtils.cancelReminder(context, local.getId());
+            @Override
+            public void onFailure(Call<Void> call, Throwable t) {
+                Log.e(TAG, "Failed to sync delete reminder offline: " + t.getMessage());
+                syncDeletedReminders(deleted, index + 1, onFinished);
+            }
+        });
+    }
+
+    private void syncRemindersBidirectional(SyncCallback<Void> callback) {
+        List<Reminder> deleted = reminderDb.getDeletedReminders();
+        syncDeletedReminders(deleted, 0, () -> {
+            java.util.Set<Long> deletedServerIds = new java.util.HashSet<>();
+            for (Reminder dr : deleted) {
+                if (dr.getServerId() != null) {
+                    deletedServerIds.add(dr.getServerId());
+                }
+            }
+
+            repository.getReminders(new Callback<List<ReminderResponse>>() {
+                @Override
+                public void onResponse(Call<List<ReminderResponse>> call, Response<List<ReminderResponse>> response) {
+                    if (response.isSuccessful() && response.body() != null) {
+                        List<ReminderResponse> serverReminders = response.body();
+                        java.util.Set<Long> serverIds = new java.util.HashSet<>();
+                        for (ReminderResponse reminder : serverReminders) {
+                            if (reminder.getId() != null) {
+                                serverIds.add(reminder.getId());
                             }
                         }
-                    }
 
-                    // Upsert server reminders
-                    for (ReminderResponse serverReminder : serverReminders) {
-                        Reminder localReminder = null;
-                        for (Reminder r : localReminders) {
-                            if (r.getServerId() != null && r.getServerId().equals(serverReminder.getId())) {
-                                localReminder = r;
-                                break;
+                        // Prune local SYNCED records missing on server
+                        List<Reminder> localReminders = reminderDb.getAllReminders();
+                        for (Reminder local : localReminders) {
+                            if (local.getServerId() != null && "SYNCED".equals(local.getSyncStatus())) {
+                                if (!serverIds.contains(local.getServerId())) {
+                                    reminderDb.deleteReminder(local.getId());
+                                    Log.d("REMINDER SCHEDULER", "Cancelling reminder: localId=" + local.getId());
+                                    com.example.reminder.AlarmUtils.cancelReminder(context, local.getId());
+                                }
                             }
                         }
 
-                        long serverMillis = parseInstant(serverReminder.getUpdatedAt());
-                        boolean isExpired = serverReminder.getIsExpired() != null && serverReminder.getIsExpired();
-                        long snoozedTime = serverReminder.getSnoozedTime() != null ? serverReminder.getSnoozedTime() : 0L;
+                        // Upsert server reminders
+                        for (ReminderResponse serverReminder : serverReminders) {
+                            if (serverReminder.getId() != null && deletedServerIds.contains(serverReminder.getId())) {
+                                continue; // Skip since it's locally deleted
+                            }
 
-                        if (localReminder != null) {
-                            long localMillis = reminderDb.getReminderUpdatedAt(localReminder.getId());
-                            if (serverMillis > localMillis) {
+                            Reminder localReminder = null;
+                            for (Reminder r : localReminders) {
+                                if (r.getServerId() != null && r.getServerId().equals(serverReminder.getId())) {
+                                    localReminder = r;
+                                    break;
+                                }
+                            }
+
+                            long serverMillis = parseInstant(serverReminder.getUpdatedAt());
+                            boolean isExpired = serverReminder.getIsExpired() != null && serverReminder.getIsExpired();
+                            long snoozedTime = serverReminder.getSnoozedTime() != null ? serverReminder.getSnoozedTime() : 0L;
+
+                            if (localReminder != null) {
+                                long localMillis = reminderDb.getReminderUpdatedAt(localReminder.getId());
+                                if (serverMillis > localMillis) {
+                                    long localId = reminderDb.insertOrUpdateSyncedReminder(
+                                            serverReminder.getId(),
+                                            serverReminder.getText(),
+                                            serverReminder.getReminderTime(),
+                                            isExpired,
+                                            snoozedTime,
+                                            serverMillis
+                                    );
+                                    Log.d("REMINDER SCHEDULER", "Cancelling reminder: localId=" + localId);
+                                    com.example.reminder.AlarmUtils.cancelReminder(context, (int) localId);
+                                    if (!isExpired && serverReminder.getReminderTime() > System.currentTimeMillis()) {
+                                        Log.d("REMINDER SCHEDULER", "Scheduling reminder:\nlocalId=" + localId + "\nserverId=" + serverReminder.getId() + "\ntime=" + serverReminder.getReminderTime() + "\nsuccess=true");
+                                        com.example.reminder.AlarmUtils.scheduleReminder(context, (int) localId, serverReminder.getText(), serverReminder.getReminderTime());
+                                    }
+                                }
+                            } else {
                                 long localId = reminderDb.insertOrUpdateSyncedReminder(
                                         serverReminder.getId(),
                                         serverReminder.getText(),
@@ -619,46 +734,31 @@ public class SyncManager {
                                         snoozedTime,
                                         serverMillis
                                 );
-                                Log.d("REMINDER SCHEDULER", "Cancelling reminder: localId=" + localId);
-                                com.example.reminder.AlarmUtils.cancelReminder(context, (int) localId);
                                 if (!isExpired && serverReminder.getReminderTime() > System.currentTimeMillis()) {
                                     Log.d("REMINDER SCHEDULER", "Scheduling reminder:\nlocalId=" + localId + "\nserverId=" + serverReminder.getId() + "\ntime=" + serverReminder.getReminderTime() + "\nsuccess=true");
                                     com.example.reminder.AlarmUtils.scheduleReminder(context, (int) localId, serverReminder.getText(), serverReminder.getReminderTime());
                                 }
                             }
-                        } else {
-                            long localId = reminderDb.insertOrUpdateSyncedReminder(
-                                    serverReminder.getId(),
-                                    serverReminder.getText(),
-                                    serverReminder.getReminderTime(),
-                                    isExpired,
-                                    snoozedTime,
-                                    serverMillis
-                            );
-                            if (!isExpired && serverReminder.getReminderTime() > System.currentTimeMillis()) {
-                                Log.d("REMINDER SCHEDULER", "Scheduling reminder:\nlocalId=" + localId + "\nserverId=" + serverReminder.getId() + "\ntime=" + serverReminder.getReminderTime() + "\nsuccess=true");
-                                com.example.reminder.AlarmUtils.scheduleReminder(context, (int) localId, serverReminder.getText(), serverReminder.getReminderTime());
+                        }
+
+                        // Push pending changes to server
+                        List<Reminder> pendingReminders = new java.util.ArrayList<>();
+                        for (Reminder local : reminderDb.getAllReminders()) {
+                            if ("PENDING".equals(local.getSyncStatus())) {
+                                pendingReminders.add(local);
                             }
                         }
+                        uploadPendingReminders(pendingReminders, 0, () -> callback.onSuccess(null));
+                    } else {
+                        callback.onError("HTTP error " + response.code());
                     }
-
-                    // Push pending changes to server
-                    List<Reminder> pendingReminders = new java.util.ArrayList<>();
-                    for (Reminder local : reminderDb.getAllReminders()) {
-                        if ("PENDING".equals(local.getSyncStatus())) {
-                            pendingReminders.add(local);
-                        }
-                    }
-                    uploadPendingReminders(pendingReminders, 0, () -> callback.onSuccess(null));
-                } else {
-                    callback.onError("HTTP error " + response.code());
                 }
-            }
 
-            @Override
-            public void onFailure(Call<List<ReminderResponse>> call, Throwable t) {
-                callback.onError(t.getMessage());
-            }
+                @Override
+                public void onFailure(Call<List<ReminderResponse>> call, Throwable t) {
+                    callback.onError(t.getMessage());
+                }
+            });
         });
     }
 

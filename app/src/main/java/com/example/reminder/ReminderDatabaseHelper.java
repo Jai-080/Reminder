@@ -12,7 +12,7 @@ import java.util.ArrayList;
 public class ReminderDatabaseHelper extends SQLiteOpenHelper {
 
     private static final String DATABASE_NAME = "reminders.db";
-    private static final int DATABASE_VERSION = 6;
+    private static final int DATABASE_VERSION = 7;
     private static final String TAG = "ReminderDB";
 
     public ReminderDatabaseHelper(Context context) {
@@ -66,6 +66,19 @@ public class ReminderDatabaseHelper extends SQLiteOpenHelper {
                 Log.w(TAG, "Error during version 6 upgrade: " + e.getMessage());
             }
         }
+
+        if (oldVersion < 7) {
+            Log.d(TAG, "Upgrading database to version 7 (ensuring sync columns exist for soft-delete support)");
+            try {
+                db.execSQL("ALTER TABLE reminders ADD COLUMN server_id BIGINT");
+            } catch (Exception ignored) {}
+            try {
+                db.execSQL("ALTER TABLE reminders ADD COLUMN updated_at BIGINT");
+            } catch (Exception ignored) {}
+            try {
+                db.execSQL("ALTER TABLE reminders ADD COLUMN sync_status TEXT");
+            } catch (Exception ignored) {}
+        }
     }
 
     // ------------------------
@@ -96,6 +109,15 @@ public class ReminderDatabaseHelper extends SQLiteOpenHelper {
         db.close();
     }
 
+    public void softDeleteReminder(int id) {
+        SQLiteDatabase db = getWritableDatabase();
+        ContentValues values = new ContentValues();
+        values.put("sync_status", "DELETE_PENDING");
+        values.put("updated_at", System.currentTimeMillis());
+        db.update("reminders", values, "id=?", new String[]{String.valueOf(id)});
+        db.close();
+    }
+
     public ArrayList<Reminder> getPendingReminders() {
         ArrayList<Reminder> reminders = new ArrayList<>();
         SQLiteDatabase db = getReadableDatabase();
@@ -103,7 +125,7 @@ public class ReminderDatabaseHelper extends SQLiteOpenHelper {
         try (Cursor cursor = db.query(
                 "reminders",
                 null,
-                "is_expired=?",
+                "is_expired=? AND (sync_status IS NULL OR (sync_status != 'DELETE_PENDING' AND sync_status != 'DELETE_SYNCED'))",
                 new String[]{"0"},
                 null, null,
                 "time ASC")) {
@@ -138,7 +160,7 @@ public class ReminderDatabaseHelper extends SQLiteOpenHelper {
         try (Cursor cursor = db.query(
                 "reminders",
                 null,
-                "is_expired=?",
+                "is_expired=? AND (sync_status IS NULL OR (sync_status != 'DELETE_PENDING' AND sync_status != 'DELETE_SYNCED'))",
                 new String[]{"1"},
                 null, null,
                 "time ASC")) {
@@ -209,7 +231,7 @@ public class ReminderDatabaseHelper extends SQLiteOpenHelper {
         try (Cursor cursor = db.query(
                 "reminders",
                 null,
-                null,
+                "sync_status IS NULL OR (sync_status != 'DELETE_PENDING' AND sync_status != 'DELETE_SYNCED')",
                 null,
                 null, null,
                 "time ASC")) {
@@ -319,5 +341,35 @@ public class ReminderDatabaseHelper extends SQLiteOpenHelper {
         cursor.close();
         db.close();
         return updatedAt;
+    }
+
+    public ArrayList<Reminder> getDeletedReminders() {
+        ArrayList<Reminder> reminders = new ArrayList<>();
+        SQLiteDatabase db = getReadableDatabase();
+
+        try (Cursor cursor = db.query(
+                "reminders",
+                null,
+                "sync_status=?",
+                new String[]{"DELETE_PENDING"},
+                null, null, null)) {
+
+            while (cursor.moveToNext()) {
+                int id = cursor.getInt(cursor.getColumnIndexOrThrow("id"));
+                Long serverId = null;
+                int serverIdIdx = cursor.getColumnIndexOrThrow("server_id");
+                if (!cursor.isNull(serverIdIdx)) {
+                    serverId = cursor.getLong(serverIdIdx);
+                }
+                String text = cursor.getString(cursor.getColumnIndexOrThrow("text"));
+                long time = cursor.getLong(cursor.getColumnIndexOrThrow("time"));
+                boolean isExpired = cursor.getInt(cursor.getColumnIndexOrThrow("is_expired")) == 1;
+                long snoozedTime = cursor.getLong(cursor.getColumnIndexOrThrow("snoozed_time"));
+                String syncStatus = cursor.getString(cursor.getColumnIndexOrThrow("sync_status"));
+                reminders.add(new Reminder(id, serverId, text, time, isExpired, snoozedTime, syncStatus));
+            }
+        }
+        db.close();
+        return reminders;
     }
 }

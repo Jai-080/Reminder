@@ -12,7 +12,7 @@ import java.util.ArrayList;
 public class QuickNoteDatabaseHelper extends SQLiteOpenHelper {
 
     private static final String DATABASE_NAME = "quick_notes.db";
-    private static final int DATABASE_VERSION = 3;
+    private static final int DATABASE_VERSION = 4;
     private static final String TABLE_NAME = "quick_notes";
     private static final String TAG = "QuickNoteDB";
 
@@ -51,6 +51,18 @@ public class QuickNoteDatabaseHelper extends SQLiteOpenHelper {
                 Log.w(TAG, "Sync columns may already exist.");
             }
         }
+        if (oldVersion < 4) {
+            Log.d(TAG, "Upgrading database to version 4 (ensuring sync columns exist for soft-delete support)");
+            try {
+                db.execSQL("ALTER TABLE " + TABLE_NAME + " ADD COLUMN server_id BIGINT");
+            } catch (Exception ignored) {}
+            try {
+                db.execSQL("ALTER TABLE " + TABLE_NAME + " ADD COLUMN updated_at BIGINT");
+            } catch (Exception ignored) {}
+            try {
+                db.execSQL("ALTER TABLE " + TABLE_NAME + " ADD COLUMN sync_status TEXT");
+            } catch (Exception ignored) {}
+        }
     }
 
     public long addNote(String text, boolean isCompleted) {
@@ -85,6 +97,15 @@ public class QuickNoteDatabaseHelper extends SQLiteOpenHelper {
         db.close();
     }
 
+    public void softDeleteNote(int id) {
+        SQLiteDatabase db = getWritableDatabase();
+        ContentValues values = new ContentValues();
+        values.put("sync_status", "DELETE_PENDING");
+        values.put("updated_at", System.currentTimeMillis());
+        db.update(TABLE_NAME, values, "id = ?", new String[]{String.valueOf(id)});
+        db.close();
+    }
+
     public void updateNote(int id, String newText, boolean isCompleted) {
         SQLiteDatabase db = getWritableDatabase();
         ContentValues values = new ContentValues();
@@ -99,7 +120,7 @@ public class QuickNoteDatabaseHelper extends SQLiteOpenHelper {
     public ArrayList<QuickNote> getAllNotes() {
         ArrayList<QuickNote> notes = new ArrayList<>();
         SQLiteDatabase db = getReadableDatabase();
-        Cursor cursor = db.query(TABLE_NAME, null, null, null, null, null, "position ASC");
+        Cursor cursor = db.query(TABLE_NAME, null, "sync_status IS NULL OR (sync_status != 'DELETE_PENDING' AND sync_status != 'DELETE_SYNCED')", null, null, null, "position ASC");
 
         while (cursor.moveToNext()) {
             int id = cursor.getInt(cursor.getColumnIndexOrThrow("id"));
@@ -126,7 +147,7 @@ public class QuickNoteDatabaseHelper extends SQLiteOpenHelper {
     public ArrayList<String> getNoteTexts() {
         ArrayList<String> noteTexts = new ArrayList<>();
         SQLiteDatabase db = getReadableDatabase();
-        Cursor cursor = db.query(TABLE_NAME, new String[]{"text"}, "is_completed = 0", null, null, null, "position ASC");
+        Cursor cursor = db.query(TABLE_NAME, new String[]{"text"}, "is_completed = 0 AND (sync_status IS NULL OR (sync_status != 'DELETE_PENDING' AND sync_status != 'DELETE_SYNCED'))", null, null, null, "position ASC");
 
         while (cursor.moveToNext()) {
             noteTexts.add(cursor.getString(cursor.getColumnIndexOrThrow("text")));
@@ -198,5 +219,29 @@ public class QuickNoteDatabaseHelper extends SQLiteOpenHelper {
         cursor.close();
         db.close();
         return updatedAt;
+    }
+
+    public ArrayList<QuickNote> getDeletedNotes() {
+        ArrayList<QuickNote> notes = new ArrayList<>();
+        SQLiteDatabase db = getReadableDatabase();
+        Cursor cursor = db.query(TABLE_NAME, null, "sync_status = 'DELETE_PENDING'", null, null, null, null);
+
+        while (cursor.moveToNext()) {
+            int id = cursor.getInt(cursor.getColumnIndexOrThrow("id"));
+            Long serverId = null;
+            int serverIdIdx = cursor.getColumnIndexOrThrow("server_id");
+            if (!cursor.isNull(serverIdIdx)) {
+                serverId = cursor.getLong(serverIdIdx);
+            }
+            String text = cursor.getString(cursor.getColumnIndexOrThrow("text"));
+            boolean isCompleted = cursor.getInt(cursor.getColumnIndexOrThrow("is_completed")) == 1;
+            int position = cursor.getInt(cursor.getColumnIndexOrThrow("position"));
+            String syncStatus = cursor.getString(cursor.getColumnIndexOrThrow("sync_status"));
+            notes.add(new QuickNote(id, serverId, text, isCompleted, position, syncStatus));
+        }
+
+        cursor.close();
+        db.close();
+        return notes;
     }
 }

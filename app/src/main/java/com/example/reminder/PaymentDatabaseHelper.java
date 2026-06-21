@@ -54,6 +54,18 @@ public class PaymentDatabaseHelper extends SQLiteOpenHelper {
                 Log.w(TAG, "Sync columns may already exist.");
             }
         }
+        if (oldVersion < 3) {
+            Log.d(TAG, "Upgrading database to version 3 (ensuring sync columns exist for soft-delete support)");
+            try {
+                db.execSQL("ALTER TABLE " + TABLE_NAME + " ADD COLUMN " + COL_SERVER_ID + " BIGINT");
+            } catch (Exception ignored) {}
+            try {
+                db.execSQL("ALTER TABLE " + TABLE_NAME + " ADD COLUMN " + COL_UPDATED_AT + " BIGINT");
+            } catch (Exception ignored) {}
+            try {
+                db.execSQL("ALTER TABLE " + TABLE_NAME + " ADD COLUMN " + COL_SYNC_STATUS + " TEXT");
+            } catch (Exception ignored) {}
+        }
     }
 
     public int insertPayment(String name, long dueDate, boolean isCompleted) {
@@ -74,7 +86,7 @@ public class PaymentDatabaseHelper extends SQLiteOpenHelper {
     public ArrayList<MonthlyPayment> getAllPayments() {
         ArrayList<MonthlyPayment> list = new ArrayList<>();
         SQLiteDatabase db = getReadableDatabase();
-        Cursor cursor = db.query(TABLE_NAME, null, COL_SYNC_STATUS + " IS NULL OR " + COL_SYNC_STATUS + " != ?", new String[]{"DELETED"}, null, null, null);
+        Cursor cursor = db.query(TABLE_NAME, null, COL_SYNC_STATUS + " IS NULL OR (" + COL_SYNC_STATUS + " != 'DELETE_PENDING' AND " + COL_SYNC_STATUS + " != 'DELETE_SYNCED')", null, null, null, null);
 
         while (cursor.moveToNext()) {
             int id = cursor.getInt(cursor.getColumnIndexOrThrow(COL_ID));
@@ -101,7 +113,7 @@ public class PaymentDatabaseHelper extends SQLiteOpenHelper {
     public void softDeletePayment(int id) {
         SQLiteDatabase db = getWritableDatabase();
         ContentValues values = new ContentValues();
-        values.put(COL_SYNC_STATUS, "DELETED");
+        values.put(COL_SYNC_STATUS, "DELETE_PENDING");
         values.put(COL_UPDATED_AT, System.currentTimeMillis());
         db.update(TABLE_NAME, values, COL_ID + " = ?", new String[]{String.valueOf(id)});
         db.close();
@@ -110,7 +122,7 @@ public class PaymentDatabaseHelper extends SQLiteOpenHelper {
     public ArrayList<MonthlyPayment> getDeletedPayments() {
         ArrayList<MonthlyPayment> list = new ArrayList<>();
         SQLiteDatabase db = getReadableDatabase();
-        Cursor cursor = db.query(TABLE_NAME, null, COL_SYNC_STATUS + " = ?", new String[]{"DELETED"}, null, null, null);
+        Cursor cursor = db.query(TABLE_NAME, null, COL_SYNC_STATUS + " = 'DELETE_PENDING'", null, null, null, null);
 
         while (cursor.moveToNext()) {
             int id = cursor.getInt(cursor.getColumnIndexOrThrow(COL_ID));
