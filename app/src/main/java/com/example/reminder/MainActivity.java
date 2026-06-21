@@ -9,7 +9,10 @@ import android.app.AlarmManager;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.provider.Settings;
@@ -39,6 +42,7 @@ public class MainActivity extends AppCompatActivity {
     private QuickNoteAdapter quickNoteAdapter;
     private ArrayList<QuickNote> noteList = new ArrayList<>();
     private QuickNoteDatabaseHelper noteDbHelper;
+    private BroadcastReceiver syncCompletedReceiver;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -124,6 +128,23 @@ public class MainActivity extends AppCompatActivity {
 
         noteDbHelper = new QuickNoteDatabaseHelper(this);
         setupQuickNotes();
+
+        syncCompletedReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                Log.d(TAG, "Sync completed broadcast received. Refreshing notes UI.");
+                runOnUiThread(() -> {
+                    if (noteDbHelper != null && quickNoteAdapter != null && noteList != null) {
+                        noteList.clear();
+                        noteList.addAll(noteDbHelper.getAllNotes());
+                        quickNoteAdapter.notifyDataSetChanged();
+                        QuickNotesWidgetProvider.updateWidget(getApplicationContext());
+                    }
+                });
+            }
+        };
+        registerReceiver(syncCompletedReceiver, new IntentFilter(SyncManager.ACTION_SYNC_COMPLETED),
+                Context.RECEIVER_NOT_EXPORTED);
     }
 
     private void setupQuickNotes() {
@@ -286,6 +307,14 @@ public class MainActivity extends AppCompatActivity {
                     }
                 });
             }
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (syncCompletedReceiver != null) {
+            unregisterReceiver(syncCompletedReceiver);
         }
     }
 }

@@ -34,6 +34,29 @@ public class AlarmUtils {
 
     // ✅ Schedule a timed reminder
     public static void scheduleReminder(Context context, int reminderId, String reminderText, long triggerAtMillis) {
+        long serverId = -1;
+        try {
+            ReminderDatabaseHelper dbHelper = new ReminderDatabaseHelper(context);
+            android.database.sqlite.SQLiteDatabase db = dbHelper.getReadableDatabase();
+            android.database.Cursor cursor = db.query("reminders", new String[]{"server_id"}, "id=?", new String[]{String.valueOf(reminderId)}, null, null, null);
+            if (cursor != null) {
+                if (cursor.moveToFirst()) {
+                    int colIdx = cursor.getColumnIndex("server_id");
+                    if (colIdx != -1 && !cursor.isNull(colIdx)) {
+                        serverId = cursor.getLong(colIdx);
+                    }
+                }
+                cursor.close();
+            }
+            db.close();
+        } catch (Exception e) {
+            android.util.Log.e("AlarmUtils", "Failed to query serverId for logging", e);
+        }
+
+        AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+        boolean canExact = alarmManager != null && alarmManager.canScheduleExactAlarms();
+        android.util.Log.d("AlarmUtils", "scheduleReminder: localId=" + reminderId + ", serverId=" + serverId + ", triggerTime=" + triggerAtMillis + ", currentTime=" + System.currentTimeMillis() + ", request code=" + reminderId + ", PendingIntent flags=" + (PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE) + ", canScheduleExactAlarms=" + canExact);
+
         scheduleAlarm(context, reminderId, reminderText, triggerAtMillis, false);
     }
 
@@ -88,8 +111,28 @@ public class AlarmUtils {
 
     // Generic method to schedule any alarm
     private static void scheduleAlarm(Context context, int id, String text, long triggerAtMillis, boolean isPayment) {
+        long serverId = -1;
+        try {
+            ReminderDatabaseHelper dbHelper = new ReminderDatabaseHelper(context);
+            android.database.sqlite.SQLiteDatabase db = dbHelper.getReadableDatabase();
+            android.database.Cursor cursor = db.query("reminders", new String[]{"server_id"}, "id=?", new String[]{String.valueOf(id)}, null, null, null);
+            if (cursor != null) {
+                if (cursor.moveToFirst()) {
+                    int colIdx = cursor.getColumnIndex("server_id");
+                    if (colIdx != -1 && !cursor.isNull(colIdx)) {
+                        serverId = cursor.getLong(colIdx);
+                    }
+                }
+                cursor.close();
+            }
+            db.close();
+        } catch (Exception e) {
+            // Ignore or log
+        }
+
         Intent intent = new Intent(context, ReminderReceiver.class);
         intent.putExtra("reminder_id", id);
+        intent.putExtra("server_id", serverId);
         intent.putExtra("reminder_text", text);
         intent.putExtra("is_payment", isPayment);
         intent.putExtra("scheduled_time", triggerAtMillis);
@@ -103,12 +146,11 @@ public class AlarmUtils {
 
         AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
         if (alarmManager != null) {
+            android.util.Log.d("AlarmUtils", "scheduleAlarm: request code=" + id + ", triggerTime=" + triggerAtMillis + ", PendingIntent flags=" + (PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE));
             android.util.Log.d("AlarmUtils", "Alarm scheduled: reminder id=" + id + ", scheduled trigger time=" + triggerAtMillis);
-            if (alarmManager.canScheduleExactAlarms()) {
-                alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAtMillis, pendingIntent);
-            } else {
-                alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAtMillis, pendingIntent);
-            }
+            
+            // Standardize to unconditionally call setExactAndAllowWhileIdle to match the payment flow
+            alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAtMillis, pendingIntent);
         }
     }
 
@@ -171,18 +213,24 @@ public class AlarmUtils {
 
     // ✅ Cancel scheduled reminder/payment
     public static void cancelReminder(Context context, int reminderId) {
+        android.util.Log.d("REMINDER_CANCEL", "Cancelling reminder " + reminderId + " at " + System.currentTimeMillis());
+
         Intent intent = new Intent(context, ReminderReceiver.class);
 
+        // Use FLAG_NO_CREATE so we do NOT create or modify an existing PendingIntent.
+        // FLAG_UPDATE_CURRENT was previously corrupting the PendingIntent by stripping its extras.
         PendingIntent pendingIntent = PendingIntent.getBroadcast(
                 context,
                 reminderId,
                 intent,
-                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+                PendingIntent.FLAG_NO_CREATE | PendingIntent.FLAG_IMMUTABLE
         );
 
         AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
-        if (alarmManager != null) {
+        if (alarmManager != null && pendingIntent != null) {
             alarmManager.cancel(pendingIntent);
+        } else {
+            android.util.Log.d("REMINDER_CANCEL", "No pending alarm found for reminder " + reminderId + ", skip cancel.");
         }
     }
 }

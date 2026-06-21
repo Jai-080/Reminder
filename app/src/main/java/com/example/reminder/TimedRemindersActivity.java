@@ -50,6 +50,7 @@ public class TimedRemindersActivity extends AppCompatActivity {
     private final ArrayList<Reminder> expiredReminders = new ArrayList<>();
 
     private BroadcastReceiver reminderExpiredReceiver;
+    private BroadcastReceiver syncCompletedReceiver;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -162,6 +163,16 @@ public class TimedRemindersActivity extends AppCompatActivity {
             }
         };
         registerReceiver(reminderExpiredReceiver, new IntentFilter("com.example.reminder.REMINDER_EXPIRED"),
+                Context.RECEIVER_NOT_EXPORTED);
+
+        syncCompletedReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                Log.d(TAG, "Sync completed broadcast received. Refreshing reminders UI.");
+                runOnUiThread(() -> loadReminders());
+            }
+        };
+        registerReceiver(syncCompletedReceiver, new IntentFilter(SyncManager.ACTION_SYNC_COMPLETED),
                 Context.RECEIVER_NOT_EXPORTED);
     }
 
@@ -277,6 +288,9 @@ public class TimedRemindersActivity extends AppCompatActivity {
         super.onDestroy();
         if (reminderExpiredReceiver != null) {
             unregisterReceiver(reminderExpiredReceiver);
+        }
+        if (syncCompletedReceiver != null) {
+            unregisterReceiver(syncCompletedReceiver);
         }
     }
 }

@@ -28,6 +28,7 @@ import retrofit2.Response;
 public class SyncManager {
     private static final String TAG = "SyncManager";
     private static SyncManager instance;
+    public static final String ACTION_SYNC_COMPLETED = "com.example.reminder.SYNC_COMPLETED";
 
     private final Context context;
     private final SyncRepository repository;
@@ -451,6 +452,7 @@ public class SyncManager {
             if (callback != null) callback.onError("Not authenticated.");
             return;
         }
+        Log.d(TAG, "performFullSync started");
         Log.d(TAG, "Starting bidirectional sync...");
 
         syncNotes(new SyncCallback<Void>() {
@@ -463,6 +465,13 @@ public class SyncManager {
                             @Override
                             public void onSuccess(Void result) {
                                 tokenManager.setLastSyncTimestamp(System.currentTimeMillis());
+                                Log.d(TAG, "performFullSync completed");
+                                
+                                // Broadcast sync completed
+                                android.content.Intent intent = new android.content.Intent(ACTION_SYNC_COMPLETED);
+                                intent.setPackage(context.getPackageName());
+                                context.sendBroadcast(intent);
+
                                 if (callback != null) callback.onSuccess(null);
                             }
 
@@ -710,6 +719,7 @@ public class SyncManager {
                             if (localReminder != null) {
                                 long localMillis = reminderDb.getReminderUpdatedAt(localReminder.getId());
                                 if (serverMillis > localMillis) {
+                                    boolean reminderTimeChanged = serverReminder.getReminderTime() != localReminder.getTimeMillis();
                                     long localId = reminderDb.insertOrUpdateSyncedReminder(
                                             serverReminder.getId(),
                                             serverReminder.getText(),
@@ -718,14 +728,25 @@ public class SyncManager {
                                             snoozedTime,
                                             serverMillis
                                     );
-                                    Log.d("REMINDER SCHEDULER", "Cancelling reminder: localId=" + localId);
-                                    com.example.reminder.AlarmUtils.cancelReminder(context, (int) localId);
-                                    if (!isExpired && serverReminder.getReminderTime() > System.currentTimeMillis()) {
-                                        Log.d("REMINDER SCHEDULER", "Scheduling reminder:\nlocalId=" + localId + "\nserverId=" + serverReminder.getId() + "\ntime=" + serverReminder.getReminderTime() + "\nsuccess=true");
-                                        com.example.reminder.AlarmUtils.scheduleReminder(context, (int) localId, serverReminder.getText(), serverReminder.getReminderTime());
+                                    // Only cancel+reschedule if the reminder TIME actually changed.
+                                    // If only other fields changed (e.g. updatedAt from a server touch),
+                                    // do NOT disrupt an already-scheduled alarm — that creates race conditions.
+                                    if (reminderTimeChanged) {
+                                        Log.d("REMINDER SCHEDULER", "Reminder time changed, cancelling and rescheduling: localId=" + localId);
+                                        com.example.reminder.AlarmUtils.cancelReminder(context, (int) localId);
+                                        // Guard: only schedule if at least 30 seconds remain to avoid near-fire cancellation race
+                                        if (!isExpired && serverReminder.getReminderTime() > System.currentTimeMillis() + 30000) {
+                                            Log.d("REMINDER SCHEDULER", "Scheduling reminder:\nlocalId=" + localId + "\nserverId=" + serverReminder.getId() + "\ntime=" + serverReminder.getReminderTime() + "\nsuccess=true");
+                                            com.example.reminder.AlarmUtils.scheduleReminder(context, (int) localId, serverReminder.getText(), serverReminder.getReminderTime());
+                                        } else {
+                                            Log.d("REMINDER SCHEDULER", "Skipping reschedule for localId=" + localId + ": isExpired=" + isExpired + " or fire time too near/past.");
+                                        }
+                                    } else {
+                                        Log.d("REMINDER SCHEDULER", "Reminder time unchanged for localId=" + localId + ", not disturbing existing alarm.");
                                     }
                                 }
                             } else {
+                                // New reminder from server — insert and schedule
                                 long localId = reminderDb.insertOrUpdateSyncedReminder(
                                         serverReminder.getId(),
                                         serverReminder.getText(),
@@ -734,8 +755,9 @@ public class SyncManager {
                                         snoozedTime,
                                         serverMillis
                                 );
+                                // Fresh insert: always schedule if in the future (no cancel risk)
                                 if (!isExpired && serverReminder.getReminderTime() > System.currentTimeMillis()) {
-                                    Log.d("REMINDER SCHEDULER", "Scheduling reminder:\nlocalId=" + localId + "\nserverId=" + serverReminder.getId() + "\ntime=" + serverReminder.getReminderTime() + "\nsuccess=true");
+                                    Log.d("REMINDER SCHEDULER", "Scheduling reminder (new):\nlocalId=" + localId + "\nserverId=" + serverReminder.getId() + "\ntime=" + serverReminder.getReminderTime() + "\nsuccess=true");
                                     com.example.reminder.AlarmUtils.scheduleReminder(context, (int) localId, serverReminder.getText(), serverReminder.getReminderTime());
                                 }
                             }

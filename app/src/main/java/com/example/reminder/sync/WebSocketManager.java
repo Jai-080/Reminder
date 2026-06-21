@@ -164,6 +164,7 @@ public class WebSocketManager {
             handler.post(() -> ReminderApplication.enqueueSyncWorker(context));
 
         } else if ("MESSAGE".equals(command)) {
+            Log.d(TAG, "MESSAGE received");
             Log.d(TAG, "STOMP Frame Incoming [MESSAGE]:\n" + frameText);
             int bodyStartIndex = -1;
             for (int i = 1; i < lines.length; i++) {
