@@ -7,6 +7,7 @@ public class PaymentResponse {
     private Boolean completed;
     private Double amount;
     private String recurrence;
+    private String notificationOffsets;
     private String createdAt;
     private String updatedAt;
 
@@ -16,6 +17,7 @@ public class PaymentResponse {
     public Boolean getCompleted() { return completed; }
     public Double getAmount() { return amount; }
     public String getRecurrence() { return recurrence; }
+    public String getNotificationOffsets() { return notificationOffsets; }
     public String getCreatedAt() { return createdAt; }
     public String getUpdatedAt() { return updatedAt; }
 }
