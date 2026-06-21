@@ -6,12 +6,14 @@ public class PaymentRequest {
     private Boolean completed;
     private Long updatedAt;
     private Double amount;
+    private String recurrence;
 
     public PaymentRequest(String name, Long dueDate, Boolean completed) {
         this.name = name;
         this.dueDate = dueDate;
         this.completed = completed;
         this.amount = null;
+        this.recurrence = "MONTHLY";
     }
 
     public PaymentRequest(String name, Long dueDate, Boolean completed, Long updatedAt) {
@@ -20,6 +22,7 @@ public class PaymentRequest {
         this.completed = completed;
         this.updatedAt = updatedAt;
         this.amount = null;
+        this.recurrence = "MONTHLY";
     }
 
     public PaymentRequest(String name, Long dueDate, Boolean completed, Long updatedAt, Double amount) {
@@ -28,6 +31,16 @@ public class PaymentRequest {
         this.completed = completed;
         this.updatedAt = updatedAt;
         this.amount = amount;
+        this.recurrence = "MONTHLY";
+    }
+
+    public PaymentRequest(String name, Long dueDate, Boolean completed, Long updatedAt, Double amount, String recurrence) {
+        this.name = name;
+        this.dueDate = dueDate;
+        this.completed = completed;
+        this.updatedAt = updatedAt;
+        this.amount = amount;
+        this.recurrence = recurrence;
     }
 
     public String getName() { return name; }
@@ -35,4 +48,5 @@ public class PaymentRequest {
     public Boolean getCompleted() { return completed; }
     public Long getUpdatedAt() { return updatedAt; }
     public Double getAmount() { return amount; }
+    public String getRecurrence() { return recurrence; }
 }

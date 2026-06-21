@@ -24,6 +24,7 @@ public class PaymentDatabaseHelper extends SQLiteOpenHelper {
     private static final String COL_UPDATED_AT = "updated_at";
     private static final String COL_SYNC_STATUS = "sync_status";
     private static final String COL_AMOUNT = "amount";
+    private static final String COL_RECURRENCE = "recurrence";
 
     public PaymentDatabaseHelper(Context context) {
         super(context, DB_NAME, null, 3);
@@ -40,7 +41,8 @@ public class PaymentDatabaseHelper extends SQLiteOpenHelper {
                         COL_COMPLETED + " INTEGER NOT NULL DEFAULT 0, " +
                         COL_UPDATED_AT + " BIGINT, " +
                         COL_SYNC_STATUS + " TEXT, " +
-                        COL_AMOUNT + " REAL)"
+                        COL_AMOUNT + " REAL, " +
+                        COL_RECURRENCE + " TEXT DEFAULT 'MONTHLY')"
         );
     }
 
@@ -70,14 +72,21 @@ public class PaymentDatabaseHelper extends SQLiteOpenHelper {
             try {
                 db.execSQL("ALTER TABLE " + TABLE_NAME + " ADD COLUMN " + COL_AMOUNT + " REAL");
             } catch (Exception ignored) {}
+            try {
+                db.execSQL("ALTER TABLE " + TABLE_NAME + " ADD COLUMN " + COL_RECURRENCE + " TEXT DEFAULT 'MONTHLY'");
+            } catch (Exception ignored) {}
         }
     }
 
     public int insertPayment(String name, long dueDate, boolean isCompleted) {
-        return insertPayment(name, dueDate, isCompleted, null);
+        return insertPayment(name, dueDate, isCompleted, null, RecurrenceType.MONTHLY);
     }
 
     public int insertPayment(String name, long dueDate, boolean isCompleted, Double amount) {
+        return insertPayment(name, dueDate, isCompleted, amount, RecurrenceType.MONTHLY);
+    }
+
+    public int insertPayment(String name, long dueDate, boolean isCompleted, Double amount, RecurrenceType recurrence) {
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues values = new ContentValues();
         values.put(COL_NAME, name);
@@ -88,6 +97,7 @@ public class PaymentDatabaseHelper extends SQLiteOpenHelper {
         } else {
             values.putNull(COL_AMOUNT);
         }
+        values.put(COL_RECURRENCE, recurrence != null ? recurrence.name() : RecurrenceType.MONTHLY.name());
         values.put(COL_UPDATED_AT, System.currentTimeMillis());
         values.put(COL_SYNC_STATUS, "PENDING");
 
@@ -120,8 +130,21 @@ public class PaymentDatabaseHelper extends SQLiteOpenHelper {
             if (amountIdx != -1 && !cursor.isNull(amountIdx)) {
                 amount = cursor.getDouble(amountIdx);
             }
+            String recurrenceStr = "MONTHLY";
+            int recurrenceIdx = cursor.getColumnIndex(COL_RECURRENCE);
+            if (recurrenceIdx != -1 && !cursor.isNull(recurrenceIdx)) {
+                recurrenceStr = cursor.getString(recurrenceIdx);
+            }
+            RecurrenceType recurrence = RecurrenceType.MONTHLY;
+            try {
+                if (recurrenceStr != null) {
+                    recurrence = RecurrenceType.valueOf(recurrenceStr.toUpperCase());
+                }
+            } catch (IllegalArgumentException e) {
+                recurrence = RecurrenceType.MONTHLY;
+            }
 
-            list.add(new MonthlyPayment(id, serverId, name, completed, dueDate, syncStatus, amount));
+            list.add(new MonthlyPayment(id, serverId, name, completed, dueDate, syncStatus, amount, recurrence));
         }
 
         cursor.close();
@@ -161,8 +184,21 @@ public class PaymentDatabaseHelper extends SQLiteOpenHelper {
             if (amountIdx != -1 && !cursor.isNull(amountIdx)) {
                 amount = cursor.getDouble(amountIdx);
             }
+            String recurrenceStr = "MONTHLY";
+            int recurrenceIdx = cursor.getColumnIndex(COL_RECURRENCE);
+            if (recurrenceIdx != -1 && !cursor.isNull(recurrenceIdx)) {
+                recurrenceStr = cursor.getString(recurrenceIdx);
+            }
+            RecurrenceType recurrence = RecurrenceType.MONTHLY;
+            try {
+                if (recurrenceStr != null) {
+                    recurrence = RecurrenceType.valueOf(recurrenceStr.toUpperCase());
+                }
+            } catch (IllegalArgumentException e) {
+                recurrence = RecurrenceType.MONTHLY;
+            }
 
-            list.add(new MonthlyPayment(id, serverId, name, completed, dueDate, syncStatus, amount));
+            list.add(new MonthlyPayment(id, serverId, name, completed, dueDate, syncStatus, amount, recurrence));
         }
 
         cursor.close();
@@ -193,10 +229,14 @@ public class PaymentDatabaseHelper extends SQLiteOpenHelper {
     }
 
     public long insertOrUpdateSyncedPayment(long serverId, String name, long dueDate, boolean completed, long updatedAt) {
-        return insertOrUpdateSyncedPayment(serverId, name, dueDate, completed, updatedAt, null);
+        return insertOrUpdateSyncedPayment(serverId, name, dueDate, completed, updatedAt, null, RecurrenceType.MONTHLY);
     }
 
     public long insertOrUpdateSyncedPayment(long serverId, String name, long dueDate, boolean completed, long updatedAt, Double amount) {
+        return insertOrUpdateSyncedPayment(serverId, name, dueDate, completed, updatedAt, amount, RecurrenceType.MONTHLY);
+    }
+
+    public long insertOrUpdateSyncedPayment(long serverId, String name, long dueDate, boolean completed, long updatedAt, Double amount, RecurrenceType recurrence) {
         SQLiteDatabase db = getWritableDatabase();
         ContentValues values = new ContentValues();
         values.put("server_id", serverId);
@@ -210,6 +250,7 @@ public class PaymentDatabaseHelper extends SQLiteOpenHelper {
         } else {
             values.putNull(COL_AMOUNT);
         }
+        values.put(COL_RECURRENCE, recurrence != null ? recurrence.name() : RecurrenceType.MONTHLY.name());
 
         long localId = -1;
         Cursor cursor = db.query(TABLE_NAME, new String[]{"id"}, "server_id = ?", new String[]{String.valueOf(serverId)}, null, null, null);
