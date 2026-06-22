@@ -45,8 +45,7 @@
         android:id="@+id/inputRow"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
+        android:orientation="vertical"
         android:paddingHorizontal="20dp"
         android:paddingTop="20dp"
         android:paddingBottom="12dp"
@@ -54,31 +53,16 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
-        <EditText
-            android:id="@+id/paymentInput"
-            android:layout_width="0dp"
-            android:layout_height="48dp"
-            android:layout_weight="1"
-            android:background="@drawable/rounded_edittext"
-            android:hint="@string/payment_input_hint"
-            android:textColor="@color/colorTextSecondary"
-            android:textColorHint="@color/colorHint"
-            android:textSize="14sp"
-            android:paddingHorizontal="14dp"
-            android:paddingVertical="0dp"
-            android:inputType="text"
-            android:maxLines="1" />
-
-        <Button
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/addPaymentButton"
-            android:layout_width="wrap_content"
-            android:layout_height="48dp"
-            android:layout_marginStart="10dp"
-            android:background="@drawable/rounded_primary_button"
-            android:text="@string/add_payment"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:text="+ Add Payment"
             android:textColor="#FFFFFF"
-            android:textSize="13sp"
-            android:paddingHorizontal="18dp" />
+            android:textSize="16sp"
+            android:textStyle="bold"
+            app:cornerRadius="12dp"
+            app:backgroundTint="@color/accent_purple" />
     </LinearLayout>
 
     <!-- Section label -->

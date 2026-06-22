@@ -132,13 +132,18 @@ public class MainActivity extends AppCompatActivity {
         syncCompletedReceiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
-                Log.d(TAG, "Sync completed broadcast received. Refreshing notes UI.");
+                Log.d(TAG, "SYNC_COMPLETED received");
+                System.out.println("SYNC_COMPLETED received");
                 runOnUiThread(() -> {
                     if (noteDbHelper != null && quickNoteAdapter != null && noteList != null) {
                         noteList.clear();
                         noteList.addAll(noteDbHelper.getAllNotes());
                         quickNoteAdapter.notifyDataSetChanged();
                         QuickNotesWidgetProvider.updateWidget(getApplicationContext());
+                        Log.d(TAG, "UI refresh executed");
+                        System.out.println("UI refresh executed");
+                        Log.d(TAG, "Dataset size after refresh: " + noteList.size());
+                        System.out.println("Dataset size after refresh: " + noteList.size());
                     }
                 });
             }

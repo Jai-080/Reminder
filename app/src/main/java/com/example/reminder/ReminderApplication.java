@@ -91,6 +91,8 @@ public class ReminderApplication extends Application {
                 ExistingWorkPolicy.KEEP,
                 request
         );
+        Log.d(TAG, "SyncWorker enqueued");
+        System.out.println("SyncWorker enqueued");
         Log.d(TAG, "Enqueued unique SyncWorker with network constraints.");
     }
 

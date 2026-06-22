@@ -62,9 +62,55 @@ public class AlarmUtils {
 
     // Centralized method to schedule monthly payment alarm using Paymentalarmreceiver
     public static void schedulePaymentAlarm(Context context, int paymentId, String paymentName, long dueDateMillis) {
-        if (dueDateMillis <= System.currentTimeMillis()) {
+        String offsetsStr = "0";
+        try {
+            PaymentDatabaseHelper dbHelper = new PaymentDatabaseHelper(context);
+            android.database.sqlite.SQLiteDatabase db = dbHelper.getReadableDatabase();
+            android.database.Cursor cursor = db.query("monthly_payments", new String[]{"notification_offsets", "completed"}, "id=?", new String[]{String.valueOf(paymentId)}, null, null, null);
+            if (cursor != null) {
+                if (cursor.moveToFirst()) {
+                    int completedIdx = cursor.getColumnIndex("completed");
+                    if (completedIdx != -1 && cursor.getInt(completedIdx) == 1) {
+                        cursor.close();
+                        db.close();
+                        return; // do not schedule completed payments
+                    }
+                    int colIdx = cursor.getColumnIndex("notification_offsets");
+                    if (colIdx != -1 && !cursor.isNull(colIdx)) {
+                        offsetsStr = cursor.getString(colIdx);
+                    }
+                }
+                cursor.close();
+            }
+            db.close();
+        } catch (Exception e) {
+            android.util.Log.e("AlarmUtils", "Failed to query notification_offsets", e);
+        }
+
+        String[] parts = offsetsStr.split(",");
+        long now = System.currentTimeMillis();
+        long nextAlertTime = -1;
+        int nextOffsetDays = -1;
+
+        for (String part : parts) {
+            try {
+                int days = Integer.parseInt(part.trim());
+                long alertTime = dueDateMillis - ((long) days * 24 * 60 * 60 * 1000);
+                if (alertTime > now) {
+                    if (nextAlertTime == -1 || alertTime < nextAlertTime) {
+                        nextAlertTime = alertTime;
+                        nextOffsetDays = days;
+                    }
+                }
+            } catch (NumberFormatException ignored) {}
+        }
+
+        // If no future alert offset exists, we don't schedule anything.
+        if (nextAlertTime == -1) {
+            android.util.Log.d("AlarmUtils", "No future alerts to schedule for payment id=" + paymentId);
             return;
         }
+
         AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
         if (alarmManager == null) return;
 
@@ -72,6 +118,7 @@ public class AlarmUtils {
         intent.putExtra("payment_id", paymentId);
         intent.putExtra("payment_name", paymentName);
         intent.putExtra("scheduled_time", dueDateMillis);
+        intent.putExtra("offset_days", nextOffsetDays);
 
         PendingIntent pendingIntent = PendingIntent.getBroadcast(
                 context,
@@ -80,8 +127,8 @@ public class AlarmUtils {
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
         );
 
-        android.util.Log.d("AlarmUtils", "Alarm scheduled: reminder id=" + paymentId + ", scheduled trigger time=" + dueDateMillis);
-        alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, dueDateMillis, pendingIntent);
+        android.util.Log.d("AlarmUtils", "Alarm scheduled: payment id=" + paymentId + ", offset=" + nextOffsetDays + "d, scheduled trigger time=" + nextAlertTime);
+        alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, nextAlertTime, pendingIntent);
     }
 
     // ✅ Centralized method to cancel monthly payment alarm using Paymentalarmreceiver
@@ -175,24 +222,21 @@ public class AlarmUtils {
 
     // ✅ Show permanent notification for monthly payments
     public static void showMonthlyPaymentNotification(Context context, int paymentId, String paymentName) {
-        NotificationManager manager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
-        if (manager != null) {
-            try {
-                for (android.service.notification.StatusBarNotification sbn : manager.getActiveNotifications()) {
-                    if (sbn.getId() == paymentId) {
-                        return; // Already active, skip displaying again
-                    }
-                }
-            } catch (Exception e) {
-                // Fallback in case of unexpected errors reading notifications
-            }
-        }
+        showMonthlyPaymentNotification(context, paymentId, paymentName, 0);
+    }
 
+    public static void showMonthlyPaymentNotification(Context context, int paymentId, String paymentName, int offsetDays) {
+        NotificationManager manager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
         createNotificationChannel(context);
 
+        String title = offsetDays == 0 ? "Payment Due Today" : "Payment Due Soon";
+        String contentText = offsetDays == 0 ? 
+                paymentName + " is due today" : 
+                paymentName + " is due in " + offsetDays + " days";
+
         Notification notification = new NotificationCompat.Builder(context, CHANNEL_ID)
-                .setContentTitle("Monthly Payment Due")
-                .setContentText(paymentName + " is due today")
+                .setContentTitle(title)
+                .setContentText(contentText)
                 .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
                 .setOngoing(true) // Permanent notification

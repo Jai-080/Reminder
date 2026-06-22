@@ -5,6 +5,9 @@ public class PaymentResponse {
     private String name;
     private Long dueDate;
     private Boolean completed;
+    private Double amount;
+    private String recurrence;
+    private String notificationOffsets;
     private String createdAt;
     private String updatedAt;
 
@@ -12,6 +15,9 @@ public class PaymentResponse {
     public String getName() { return name; }
     public Long getDueDate() { return dueDate; }
     public Boolean getCompleted() { return completed; }
+    public Double getAmount() { return amount; }
+    public String getRecurrence() { return recurrence; }
+    public String getNotificationOffsets() { return notificationOffsets; }
     public String getCreatedAt() { return createdAt; }
     public String getUpdatedAt() { return updatedAt; }
 }

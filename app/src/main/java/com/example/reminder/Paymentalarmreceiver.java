@@ -14,6 +14,7 @@ public class Paymentalarmreceiver extends BroadcastReceiver {
         if (paymentId == -1 || paymentName == null || paymentName.isEmpty()) return;
 
         long scheduledTime = intent.getLongExtra("scheduled_time", -1L);
+        int offsetDays = intent.getIntExtra("offset_days", 0);
         long actualTime = System.currentTimeMillis();
         android.util.Log.d("Paymentalarmreceiver", "Alarm fired: reminder id=" + paymentId + ", actual fire time=" + actualTime);
         if (scheduledTime != -1L) {
@@ -22,6 +23,11 @@ public class Paymentalarmreceiver extends BroadcastReceiver {
         }
 
         // ✅ Directly show persistent notification to bypass foreground service background limits
-        AlarmUtils.showMonthlyPaymentNotification(context, paymentId, paymentName);
+        AlarmUtils.showMonthlyPaymentNotification(context, paymentId, paymentName, offsetDays);
+
+        // ✅ Reschedule next offset alarm for loop propagation
+        if (scheduledTime != -1L) {
+            AlarmUtils.schedulePaymentAlarm(context, paymentId, paymentName, scheduledTime);
+        }
     }
 }
