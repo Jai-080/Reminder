@@ -29,7 +29,6 @@ public class MonthlyPaymentsActivity extends AppCompatActivity {
     private MonthlyPaymentAdapter adapter;
     private ArrayList<MonthlyPayment> payments;
 
-    private EditText paymentInput;
     private BroadcastReceiver syncCompletedReceiver;
 
     @Override
@@ -38,7 +37,6 @@ public class MonthlyPaymentsActivity extends AppCompatActivity {
         setContentView(R.layout.activity_monthly_payments);
 
         dbHelper = new PaymentDatabaseHelper(this);
-        paymentInput = findViewById(R.id.paymentInput);
         Button addButton = findViewById(R.id.addPaymentButton);
         Button clearAllButton = findViewById(R.id.clearAllBtn);
         RecyclerView recyclerView = findViewById(R.id.paymentRecyclerView);
@@ -50,8 +48,7 @@ public class MonthlyPaymentsActivity extends AppCompatActivity {
         recyclerView.setAdapter(adapter);
 
         addButton.setOnClickListener(v -> {
-            String name = paymentInput.getText().toString().trim();
-            showPaymentCreateDialog(name);
+            showPaymentCreateDialog("");
         });
 
         clearAllButton.setOnClickListener(v -> {
@@ -71,6 +68,8 @@ public class MonthlyPaymentsActivity extends AppCompatActivity {
             @Override
             public void onReceive(Context context, Intent intent) {
                 Log.d("MonthlyPayments", "Sync completed broadcast received. Refreshing payments UI.");
+                Log.d("MonthlyPayments", "UI refresh received");
+                System.out.println("UI refresh received");
                 runOnUiThread(() -> {
                     if (payments != null && dbHelper != null && adapter != null) {
                         payments.clear();
@@ -88,52 +87,21 @@ public class MonthlyPaymentsActivity extends AppCompatActivity {
         androidx.appcompat.app.AlertDialog.Builder builder = new androidx.appcompat.app.AlertDialog.Builder(this);
         builder.setTitle("Add Payment Reminder");
 
-        android.widget.LinearLayout layout = new android.widget.LinearLayout(this);
-        layout.setOrientation(android.widget.LinearLayout.VERTICAL);
-        layout.setPadding(60, 40, 60, 20);
+        android.view.LayoutInflater inflater = getLayoutInflater();
+        android.view.View dialogView = inflater.inflate(R.layout.dialog_create_payment, null);
+        builder.setView(dialogView);
 
-        android.widget.TextView nameLabel = new android.widget.TextView(this);
-        nameLabel.setText("Payment Name");
-        nameLabel.setTextSize(14);
-        nameLabel.setPadding(0, 10, 0, 5);
-        layout.addView(nameLabel);
-
-        final android.widget.EditText nameInput = new android.widget.EditText(this);
+        final com.google.android.material.textfield.TextInputEditText nameInput = dialogView.findViewById(R.id.dialogPaymentNameInput);
         nameInput.setText(initialName);
-        nameInput.setHint("e.g. Netflix");
-        nameInput.setInputType(android.text.InputType.TYPE_CLASS_TEXT);
-        layout.addView(nameInput);
 
-        android.widget.TextView amountLabel = new android.widget.TextView(this);
-        amountLabel.setText("Amount (Optional)");
-        amountLabel.setTextSize(14);
-        amountLabel.setPadding(0, 20, 0, 5);
-        layout.addView(amountLabel);
-
-        final android.widget.EditText amountInput = new android.widget.EditText(this);
-        amountInput.setHint("e.g. 649");
-        amountInput.setInputType(android.text.InputType.TYPE_CLASS_NUMBER | android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL);
-        layout.addView(amountInput);
-
-        android.widget.TextView recurrenceLabel = new android.widget.TextView(this);
-        recurrenceLabel.setText("Recurrence");
-        recurrenceLabel.setTextSize(14);
-        recurrenceLabel.setPadding(0, 20, 0, 5);
-        layout.addView(recurrenceLabel);
-
-        final android.widget.Spinner recurrenceSpinner = new android.widget.Spinner(this);
+        final com.google.android.material.textfield.TextInputEditText amountInput = dialogView.findViewById(R.id.dialogPaymentAmountInput);
+        
+        final android.widget.Spinner recurrenceSpinner = dialogView.findViewById(R.id.dialogRecurrenceSpinner);
         android.widget.ArrayAdapter<String> spinnerAdapter = new android.widget.ArrayAdapter<>(this, android.R.layout.simple_spinner_item, new String[]{"Monthly", "Quarterly", "Yearly"});
         spinnerAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         recurrenceSpinner.setAdapter(spinnerAdapter);
-        layout.addView(recurrenceSpinner);
 
-        android.widget.TextView dateLabel = new android.widget.TextView(this);
-        dateLabel.setText("Due Date");
-        dateLabel.setTextSize(14);
-        dateLabel.setPadding(0, 20, 0, 5);
-        layout.addView(dateLabel);
-
-        final android.widget.Button dateButton = new android.widget.Button(this);
+        final com.google.android.material.button.MaterialButton dateButton = dialogView.findViewById(R.id.dialogDateButton);
         final java.util.Calendar dueCalendar = java.util.Calendar.getInstance();
         dueCalendar.set(java.util.Calendar.HOUR_OF_DAY, 9);
         dueCalendar.set(java.util.Calendar.MINUTE, 0);
@@ -158,9 +126,11 @@ public class MonthlyPaymentsActivity extends AppCompatActivity {
             datePickerDialog.getDatePicker().setMinDate(System.currentTimeMillis() - 1000);
             datePickerDialog.show();
         });
-        layout.addView(dateButton);
 
-        builder.setView(layout);
+        final android.widget.CheckBox checkbox7d = dialogView.findViewById(R.id.checkboxNotify7d);
+        final android.widget.CheckBox checkbox3d = dialogView.findViewById(R.id.checkboxNotify3d);
+        final android.widget.CheckBox checkbox1d = dialogView.findViewById(R.id.checkboxNotify1d);
+        final android.widget.CheckBox checkboxDue = dialogView.findViewById(R.id.checkboxNotifyDue);
 
         builder.setPositiveButton("Save", (dialog, which) -> {
             String name = nameInput.getText().toString().trim();
@@ -189,7 +159,18 @@ public class MonthlyPaymentsActivity extends AppCompatActivity {
             }
 
             long dueDateMillis = dueCalendar.getTimeInMillis();
-            String notificationOffsets = "7,3,1,0";
+
+            // Construct notificationOffsets based on checkboxes
+            java.util.List<String> offsetsList = new java.util.ArrayList<>();
+            if (checkbox7d.isChecked()) offsetsList.add("7");
+            if (checkbox3d.isChecked()) offsetsList.add("3");
+            if (checkbox1d.isChecked()) offsetsList.add("1");
+            if (checkboxDue.isChecked()) offsetsList.add("0");
+
+            String notificationOffsets = "0"; // Default fallback
+            if (!offsetsList.isEmpty()) {
+                notificationOffsets = android.text.TextUtils.join(",", offsetsList);
+            }
 
             int paymentId = dbHelper.insertPayment(name, dueDateMillis, false, amount, recurrence, notificationOffsets);
 
@@ -212,7 +193,6 @@ public class MonthlyPaymentsActivity extends AppCompatActivity {
             payments.addAll(dbHelper.getAllPayments());
             adapter.notifyDataSetChanged();
 
-            paymentInput.setText("");
             Toast.makeText(this, "Payment reminder set for due date!", Toast.LENGTH_SHORT).show();
 
             MonthlyPayment newPayment = new MonthlyPayment(paymentId, null, name, false, dueDateMillis, "PENDING", amount, recurrence, notificationOffsets);

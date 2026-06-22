@@ -169,6 +169,8 @@ public class TimedRemindersActivity extends AppCompatActivity {
             @Override
             public void onReceive(Context context, Intent intent) {
                 Log.d(TAG, "Sync completed broadcast received. Refreshing reminders UI.");
+                Log.d(TAG, "UI refresh received");
+                System.out.println("UI refresh received");
                 runOnUiThread(() -> loadReminders());
             }
         };

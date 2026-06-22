@@ -165,6 +165,7 @@ public class WebSocketManager {
 
         } else if ("MESSAGE".equals(command)) {
             Log.d(TAG, "MESSAGE received");
+            System.out.println("MESSAGE received");
             Log.d(TAG, "STOMP Frame Incoming [MESSAGE]:\n" + frameText);
             int bodyStartIndex = -1;
             for (int i = 1; i < lines.length; i++) {
@@ -182,11 +183,21 @@ public class WebSocketManager {
                 String body = bodyBuilder.toString().replace("\u0000", "").trim();
                 Log.d(TAG, "Received WebSocket SyncEvent payload: " + body);
 
-                // Signal to trigger existing sync engine
-                handler.post(() -> {
-                    Log.d(TAG, "Sync event received. Enqueuing sync worker.");
-                    ReminderApplication.enqueueSyncWorker(context);
-                });
+                // Signal to trigger existing sync engine immediately on a background thread
+                new Thread(() -> {
+                    Log.d(TAG, "Sync event received. Triggering immediate full sync.");
+                    SyncManager.getInstance(context).performFullSync(new SyncManager.SyncCallback<Void>() {
+                        @Override
+                        public void onSuccess(Void result) {
+                            Log.d(TAG, "Immediate sync from MESSAGE succeeded.");
+                        }
+
+                        @Override
+                        public void onError(String error) {
+                            Log.d(TAG, "Immediate sync from MESSAGE failed: " + error);
+                        }
+                    });
+                }).start();
             }
         } else if ("ERROR".equals(command)) {
             Log.e(TAG, "STOMP Frame Incoming [ERROR]:\n" + frameText);

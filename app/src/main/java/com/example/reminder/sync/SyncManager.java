@@ -40,6 +40,8 @@ public class SyncManager {
     private final ReminderDatabaseHelper reminderDb;
     private final PaymentDatabaseHelper paymentDb;
 
+    private final java.util.concurrent.atomic.AtomicBoolean syncRunning = new java.util.concurrent.atomic.AtomicBoolean(false);
+
     public interface SyncCallback<T> {
         void onSuccess(T result);
         void onError(String error);
@@ -503,7 +505,15 @@ public class SyncManager {
             if (callback != null) callback.onError("Not authenticated.");
             return;
         }
+        if (!syncRunning.compareAndSet(false, true)) {
+            Log.d(TAG, "Sync already running.");
+            if (callback != null) {
+                callback.onError("Sync already running.");
+            }
+            return;
+        }
         Log.d(TAG, "performFullSync started");
+        System.out.println("performFullSync started");
         Log.d(TAG, "Starting bidirectional sync...");
 
         syncNotes(new SyncCallback<Void>() {
@@ -517,17 +527,22 @@ public class SyncManager {
                             public void onSuccess(Void result) {
                                 tokenManager.setLastSyncTimestamp(System.currentTimeMillis());
                                 Log.d(TAG, "performFullSync completed");
+                                System.out.println("performFullSync completed");
                                 
                                 // Broadcast sync completed
                                 android.content.Intent intent = new android.content.Intent(ACTION_SYNC_COMPLETED);
                                 intent.setPackage(context.getPackageName());
                                 context.sendBroadcast(intent);
+                                Log.d(TAG, "SYNC_COMPLETED broadcast sent");
+                                System.out.println("SYNC_COMPLETED broadcast sent");
 
+                                syncRunning.set(false);
                                 if (callback != null) callback.onSuccess(null);
                             }
 
                             @Override
                             public void onError(String error) {
+                                syncRunning.set(false);
                                 if (callback != null) callback.onError("Payment sync failed: " + error);
                             }
                         });
@@ -535,6 +550,7 @@ public class SyncManager {
 
                     @Override
                     public void onError(String error) {
+                        syncRunning.set(false);
                         if (callback != null) callback.onError("Reminder sync failed: " + error);
                     }
                 });
@@ -542,6 +558,7 @@ public class SyncManager {
 
             @Override
             public void onError(String error) {
+                syncRunning.set(false);
                 if (callback != null) callback.onError("Notes sync failed: " + error);
             }
         });

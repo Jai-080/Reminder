@@ -133,6 +133,8 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onReceive(Context context, Intent intent) {
                 Log.d(TAG, "Sync completed broadcast received. Refreshing notes UI.");
+                Log.d(TAG, "UI refresh received");
+                System.out.println("UI refresh received");
                 runOnUiThread(() -> {
                     if (noteDbHelper != null && quickNoteAdapter != null && noteList != null) {
                         noteList.clear();
