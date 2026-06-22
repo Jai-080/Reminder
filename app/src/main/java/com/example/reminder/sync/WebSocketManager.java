@@ -61,78 +61,148 @@ public class WebSocketManager {
         executeConnect();
     }
 
-    private synchronized void executeConnect() {
+    private boolean isTokenExpired(String token) {
+        if (token == null || token.isEmpty()) return true;
+        try {
+            String[] parts = token.split("\\.");
+            if (parts.length < 2) return true;
+            String payloadEnc = parts[1];
+            byte[] bytes = android.util.Base64.decode(payloadEnc, android.util.Base64.DEFAULT);
+            String payloadDec = new String(bytes, "UTF-8");
+            org.json.JSONObject json = new org.json.JSONObject(payloadDec);
+            if (json.has("exp")) {
+                long exp = json.getLong("exp");
+                long current = System.currentTimeMillis() / 1000;
+                // Add a 10 seconds buffer
+                return exp <= (current + 10);
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error checking token expiration", e);
+        }
+        return true;
+    }
+
+    private String getValidTokenOrRefresh() {
         String token = tokenManager.getAccessToken();
-        if (token == null) {
-            Log.e(TAG, "Cannot connect: accessToken is null");
-            isConnecting = false;
-            return;
+        if (token == null) return null;
+
+        if (isTokenExpired(token)) {
+            Log.d(TAG, "Access token is expired or close to expiration. Attempting refresh...");
+            String refreshToken = tokenManager.getRefreshToken();
+            if (refreshToken == null) {
+                Log.w(TAG, "No refresh token available.");
+                return null;
+            }
+
+            try {
+                com.example.reminder.network.AuthApi authApi = com.example.reminder.network.ApiClient.getAuthServiceNoAuth(context);
+                retrofit2.Response<com.example.reminder.network.AuthResponse> response = authApi.refresh(
+                        new com.example.reminder.network.RefreshTokenRequest(refreshToken)
+                ).execute();
+
+                if (response.isSuccessful() && response.body() != null) {
+                    com.example.reminder.network.AuthResponse body = response.body();
+                    tokenManager.saveSession(
+                            body.getAccessToken(),
+                            body.getRefreshToken(),
+                            body.getUserId(),
+                            body.getUsername()
+                    );
+                    Log.d(TAG, "Token refresh succeeded during WebSocket pre-connect.");
+                    return body.getAccessToken();
+                } else {
+                    Log.e(TAG, "Token refresh failed with code: " + response.code() + " during WebSocket pre-connect.");
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "Exception during token refresh for WebSocket connect", e);
+            }
         }
+        return tokenManager.getAccessToken();
+    }
 
-        // Format WebSocket URL from Base URL
-        String baseUrl = tokenManager.getBaseUrl();
-        String wsUrl = baseUrl.replace("http://", "ws://").replace("https://", "wss://");
-        if (!wsUrl.endsWith("/")) {
-            wsUrl += "/";
-        }
-        wsUrl += "ws?token=" + token;
-
-        Log.d(TAG, "Connecting to WebSocket at: " + wsUrl);
-
-        OkHttpClient client = new OkHttpClient.Builder()
-                .readTimeout(0, TimeUnit.MILLISECONDS)
-                .build();
-
-        Request request = new Request.Builder()
-                .url(wsUrl)
-                .build();
-
-        webSocket = client.newWebSocket(request, new WebSocketListener() {
-            @Override
-            public void onOpen(WebSocket ws, Response response) {
-                Log.d(TAG, "WebSocket connected");
-                System.out.println("WebSocket connected");
-                String connectFrame = "CONNECT\n" +
-                        "accept-version:1.1,1.2\n" +
-                        "heart-beat:0,0\n" +
-                        "Authorization:Bearer " + token + "\n" +
-                        "\n" +
-                        "\u0000";
-                Log.d(TAG, "STOMP Frame Outgoing [CONNECT]:\n" + connectFrame);
-                ws.send(connectFrame);
-            }
-
-            @Override
-            public void onMessage(WebSocket ws, String text) {
-                handleStompFrame(text);
-            }
-
-            @Override
-            public void onClosing(WebSocket ws, int code, String reason) {
-                Log.d(TAG, "WebSocket closing: " + reason);
-                ws.close(1000, null);
-            }
-
-            @Override
-            public void onClosed(WebSocket ws, int code, String reason) {
-                Log.d(TAG, "WebSocket closed: " + reason);
+    private synchronized void executeConnect() {
+        new Thread(() -> {
+            String token = getValidTokenOrRefresh();
+            if (token == null) {
+                Log.e(TAG, "Cannot connect: valid token is null");
                 synchronized (WebSocketManager.this) {
-                    isConnected = false;
                     isConnecting = false;
                 }
-                triggerReconnectIfNeeded();
+                return;
             }
 
-            @Override
-            public void onFailure(WebSocket ws, Throwable t, Response response) {
-                Log.e(TAG, "WebSocket failure: " + t.getMessage(), t);
-                synchronized (WebSocketManager.this) {
-                    isConnected = false;
-                    isConnecting = false;
-                }
-                triggerReconnectIfNeeded();
+            // Format WebSocket URL from Base URL
+            String baseUrl = tokenManager.getBaseUrl();
+            String wsUrl = baseUrl.replace("http://", "ws://").replace("https://", "wss://");
+            if (!wsUrl.endsWith("/")) {
+                wsUrl += "/";
             }
-        });
+            wsUrl += "ws?token=" + token;
+
+            Log.d(TAG, "Connecting to WebSocket at: " + wsUrl);
+
+            OkHttpClient client = new OkHttpClient.Builder()
+                    .readTimeout(0, TimeUnit.MILLISECONDS)
+                    .build();
+
+            Request request = new Request.Builder()
+                    .url(wsUrl)
+                    .build();
+
+            synchronized (WebSocketManager.this) {
+                if (!userWantsConnection) {
+                    isConnecting = false;
+                    return;
+                }
+
+                webSocket = client.newWebSocket(request, new WebSocketListener() {
+                    @Override
+                    public void onOpen(WebSocket ws, Response response) {
+                        Log.d(TAG, "WebSocket connected");
+                        System.out.println("WebSocket connected");
+                        String connectFrame = "CONNECT\n" +
+                                "accept-version:1.1,1.2\n" +
+                                "heart-beat:0,0\n" +
+                                "Authorization:Bearer " + token + "\n" +
+                                "\n" +
+                                "\u0000";
+                        Log.d(TAG, "STOMP Frame Outgoing [CONNECT]:\n" + connectFrame);
+                        ws.send(connectFrame);
+                    }
+
+                    @Override
+                    public void onMessage(WebSocket ws, String text) {
+                        handleStompFrame(text);
+                    }
+
+                    @Override
+                    public void onClosing(WebSocket ws, int code, String reason) {
+                        Log.d(TAG, "WebSocket closing: " + reason);
+                        ws.close(1000, null);
+                    }
+
+                    @Override
+                    public void onClosed(WebSocket ws, int code, String reason) {
+                        Log.d(TAG, "WebSocket closed: " + reason);
+                        synchronized (WebSocketManager.this) {
+                            isConnected = false;
+                            isConnecting = false;
+                        }
+                        triggerReconnectIfNeeded();
+                    }
+
+                    @Override
+                    public void onFailure(WebSocket ws, Throwable t, Response response) {
+                        Log.e(TAG, "WebSocket failure: " + t.getMessage(), t);
+                        synchronized (WebSocketManager.this) {
+                            isConnected = false;
+                            isConnecting = false;
+                        }
+                        triggerReconnectIfNeeded();
+                    }
+                });
+            }
+        }).start();
     }
 
     private synchronized void handleStompFrame(String frameText) {
