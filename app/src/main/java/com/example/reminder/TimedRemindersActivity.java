@@ -80,6 +80,18 @@ public class TimedRemindersActivity extends AppCompatActivity {
 
         loadReminders();
 
+        Button clearAllBtn = findViewById(R.id.clearAllBtn);
+        clearAllBtn.setOnClickListener(v -> {
+            List<Reminder> allReminders = dbHelper.getAllReminders();
+            for (Reminder r : allReminders) {
+                AlarmUtils.cancelReminder(this, r.getId());
+                dbHelper.softDeleteReminder(r.getId());
+            }
+            loadReminders();
+            Toast.makeText(this, "All reminders cleared", Toast.LENGTH_SHORT).show();
+            ReminderApplication.enqueueSyncWorker(this);
+        });
+
         btnSetReminderFull.setOnClickListener(v -> {
             hideKeyboard();
             String reminderText = editTextReminder.getText().toString().trim();
@@ -168,10 +180,16 @@ public class TimedRemindersActivity extends AppCompatActivity {
         syncCompletedReceiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
-                Log.d(TAG, "Sync completed broadcast received. Refreshing reminders UI.");
-                Log.d(TAG, "UI refresh received");
-                System.out.println("UI refresh received");
-                runOnUiThread(() -> loadReminders());
+                Log.d(TAG, "SYNC_COMPLETED received");
+                System.out.println("SYNC_COMPLETED received");
+                runOnUiThread(() -> {
+                    loadReminders();
+                    Log.d(TAG, "UI refresh executed");
+                    System.out.println("UI refresh executed");
+                    int datasetSize = pendingReminders.size() + expiredReminders.size();
+                    Log.d(TAG, "Dataset size after refresh: " + datasetSize);
+                    System.out.println("Dataset size after refresh: " + datasetSize);
+                });
             }
         };
         registerReceiver(syncCompletedReceiver, new IntentFilter(SyncManager.ACTION_SYNC_COMPLETED),

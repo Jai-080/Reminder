@@ -67,14 +67,17 @@ public class MonthlyPaymentsActivity extends AppCompatActivity {
         syncCompletedReceiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
-                Log.d("MonthlyPayments", "Sync completed broadcast received. Refreshing payments UI.");
-                Log.d("MonthlyPayments", "UI refresh received");
-                System.out.println("UI refresh received");
+                Log.d("MonthlyPayments", "SYNC_COMPLETED received");
+                System.out.println("SYNC_COMPLETED received");
                 runOnUiThread(() -> {
                     if (payments != null && dbHelper != null && adapter != null) {
                         payments.clear();
                         payments.addAll(dbHelper.getAllPayments());
                         adapter.notifyDataSetChanged();
+                        Log.d("MonthlyPayments", "UI refresh executed");
+                        System.out.println("UI refresh executed");
+                        Log.d("MonthlyPayments", "Dataset size after refresh: " + payments.size());
+                        System.out.println("Dataset size after refresh: " + payments.size());
                     }
                 });
             }

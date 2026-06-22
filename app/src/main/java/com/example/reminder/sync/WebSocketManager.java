@@ -90,6 +90,8 @@ public class WebSocketManager {
         webSocket = client.newWebSocket(request, new WebSocketListener() {
             @Override
             public void onOpen(WebSocket ws, Response response) {
+                Log.d(TAG, "WebSocket connected");
+                System.out.println("WebSocket connected");
                 String connectFrame = "CONNECT\n" +
                         "accept-version:1.1,1.2\n" +
                         "heart-beat:0,0\n" +
@@ -143,6 +145,8 @@ public class WebSocketManager {
         Log.d(TAG, "Received STOMP command: " + command);
 
         if ("CONNECTED".equals(command)) {
+            Log.d(TAG, "STOMP CONNECTED");
+            System.out.println("STOMP CONNECTED");
             Log.d(TAG, "STOMP Frame Incoming [CONNECTED]:\n" + frameText);
             synchronized (this) {
                 isConnected = true;
@@ -154,6 +158,8 @@ public class WebSocketManager {
                     "destination:/user/topic/sync\n" +
                     "\n" +
                     "\u0000";
+            Log.d(TAG, "SUBSCRIBE sent");
+            System.out.println("SUBSCRIBE sent");
             Log.d(TAG, "STOMP Frame Outgoing [SUBSCRIBE]:\n" + subscribeFrame);
             if (webSocket != null) {
                 webSocket.send(subscribeFrame);
@@ -166,6 +172,10 @@ public class WebSocketManager {
         } else if ("MESSAGE".equals(command)) {
             Log.d(TAG, "MESSAGE received");
             System.out.println("MESSAGE received");
+            Log.d(TAG, "MESSAGE received on thread: " + Thread.currentThread().getName());
+            System.out.println("MESSAGE received on thread: " + Thread.currentThread().getName());
+            Log.d(TAG, "MESSAGE handler entered");
+            System.out.println("MESSAGE handler entered");
             Log.d(TAG, "STOMP Frame Incoming [MESSAGE]:\n" + frameText);
             int bodyStartIndex = -1;
             for (int i = 1; i < lines.length; i++) {
@@ -181,22 +191,33 @@ public class WebSocketManager {
                     bodyBuilder.append(lines[i]);
                 }
                 String body = bodyBuilder.toString().replace("\u0000", "").trim();
-                Log.d(TAG, "Received WebSocket SyncEvent payload: " + body);
+                Log.d(TAG, "SyncEvent payload: " + body);
+                System.out.println("SyncEvent payload: " + body);
 
                 // Signal to trigger existing sync engine immediately on a background thread
                 new Thread(() -> {
-                    Log.d(TAG, "Sync event received. Triggering immediate full sync.");
-                    SyncManager.getInstance(context).performFullSync(new SyncManager.SyncCallback<Void>() {
-                        @Override
-                        public void onSuccess(Void result) {
-                            Log.d(TAG, "Immediate sync from MESSAGE succeeded.");
-                        }
+                    Log.d(TAG, "Starting sync on thread: " + Thread.currentThread().getName());
+                    System.out.println("Starting sync on thread: " + Thread.currentThread().getName());
+                    if (SyncManager.getInstance(context).isSyncRunning()) {
+                        Log.d(TAG, "Immediate sync skipped because syncRunning=true");
+                        System.out.println("Immediate sync skipped because syncRunning=true");
+                    } else {
+                        Log.d(TAG, "About to execute immediate sync");
+                        System.out.println("About to execute immediate sync");
+                        SyncManager.getInstance(context).performFullSync(new SyncManager.SyncCallback<Void>() {
+                            @Override
+                            public void onSuccess(Void result) {
+                                Log.d(TAG, "Immediate sync finished");
+                                System.out.println("Immediate sync finished");
+                            }
 
-                        @Override
-                        public void onError(String error) {
-                            Log.d(TAG, "Immediate sync from MESSAGE failed: " + error);
-                        }
-                    });
+                            @Override
+                            public void onError(String error) {
+                                Log.d(TAG, "Immediate sync finished");
+                                System.out.println("Immediate sync finished");
+                            }
+                        });
+                    }
                 }).start();
             }
         } else if ("ERROR".equals(command)) {
