@@ -5,7 +5,12 @@
     <color name="colorTextSecondary">@color/dark_text_secondary</color>
     <color name="colorTextMuted">@color/dark_text_muted</color>
     <color name="colorDivider">@color/dark_divider</color>
-    <color name="colorHint">#444444</color>
+    <color name="colorHint">#75717F</color>
     <color name="colorSurface">@color/dark_surface</color>
     <color name="colorSurfaceBorder">@color/dark_surface_border</color>
+    <color name="colorSurfaceVariant">@color/dark_surface_variant</color>
+    <color name="colorAccent">@color/dark_primary</color>
+    <color name="colorReschedule">@color/dark_reschedule</color>
+    <color name="colorButtonGradientStart">@color/dark_button_gradient_start</color>
+    <color name="colorButtonGradientEnd">@color/dark_button_gradient_end</color>
 </resources>

@@ -1,15 +1,55 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Theme-aware (light mode values) -->
+    <!-- Theme-aware redirects (pointing to light/dark specific colors) -->
     <color name="colorBackground">@color/light_background</color>
     <color name="colorTextPrimary">@color/light_text_primary</color>
     <color name="colorTextSecondary">@color/light_text_secondary</color>
     <color name="colorTextMuted">@color/light_text_muted</color>
     <color name="colorDivider">@color/light_divider</color>
-    <color name="colorHint">#AAAAAA</color>
+    <color name="colorHint">#9A97A8</color>
     <color name="colorSurface">@color/light_surface</color>
     <color name="colorSurfaceBorder">@color/light_surface_border</color>
-    <!-- Brand -->
+    <color name="colorSurfaceVariant">@color/light_surface_variant</color>
+    <color name="colorAccent">@color/light_primary</color>
+    <color name="colorExpired">#C65A28</color>
+    <color name="colorDelete">#C4684D</color>
+    <color name="colorReschedule">@color/light_reschedule</color>
+    <color name="colorButtonGradientStart">@color/light_button_gradient_start</color>
+    <color name="colorButtonGradientEnd">@color/light_button_gradient_end</color>
+
+    <!-- Legacy / Redirect mappings for existing references -->
+    <color name="accent_purple">@color/colorAccent</color>
+    <color name="accent_red">@color/colorDelete</color>
+
+    <!-- Light theme values -->
+    <color name="light_background">#FAFAFC</color>
+    <color name="light_surface">#FFFFFF</color>
+    <color name="light_surface_variant">#F4F1FF</color>
+    <color name="light_surface_border">#E8E6F5</color>
+    <color name="light_divider">#E8E6F5</color>
+    <color name="light_text_primary">#1D1B20</color>
+    <color name="light_text_secondary">#49454F</color>
+    <color name="light_text_muted">#7C73E6</color>
+    <color name="light_primary">#7B6FEA</color>
+    <color name="light_reschedule">#8D80FF</color>
+    <color name="light_button_gradient_start">#7B6FEA</color>
+    <color name="light_button_gradient_end">#7B6FEA</color>
+
+    <!-- Dark theme values -->
+    <color name="dark_background">#111113</color>
+    <color name="dark_surface">#1B1B21</color>
+    <color name="dark_surface_variant">#2A2831</color>
+    <color name="dark_surface_border">#343240</color>
+    <color name="dark_divider">#343240</color>
+    <color name="dark_text_primary">#FFFFFF</color>
+    <color name="dark_text_secondary">#C6C2D3</color>
+    <color name="dark_text_muted">#9D8EFF</color>
+    <color name="dark_primary">#8B7DFF</color>
+    <color name="dark_reschedule">#9D8EFF</color>
+    <color name="dark_button_gradient_start">#7E72F5</color>
+    <color name="dark_button_gradient_end">#9B86FF</color>
+
+    <!-- Legacy / Android defaults -->
     <color name="purple_200">#FFBB86FC</color>
     <color name="purple_500">#FF6200EE</color>
     <color name="purple_700">#FF3700B3</color>
@@ -17,30 +57,4 @@
     <color name="teal_700">#FF018786</color>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
-
-    <!-- App accent -->
-    <color name="accent_purple">#7F77DD</color>
-    <color name="accent_red">#993C1D</color>
-
-    <!-- Dark theme -->
-    <color name="dark_background">#0F0F0F</color>
-    <color name="dark_surface">#1A1A1A</color>
-    <color name="dark_surface_border">#252525</color>
-    <color name="dark_text_primary">#F0F0F0</color>
-    <color name="dark_text_secondary">#CCCCCC</color>
-    <color name="dark_text_muted">#8A8A8A</color>
-    <color name="dark_input_bg">#1A1A1A</color>
-    <color name="dark_input_border">#2A2A2A</color>
-    <color name="dark_divider">#1F1F1F</color>
-
-    <!-- Light theme -->
-    <color name="light_background">#F5F5F5</color>
-    <color name="light_surface">#FFFFFF</color>
-    <color name="light_surface_border">#E0E0E0</color>
-    <color name="light_text_primary">#111111</color>
-    <color name="light_text_secondary">#333333</color>
-    <color name="light_text_muted">#999999</color>
-    <color name="light_input_bg">#FFFFFF</color>
-    <color name="light_input_border">#DDDDDD</color>
-    <color name="light_divider">#E8E8E8</color>
 </resources>

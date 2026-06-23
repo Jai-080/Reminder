@@ -42,7 +42,7 @@
             android:layout_height="32dp"
             android:src="@android:drawable/ic_menu_delete"
             android:padding="6dp"
-            app:tint="@color/accent_red"
+            app:tint="@color/colorDelete"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:contentDescription="Delete Note"
             android:layout_marginStart="8dp"
