@@ -26,7 +26,7 @@
     <color name="dark_surface_border">#252525</color>
     <color name="dark_text_primary">#F0F0F0</color>
     <color name="dark_text_secondary">#CCCCCC</color>
-    <color name="dark_text_muted">#555555</color>
+    <color name="dark_text_muted">#8A8A8A</color>
     <color name="dark_input_bg">#1A1A1A</color>
     <color name="dark_input_border">#2A2A2A</color>
     <color name="dark_divider">#1F1F1F</color>
