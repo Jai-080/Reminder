@@ -8,13 +8,13 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.reminder.sync.SyncManager;
 import java.util.ArrayList;
-
 import java.util.Calendar;
 
 public class SnoozeOptionsActivity extends AppCompatActivity {
@@ -40,17 +40,63 @@ public class SnoozeOptionsActivity extends AppCompatActivity {
             return;
         }
 
-        // ✅ Changed from Button to View since layout uses LinearLayout now
-        View btn1Min = findViewById(R.id.btn_snooze_1_min);
-        View btn5Min = findViewById(R.id.btn_snooze_5_min);
-        View btn10Min = findViewById(R.id.btn_snooze_10_min);
+        TextView tvReminderText = findViewById(R.id.tv_reminder_text);
+        tvReminderText.setText(reminderText);
 
-        btn1Min.setOnClickListener(v -> snoozeReminder(1));
-        btn5Min.setOnClickListener(v -> snoozeReminder(5));
-        btn10Min.setOnClickListener(v -> snoozeReminder(10));
+        View btnBack = findViewById(R.id.btnBack);
+        if (btnBack != null) {
+            btnBack.setOnClickListener(v -> finish());
+        }
+
+        View btn10Min = findViewById(R.id.btn_snooze_10_min);
+        View btn20Min = findViewById(R.id.btn_snooze_20_min);
+        View btn30Min = findViewById(R.id.btn_snooze_30_min);
+        View btn1Hour = findViewById(R.id.btn_snooze_1_hour);
+        View btnCustom = findViewById(R.id.btn_reschedule_custom);
+
+        btn10Min.setOnClickListener(v -> rescheduleReminder(10));
+        btn20Min.setOnClickListener(v -> rescheduleReminder(20));
+        btn30Min.setOnClickListener(v -> rescheduleReminder(30));
+        btn1Hour.setOnClickListener(v -> rescheduleReminder(60));
+        btnCustom.setOnClickListener(v -> showCustomRescheduleDialog());
     }
 
-    private void snoozeReminder(int minutes) {
+    private void rescheduleReminder(int minutes) {
+        long targetTimeMillis = Calendar.getInstance().getTimeInMillis() + minutes * 60 * 1000L;
+        performReschedule(targetTimeMillis, "Rescheduled for " + minutes + " min");
+    }
+
+    private void showCustomRescheduleDialog() {
+        Calendar now = Calendar.getInstance();
+        final Calendar selectedDateTime = Calendar.getInstance();
+
+        new android.app.DatePickerDialog(this, (view, year, month, dayOfMonth) -> {
+            selectedDateTime.set(Calendar.YEAR, year);
+            selectedDateTime.set(Calendar.MONTH, month);
+            selectedDateTime.set(Calendar.DAY_OF_MONTH, dayOfMonth);
+
+            int hour = now.get(Calendar.HOUR_OF_DAY);
+            int minute = now.get(Calendar.MINUTE);
+
+            new CustomTimePickerDialog(this, R.style.TimePickerTheme, (timeView, h, m) -> {
+                selectedDateTime.set(Calendar.HOUR_OF_DAY, h);
+                selectedDateTime.set(Calendar.MINUTE, m);
+                selectedDateTime.set(Calendar.SECOND, 0);
+                selectedDateTime.set(Calendar.MILLISECOND, 0);
+
+                long triggerTime = selectedDateTime.getTimeInMillis();
+                if (triggerTime <= System.currentTimeMillis()) {
+                    Toast.makeText(this, "Please choose a future time", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
+                performReschedule(triggerTime, "Rescheduled successfully");
+            }, hour, minute, true).show();
+
+        }, now.get(Calendar.YEAR), now.get(Calendar.MONTH), now.get(Calendar.DAY_OF_MONTH)).show();
+    }
+
+    private void performReschedule(long targetTimeMillis, String successMessage) {
         // Cancel old notification instantly
         NotificationManager notificationManager =
                 (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
@@ -58,13 +104,11 @@ public class SnoozeOptionsActivity extends AppCompatActivity {
             notificationManager.cancel(reminderId);
         }
 
-        // Calculate new time
-        long snoozeTimeMillis = Calendar.getInstance().getTimeInMillis() + minutes * 60 * 1000L;
-
         // Create intent for the reminder
         Intent intent = new Intent(this, ReminderReceiver.class);
         intent.putExtra("reminder_id", reminderId);
         intent.putExtra("reminder_text", reminderText);
+        intent.putExtra("scheduled_time", targetTimeMillis);
 
         PendingIntent pendingIntent = PendingIntent.getBroadcast(
                 this,
@@ -78,44 +122,44 @@ public class SnoozeOptionsActivity extends AppCompatActivity {
         if (alarmManager != null) {
             alarmManager.setExactAndAllowWhileIdle(
                     AlarmManager.RTC_WAKEUP,
-                    snoozeTimeMillis,
+                    targetTimeMillis,
                     pendingIntent
             );
-            Toast.makeText(this, "Snoozed for " + minutes + " min", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, successMessage, Toast.LENGTH_SHORT).show();
         } else {
             Log.e(TAG, "AlarmManager is null");
-            Toast.makeText(this, "Failed to snooze reminder", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Failed to reschedule reminder", Toast.LENGTH_SHORT).show();
         }
 
-        // Update local DB status and sync
+        // Update local DB status and sync (reusing the existing snoozeReminder workflow)
         ReminderDatabaseHelper dbHelper = new ReminderDatabaseHelper(this);
-        dbHelper.snoozeReminder(reminderId, snoozeTimeMillis);
+        dbHelper.snoozeReminder(reminderId, targetTimeMillis);
 
         ArrayList<Reminder> allReminders = dbHelper.getAllReminders();
-        Reminder snoozed = null;
+        Reminder rescheduled = null;
         for (Reminder r : allReminders) {
             if (r.getId() == reminderId) {
-                snoozed = r;
+                rescheduled = r;
                 break;
             }
         }
-        if (snoozed != null) {
+        if (rescheduled != null) {
             SyncManager.getInstance(getApplicationContext()).uploadReminder(
-                    snoozed.getId(),
-                    snoozed.getText(),
-                    snoozeTimeMillis,
+                    rescheduled.getId(),
+                    rescheduled.getText(),
+                    targetTimeMillis,
                     false,
-                    snoozeTimeMillis,
-                    snoozed.getServerId(),
+                    targetTimeMillis,
+                    rescheduled.getServerId(),
                     new SyncManager.SyncCallback<Long>() {
                         @Override
                         public void onSuccess(Long result) {
-                            Log.d(TAG, "Snooze sync succeeded");
+                            Log.d(TAG, "Reschedule sync succeeded");
                         }
 
                         @Override
                         public void onError(String error) {
-                            Log.e(TAG, "Snooze sync failed: " + error);
+                            Log.e(TAG, "Reschedule sync failed: " + error);
                         }
                     }
             );

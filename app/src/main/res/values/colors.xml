@@ -7,6 +7,8 @@
     <color name="colorTextMuted">@color/light_text_muted</color>
     <color name="colorDivider">@color/light_divider</color>
     <color name="colorHint">#AAAAAA</color>
+    <color name="colorSurface">@color/light_surface</color>
+    <color name="colorSurfaceBorder">@color/light_surface_border</color>
     <!-- Brand -->
     <color name="purple_200">#FFBB86FC</color>
     <color name="purple_500">#FF6200EE</color>

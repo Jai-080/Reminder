@@ -43,7 +43,7 @@ public class ExpiredRemindersActivity extends AppCompatActivity {
                 Toast.makeText(this, "No expired reminders left", Toast.LENGTH_SHORT).show();
                 finish(); // Optionally close the activity when all items are deleted
             }
-        }, false); // <-- Added this parameter to indicate expired list
+        }, true); // <-- Added this parameter to indicate expired list
 
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         recyclerView.setAdapter(adapter);

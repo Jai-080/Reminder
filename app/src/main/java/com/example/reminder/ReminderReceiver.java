@@ -84,7 +84,6 @@ public class ReminderReceiver extends BroadcastReceiver {
                 );
                 notificationManager.createNotificationChannel(channel);
 
-                // 6️⃣ Build notification
                 NotificationCompat.Builder builder = new NotificationCompat.Builder(context, channelId)
                         .setSmallIcon(android.R.drawable.ic_popup_reminder)
                         .setContentTitle("Reminder: " + title)
@@ -92,8 +91,7 @@ public class ReminderReceiver extends BroadcastReceiver {
                         .setContentIntent(activityPendingIntent)
                         .setAutoCancel(true)
                         .setPriority(NotificationCompat.PRIORITY_HIGH)
-                        .addAction(android.R.drawable.ic_menu_recent_history, "Snooze", snoozePendingIntent);
-
+                        .addAction(android.R.drawable.ic_menu_recent_history, "Reschedule", snoozePendingIntent);
                 android.util.Log.d("ReminderReceiver", "Notification built for reminder id=" + reminderId);
 
                 // 7️⃣ Show notification

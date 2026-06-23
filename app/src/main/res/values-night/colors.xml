@@ -6,4 +6,6 @@
     <color name="colorTextMuted">@color/dark_text_muted</color>
     <color name="colorDivider">@color/dark_divider</color>
     <color name="colorHint">#444444</color>
+    <color name="colorSurface">@color/dark_surface</color>
+    <color name="colorSurfaceBorder">@color/dark_surface_border</color>
 </resources>

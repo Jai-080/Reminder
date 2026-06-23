@@ -119,7 +119,7 @@ public class TimedRemindersActivity extends AppCompatActivity {
                 int minute = now.get(Calendar.MINUTE);
 
                 // ✅ Modern spinner style instead of old analog clock
-                new TimePickerDialog(this, R.style.TimePickerTheme, (timeView, h, m) -> {
+                new CustomTimePickerDialog(this, R.style.TimePickerTheme, (timeView, h, m) -> {
                     selectedDateTime.set(Calendar.HOUR_OF_DAY, h);
                     selectedDateTime.set(Calendar.MINUTE, m);
                     selectedDateTime.set(Calendar.SECOND, 0);
