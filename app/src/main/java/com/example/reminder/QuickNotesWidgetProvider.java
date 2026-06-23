@@ -40,13 +40,72 @@ public class QuickNotesWidgetProvider extends AppWidgetProvider {
                 context, 0, mainIntent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
         views.setOnClickPendingIntent(R.id.widget_container, pendingIntent);
 
-        // Set up the click template for individual items
-        Intent clickIntentTemplate = new Intent(context, MainActivity.class);
-        PendingIntent clickPendingIntentTemplate = PendingIntent.getActivity(
-                context, 0, clickIntentTemplate, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
-        views.setPendingIntentTemplate(R.id.widget_list, clickPendingIntentTemplate);
+        // Set up the click template for individual items (Broadcast template)
+        Intent clickIntent = new Intent(context, QuickNotesWidgetProvider.class);
+        clickIntent.setAction(ACTION_WIDGET_CLICK);
+        PendingIntent clickPendingIntent = PendingIntent.getBroadcast(
+                context, 0, clickIntent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_MUTABLE);
+        views.setPendingIntentTemplate(R.id.widget_list, clickPendingIntent);
 
         appWidgetManager.updateAppWidget(appWidgetId, views);
+    }
+
+    public static final String ACTION_WIDGET_CLICK = "com.example.reminder.ACTION_WIDGET_CLICK";
+
+    @Override
+    public void onReceive(Context context, Intent intent) {
+        super.onReceive(context, intent);
+        if (intent != null && ACTION_WIDGET_CLICK.equals(intent.getAction())) {
+            int noteId = intent.getIntExtra("note_id", -1);
+            boolean openApp = intent.getBooleanExtra("open_app", false);
+
+            if (openApp || noteId == -1) {
+                Intent mainIntent = new Intent(context, MainActivity.class);
+                mainIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                context.startActivity(mainIntent);
+            } else {
+                String text = intent.getStringExtra("note_text");
+                int position = intent.getIntExtra("note_position", 0);
+                long serverId = intent.getLongExtra("note_server_id", -1L);
+
+                QuickNoteDatabaseHelper dbHelper = new QuickNoteDatabaseHelper(context);
+                java.util.ArrayList<QuickNote> allNotes = dbHelper.getAllNotes();
+                boolean targetCompletedState = true;
+                for (QuickNote n : allNotes) {
+                    if (n.getId() == noteId) {
+                        targetCompletedState = !n.isCompleted();
+                        break;
+                    }
+                }
+
+                dbHelper.updateNote(noteId, text, targetCompletedState);
+                dbHelper.close();
+
+                final boolean finalCompletedState = targetCompletedState;
+                Long sId = serverId == -1L ? null : serverId;
+                com.example.reminder.sync.SyncManager.getInstance(context).uploadNote(
+                        noteId, text, finalCompletedState, position, sId, new com.example.reminder.sync.SyncManager.SyncCallback<Long>() {
+                            @Override
+                            public void onSuccess(Long result) {
+                                android.util.Log.d("WidgetProvider", "Widget note toggle sync succeeded: new state=" + finalCompletedState);
+                            }
+
+                            @Override
+                            public void onError(String error) {
+                                android.util.Log.e("WidgetProvider", "Widget note toggle sync failed: " + error);
+                            }
+                        }
+                );
+
+                // Broadcast sync completed to refresh MainActivity UI in case it is open
+                android.content.Intent syncIntent = new android.content.Intent(com.example.reminder.sync.SyncManager.ACTION_SYNC_COMPLETED);
+                syncIntent.setPackage(context.getPackageName());
+                context.sendBroadcast(syncIntent);
+
+                // Refresh widget list
+                updateWidget(context);
+            }
+        }
     }
 
     // Call this method to update the widget externally (after add/edit/delete)

@@ -74,14 +74,34 @@ public class QuickNoteAdapter extends RecyclerView.Adapter<QuickNoteAdapter.Note
                 }
             });
 
-            // Update item view state
-            holder.noteCheckBox.setChecked(note.isCompleted());
-            if (note.isCompleted()) {
-                holder.noteText.setPaintFlags(holder.noteText.getPaintFlags() | android.graphics.Paint.STRIKE_THRU_TEXT_FLAG);
-                holder.noteText.setTextColor(context.getResources().getColor(R.color.colorTextMuted, context.getTheme()));
-            } else {
-                holder.noteText.setPaintFlags(holder.noteText.getPaintFlags() & (~android.graphics.Paint.STRIKE_THRU_TEXT_FLAG));
-                holder.noteText.setTextColor(context.getResources().getColor(R.color.colorTextPrimary, context.getTheme()));
+            // Smoothly animate the note sliding to its sorted position
+            int oldPos = notes.indexOf(note);
+            if (oldPos != -1) {
+                notes.remove(oldPos);
+
+                int newPos = 0;
+                for (int k = 0; k < notes.size(); k++) {
+                    QuickNote other = notes.get(k);
+                    if (note.isCompleted() == other.isCompleted()) {
+                        if (note.getPosition() > other.getPosition()) {
+                            newPos = k + 1;
+                        } else {
+                            break;
+                        }
+                    } else if (!note.isCompleted() && other.isCompleted()) {
+                        break;
+                    } else {
+                        newPos = k + 1;
+                    }
+                }
+                notes.add(newPos, note);
+
+                if (oldPos != newPos) {
+                    notifyItemMoved(oldPos, newPos);
+                    notifyItemChanged(newPos);
+                } else {
+                    notifyItemChanged(oldPos);
+                }
             }
 
             QuickNotesWidgetProvider.updateWidget(context);

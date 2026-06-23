@@ -119,7 +119,9 @@ public class MainActivity extends AppCompatActivity {
                         runOnUiThread(() -> {
                             btnSync.setEnabled(true);
                             noteList.clear();
-                            noteList.addAll(noteDbHelper.getAllNotes());
+                            ArrayList<QuickNote> dbNotes = noteDbHelper.getAllNotes();
+                            sortNotes(dbNotes);
+                            noteList.addAll(dbNotes);
                             quickNoteAdapter.notifyDataSetChanged();
                             QuickNotesWidgetProvider.updateWidget(getApplicationContext());
                             refreshDashboardStats();
@@ -197,7 +199,9 @@ public class MainActivity extends AppCompatActivity {
                 runOnUiThread(() -> {
                     if (noteDbHelper != null && quickNoteAdapter != null && noteList != null) {
                         noteList.clear();
-                        noteList.addAll(noteDbHelper.getAllNotes());
+                        ArrayList<QuickNote> dbNotes = noteDbHelper.getAllNotes();
+                        sortNotes(dbNotes);
+                        noteList.addAll(dbNotes);
                         quickNoteAdapter.notifyDataSetChanged();
                         QuickNotesWidgetProvider.updateWidget(getApplicationContext());
                         refreshDashboardStats();
@@ -211,13 +215,25 @@ public class MainActivity extends AppCompatActivity {
         };
         registerReceiver(syncCompletedReceiver, new IntentFilter(SyncManager.ACTION_SYNC_COMPLETED),
                 Context.RECEIVER_NOT_EXPORTED);
-    }    private void setupQuickNotes() {
+    }
+
+    private void sortNotes(List<QuickNote> list) {
+        list.sort((n1, n2) -> {
+            if (n1.isCompleted() != n2.isCompleted()) {
+                return Boolean.compare(n1.isCompleted(), n2.isCompleted());
+            }
+            return Integer.compare(n1.getPosition(), n2.getPosition());
+        });
+    }
+
+    private void setupQuickNotes() {
         quickNoteInput = findViewById(R.id.editTextQuickNote);
         ImageView addNoteButton = findViewById(R.id.btnAddQuickNote);
         RecyclerView quickNotesRecycler = findViewById(R.id.recyclerQuickNotes);
         TextView btnClearAll = findViewById(R.id.btnClearAllNotes);
 
         noteList = noteDbHelper.getAllNotes();
+        sortNotes(noteList);
         quickNoteAdapter = new QuickNoteAdapter(this, noteList, noteDbHelper);
         quickNotesRecycler.setAdapter(quickNoteAdapter);
         quickNotesRecycler.setLayoutManager(new LinearLayoutManager(this));
@@ -275,9 +291,13 @@ public class MainActivity extends AppCompatActivity {
                 if (id != -1) {
                     int localId = (int) id;
                     QuickNote note = new QuickNote(localId, null, noteText, false, noteList.size() + 1, "PENDING");
-                    noteList.add(note);
-                    quickNoteAdapter.notifyItemInserted(noteList.size() - 1);
-                    quickNotesRecycler.scrollToPosition(noteList.size() - 1);
+                    int insertIndex = 0;
+                    while (insertIndex < noteList.size() && !noteList.get(insertIndex).isCompleted()) {
+                        insertIndex++;
+                    }
+                    noteList.add(insertIndex, note);
+                    quickNoteAdapter.notifyItemInserted(insertIndex);
+                    quickNotesRecycler.scrollToPosition(insertIndex);
                     quickNoteInput.setText("");
                     QuickNotesWidgetProvider.updateWidget(getApplicationContext());
                     refreshDashboardStats();
@@ -364,7 +384,9 @@ public class MainActivity extends AppCompatActivity {
         if (tokenManager.isLoggedIn()) {
             // Reload local list first in case details changed offline or on another screen
             noteList.clear();
-            noteList.addAll(noteDbHelper.getAllNotes());
+            ArrayList<QuickNote> dbNotes = noteDbHelper.getAllNotes();
+            sortNotes(dbNotes);
+            noteList.addAll(dbNotes);
             quickNoteAdapter.notifyDataSetChanged();
             refreshDashboardStats();
 
@@ -377,7 +399,9 @@ public class MainActivity extends AppCompatActivity {
                     public void onSuccess(Void result) {
                         runOnUiThread(() -> {
                             noteList.clear();
-                            noteList.addAll(noteDbHelper.getAllNotes());
+                            ArrayList<QuickNote> dbNotes2 = noteDbHelper.getAllNotes();
+                            sortNotes(dbNotes2);
+                            noteList.addAll(dbNotes2);
                             quickNoteAdapter.notifyDataSetChanged();
                             QuickNotesWidgetProvider.updateWidget(getApplicationContext());
                             refreshDashboardStats();
@@ -406,8 +430,10 @@ public class MainActivity extends AppCompatActivity {
             if (lastSync == 0) {
                 txtLastSync.setText("Last Synced: Never");
             } else {
-                java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("MMM dd, hh:mm a", java.util.Locale.getDefault());
-                txtLastSync.setText("Last Synced: " + sdf.format(new java.util.Date(lastSync)));
+                java.text.SimpleDateFormat dateSdf = new java.text.SimpleDateFormat("MMM dd, ", java.util.Locale.getDefault());
+                java.text.DateFormat timeFormat = android.text.format.DateFormat.getTimeFormat(this);
+                java.util.Date dateObj = new java.util.Date(lastSync);
+                txtLastSync.setText("Last Synced: " + dateSdf.format(dateObj) + timeFormat.format(dateObj));
             }
         }
 

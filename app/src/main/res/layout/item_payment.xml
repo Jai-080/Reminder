@@ -17,12 +17,12 @@
         android:gravity="center_vertical"
         android:padding="14dp">
 
-        <CheckBox
+        <com.google.android.material.checkbox.MaterialCheckBox
             android:id="@+id/paymentCheckBox"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:buttonTint="@color/accent_purple"
-            android:layout_marginEnd="12dp" />
+            android:layout_marginEnd="12dp"
+            app:buttonIconTint="@color/white" />
 
         <LinearLayout
             android:layout_width="0dp"

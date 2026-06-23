@@ -17,7 +17,7 @@ public class QuickNotesWidgetService extends RemoteViewsService {
     public static class QuickNotesRemoteViewsFactory implements RemoteViewsService.RemoteViewsFactory {
         private static final String TAG = "WidgetFactory";
         private final Context context;
-        private List<String> notes = new ArrayList<>();
+        private List<QuickNote> notes = new ArrayList<>();
 
         public QuickNotesRemoteViewsFactory(Context context) {
             this.context = context;
@@ -32,8 +32,15 @@ public class QuickNotesWidgetService extends RemoteViewsService {
             Log.d(TAG, "onDataSetChanged called");
             QuickNoteDatabaseHelper dbHelper = new QuickNoteDatabaseHelper(context);
             try {
-                notes = dbHelper.getNoteTexts();
-                Log.d(TAG, "Notes found: " + notes.size());
+                List<QuickNote> allNotes = dbHelper.getAllNotes();
+                allNotes.sort((n1, n2) -> {
+                    if (n1.isCompleted() != n2.isCompleted()) {
+                        return Boolean.compare(n1.isCompleted(), n2.isCompleted());
+                    }
+                    return Integer.compare(n1.getPosition(), n2.getPosition());
+                });
+                notes = allNotes;
+                Log.d(TAG, "Total notes found: " + notes.size());
             } catch (Exception e) {
                 Log.e(TAG, "Error fetching notes", e);
             } finally {
@@ -57,15 +64,33 @@ public class QuickNotesWidgetService extends RemoteViewsService {
                 return null;
             }
 
+            QuickNote note = notes.get(position);
             RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.widget_item_note);
-            views.setTextViewText(R.id.widget_item_text, "• " + notes.get(position));
 
-            // Fill-in intent for the item click. This will be merged with the 
-            // PendingIntent template in the Provider.
-            Intent fillInIntent = new Intent();
-            // You can add extras here if you want to pass data to MainActivity
-            // fillInIntent.putExtra("note_text", notes.get(position));
-            views.setOnClickFillInIntent(R.id.widget_item_text, fillInIntent);
+            // Apply strike-through and dim color for completed notes
+            if (note.isCompleted()) {
+                android.text.SpannableString spannableText = new android.text.SpannableString(note.getText());
+                spannableText.setSpan(new android.text.style.StrikethroughSpan(), 0, note.getText().length(), android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                spannableText.setSpan(new android.text.style.ForegroundColorSpan(context.getResources().getColor(R.color.colorTextMuted, context.getTheme())), 0, note.getText().length(), android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                views.setTextViewText(R.id.widget_item_text, spannableText);
+                views.setInt(R.id.widget_item_check_btn, "setImageAlpha", 102);
+            } else {
+                views.setTextViewText(R.id.widget_item_text, note.getText());
+                views.setInt(R.id.widget_item_check_btn, "setImageAlpha", 255);
+            }
+
+            // 1. Text click opens the app
+            Intent textIntent = new Intent();
+            textIntent.putExtra("open_app", true);
+            views.setOnClickFillInIntent(R.id.widget_item_text, textIntent);
+
+            // 2. Bullet checkbox click completes the note
+            Intent checkIntent = new Intent();
+            checkIntent.putExtra("note_id", note.getId());
+            checkIntent.putExtra("note_text", note.getText());
+            checkIntent.putExtra("note_position", note.getPosition());
+            checkIntent.putExtra("note_server_id", note.getServerId() != null ? note.getServerId() : -1L);
+            views.setOnClickFillInIntent(R.id.widget_item_check_btn, checkIntent);
 
             return views;
         }
