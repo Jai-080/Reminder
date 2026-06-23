@@ -31,6 +31,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import java.util.ArrayList;
+import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -43,6 +44,25 @@ public class MainActivity extends AppCompatActivity {
     private ArrayList<QuickNote> noteList = new ArrayList<>();
     private QuickNoteDatabaseHelper noteDbHelper;
     private BroadcastReceiver syncCompletedReceiver;
+
+    // Database Helpers
+    private ReminderDatabaseHelper reminderDbHelper;
+    private PaymentDatabaseHelper paymentDbHelper;
+
+    // Dashboard Views
+    private TextView txtWelcomeTitle;
+    private TextView txtLastSync;
+    private TextView txtNotesCount;
+    private TextView txtNotesSub;
+    private TextView txtRemindersCount;
+    private TextView txtRemindersSub;
+    private TextView txtPaymentsCount;
+    private TextView txtPaymentsSub;
+
+    private android.widget.LinearLayout layoutUpcomingReminders;
+    private android.widget.LinearLayout layoutUpcomingPayments;
+    private TextView txtNoUpcomingReminders;
+    private TextView txtNoUpcomingPayments;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -100,6 +120,7 @@ public class MainActivity extends AppCompatActivity {
                             noteList.addAll(noteDbHelper.getAllNotes());
                             quickNoteAdapter.notifyDataSetChanged();
                             QuickNotesWidgetProvider.updateWidget(getApplicationContext());
+                            refreshDashboardStats();
                             Toast.makeText(MainActivity.this, "Sync completed!", Toast.LENGTH_SHORT).show();
                         });
                     }
@@ -115,18 +136,39 @@ public class MainActivity extends AppCompatActivity {
             });
         }
 
-        // ✅ Fixed: View instead of Button — XML now uses LinearLayout
+        // ✅ Fixed: View instead of Button — XML now uses CardViews
         View btnMonthlyPayments = findViewById(R.id.monthlyPaymentsBtn);
-        btnMonthlyPayments.setOnClickListener(v -> {
-            startActivity(new Intent(MainActivity.this, MonthlyPaymentsActivity.class));
-        });
+        if (btnMonthlyPayments != null) {
+            btnMonthlyPayments.setOnClickListener(v -> {
+                startActivity(new Intent(MainActivity.this, MonthlyPaymentsActivity.class));
+            });
+        }
 
         View btnTimedReminders = findViewById(R.id.timedRemindersBtn);
-        btnTimedReminders.setOnClickListener(v -> {
-            startActivity(new Intent(MainActivity.this, TimedRemindersActivity.class));
-        });
+        if (btnTimedReminders != null) {
+            btnTimedReminders.setOnClickListener(v -> {
+                startActivity(new Intent(MainActivity.this, TimedRemindersActivity.class));
+            });
+        }
 
         noteDbHelper = new QuickNoteDatabaseHelper(this);
+        reminderDbHelper = new ReminderDatabaseHelper(this);
+        paymentDbHelper = new PaymentDatabaseHelper(this);
+
+        txtWelcomeTitle = findViewById(R.id.txtWelcomeTitle);
+        txtLastSync = findViewById(R.id.txtLastSync);
+        txtNotesCount = findViewById(R.id.txtNotesCount);
+        txtNotesSub = findViewById(R.id.txtNotesSub);
+        txtRemindersCount = findViewById(R.id.txtRemindersCount);
+        txtRemindersSub = findViewById(R.id.txtRemindersSub);
+        txtPaymentsCount = findViewById(R.id.txtPaymentsCount);
+        txtPaymentsSub = findViewById(R.id.txtPaymentsSub);
+
+        layoutUpcomingReminders = findViewById(R.id.layoutUpcomingReminders);
+        layoutUpcomingPayments = findViewById(R.id.layoutUpcomingPayments);
+        txtNoUpcomingReminders = findViewById(R.id.txtNoUpcomingReminders);
+        txtNoUpcomingPayments = findViewById(R.id.txtNoUpcomingPayments);
+
         setupQuickNotes();
 
         syncCompletedReceiver = new BroadcastReceiver() {
@@ -140,6 +182,7 @@ public class MainActivity extends AppCompatActivity {
                         noteList.addAll(noteDbHelper.getAllNotes());
                         quickNoteAdapter.notifyDataSetChanged();
                         QuickNotesWidgetProvider.updateWidget(getApplicationContext());
+                        refreshDashboardStats();
                         Log.d(TAG, "UI refresh executed");
                         System.out.println("UI refresh executed");
                         Log.d(TAG, "Dataset size after refresh: " + noteList.size());
@@ -150,9 +193,7 @@ public class MainActivity extends AppCompatActivity {
         };
         registerReceiver(syncCompletedReceiver, new IntentFilter(SyncManager.ACTION_SYNC_COMPLETED),
                 Context.RECEIVER_NOT_EXPORTED);
-    }
-
-    private void setupQuickNotes() {
+    }    private void setupQuickNotes() {
         quickNoteInput = findViewById(R.id.editTextQuickNote);
         ImageView addNoteButton = findViewById(R.id.btnAddQuickNote);
         RecyclerView quickNotesRecycler = findViewById(R.id.recyclerQuickNotes);
@@ -162,6 +203,16 @@ public class MainActivity extends AppCompatActivity {
         quickNoteAdapter = new QuickNoteAdapter(this, noteList, noteDbHelper);
         quickNotesRecycler.setAdapter(quickNoteAdapter);
         quickNotesRecycler.setLayoutManager(new LinearLayoutManager(this));
+
+        // Scroll to checklist when Quick Notes summary card is clicked
+        View quickNotesCard = findViewById(R.id.quickNotesSummaryCard);
+        View notesSectionCard = findViewById(R.id.notesSectionCard);
+        androidx.core.widget.NestedScrollView scrollView = findViewById(R.id.scrollView);
+        if (quickNotesCard != null && notesSectionCard != null && scrollView != null) {
+            quickNotesCard.setOnClickListener(v -> {
+                scrollView.post(() -> scrollView.smoothScrollTo(0, notesSectionCard.getTop()));
+            });
+        }
 
         btnClearAll.setOnClickListener(v -> {
             if (noteList.isEmpty()) return;
@@ -175,6 +226,7 @@ public class MainActivity extends AppCompatActivity {
                         noteList.clear();
                         quickNoteAdapter.notifyDataSetChanged();
                         QuickNotesWidgetProvider.updateWidget(getApplicationContext());
+                        refreshDashboardStats();
                         ReminderApplication.enqueueSyncWorker(this);
                     })
                     .setNegativeButton("Cancel", null)
@@ -187,6 +239,7 @@ public class MainActivity extends AppCompatActivity {
                 int fromPosition = viewHolder.getAdapterPosition();
                 int toPosition = target.getAdapterPosition();
                 quickNoteAdapter.onItemMove(fromPosition, toPosition);
+                refreshDashboardStats();
                 return true;
             }
 
@@ -209,6 +262,7 @@ public class MainActivity extends AppCompatActivity {
                     quickNotesRecycler.scrollToPosition(noteList.size() - 1);
                     quickNoteInput.setText("");
                     QuickNotesWidgetProvider.updateWidget(getApplicationContext());
+                    refreshDashboardStats();
 
                     // Sync to backend
                     SyncManager.getInstance(MainActivity.this).uploadNote(localId, noteText, false, note.getPosition(), null, new SyncManager.SyncCallback<Long>() {
@@ -217,6 +271,7 @@ public class MainActivity extends AppCompatActivity {
                             Log.d(TAG, "Note sync succeeded, serverId: " + serverId);
                             note.setServerId(serverId);
                             note.setSyncStatus("SYNCED");
+                            runOnUiThread(() -> refreshDashboardStats());
                         }
 
                         @Override
@@ -293,6 +348,7 @@ public class MainActivity extends AppCompatActivity {
             noteList.clear();
             noteList.addAll(noteDbHelper.getAllNotes());
             quickNoteAdapter.notifyDataSetChanged();
+            refreshDashboardStats();
 
             // Rate-limit auto-sync to once every 5 minutes (300000ms)
             long lastSync = tokenManager.getLastSyncTimestamp();
@@ -306,6 +362,7 @@ public class MainActivity extends AppCompatActivity {
                             noteList.addAll(noteDbHelper.getAllNotes());
                             quickNoteAdapter.notifyDataSetChanged();
                             QuickNotesWidgetProvider.updateWidget(getApplicationContext());
+                            refreshDashboardStats();
                         });
                     }
 
@@ -314,6 +371,127 @@ public class MainActivity extends AppCompatActivity {
                         Log.e(TAG, "Auto-sync failed: " + error);
                     }
                 });
+            }
+        }
+    }
+
+    public void refreshDashboardStats() {
+        // 1. Welcome and sync metadata
+        TokenManager tokenManager = TokenManager.getInstance(this);
+        String username = tokenManager.getUsername();
+        if (txtWelcomeTitle != null) {
+            txtWelcomeTitle.setText("Welcome back, " + (username != null && !username.isEmpty() ? username : "User") + "!");
+        }
+        
+        long lastSync = tokenManager.getLastSyncTimestamp();
+        if (txtLastSync != null) {
+            if (lastSync == 0) {
+                txtLastSync.setText("Last Synced: Never");
+            } else {
+                java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("MMM dd, hh:mm a", java.util.Locale.getDefault());
+                txtLastSync.setText("Last Synced: " + sdf.format(new java.util.Date(lastSync)));
+            }
+        }
+
+        // 2. Quick Notes stats
+        int totalNotes = noteList.size();
+        int incompleteNotes = 0;
+        for (QuickNote note : noteList) {
+            if (!note.isCompleted()) {
+                incompleteNotes++;
+            }
+        }
+        if (txtNotesCount != null) txtNotesCount.setText(String.valueOf(totalNotes));
+        if (txtNotesSub != null) txtNotesSub.setText(incompleteNotes + " incomplete");
+
+        // 3. Reminders stats & list
+        if (reminderDbHelper != null) {
+            ArrayList<Reminder> pendingReminders = new ArrayList<>();
+            ArrayList<Reminder> expiredReminders = new ArrayList<>();
+            List<Reminder> allReminders = reminderDbHelper.getAllReminders();
+            long now = System.currentTimeMillis();
+            for (Reminder r : allReminders) {
+                if (r.getTime() <= now) {
+                    expiredReminders.add(r);
+                } else {
+                    pendingReminders.add(r);
+                }
+            }
+            if (txtRemindersCount != null) txtRemindersCount.setText(String.valueOf(pendingReminders.size()));
+            if (txtRemindersSub != null) txtRemindersSub.setText(pendingReminders.size() + " pending | " + expiredReminders.size() + " expired");
+
+            // Populate upcoming reminders
+            if (layoutUpcomingReminders != null) {
+                layoutUpcomingReminders.removeAllViews();
+                int count = 0;
+                java.text.SimpleDateFormat timeSdf = new java.text.SimpleDateFormat("MMM dd, hh:mm a", java.util.Locale.getDefault());
+                for (Reminder r : pendingReminders) {
+                    if (count >= 3) break;
+                    TextView tv = new TextView(this);
+                    tv.setText("• " + r.getText() + " (" + timeSdf.format(new java.util.Date(r.getTime())) + ")");
+                    tv.setTextColor(getResources().getColor(R.color.colorTextSecondary, getTheme()));
+                    tv.setTextSize(14);
+                    tv.setPadding(0, 8, 0, 8);
+                    layoutUpcomingReminders.addView(tv);
+                    count++;
+                }
+                if (txtNoUpcomingReminders != null) {
+                    txtNoUpcomingReminders.setVisibility(count == 0 ? View.VISIBLE : View.GONE);
+                }
+            }
+        }
+
+        // 4. Payments stats & list
+        if (paymentDbHelper != null) {
+            ArrayList<MonthlyPayment> allPayments = paymentDbHelper.getAllPayments();
+            int activePayments = 0;
+            int overduePayments = 0;
+            ArrayList<MonthlyPayment> pendingPayments = new ArrayList<>();
+            long now = System.currentTimeMillis();
+            for (MonthlyPayment p : allPayments) {
+                if (!p.isCompleted()) {
+                    activePayments++;
+                    pendingPayments.add(p);
+                    if (p.getDueDate() < now) {
+                        overduePayments++;
+                    }
+                }
+            }
+            if (txtPaymentsCount != null) txtPaymentsCount.setText(String.valueOf(activePayments));
+            
+            // Calculate due this calendar month
+            java.util.Calendar cal = java.util.Calendar.getInstance();
+            int currentMonth = cal.get(java.util.Calendar.MONTH);
+            int currentYear = cal.get(java.util.Calendar.YEAR);
+            int dueThisMonth = 0;
+            for (MonthlyPayment p : pendingPayments) {
+                java.util.Calendar dueCal = java.util.Calendar.getInstance();
+                dueCal.setTimeInMillis(p.getDueDate());
+                if (dueCal.get(java.util.Calendar.MONTH) == currentMonth && dueCal.get(java.util.Calendar.YEAR) == currentYear) {
+                    dueThisMonth++;
+                }
+            }
+            if (txtPaymentsSub != null) txtPaymentsSub.setText(overduePayments + " overdue | " + dueThisMonth + " due this month");
+
+            // Populate upcoming payments
+            if (layoutUpcomingPayments != null) {
+                layoutUpcomingPayments.removeAllViews();
+                int count = 0;
+                java.text.SimpleDateFormat dateSdf = new java.text.SimpleDateFormat("MMM dd", java.util.Locale.getDefault());
+                for (MonthlyPayment p : pendingPayments) {
+                    if (count >= 3) break;
+                    TextView tv = new TextView(this);
+                    String amtStr = p.getAmount() == null ? "" : String.format(" (₹%.2f)", p.getAmount());
+                    tv.setText("• " + p.getName() + amtStr + " - Due: " + dateSdf.format(new java.util.Date(p.getDueDate())));
+                    tv.setTextColor(getResources().getColor(R.color.colorTextSecondary, getTheme()));
+                    tv.setTextSize(14);
+                    tv.setPadding(0, 8, 0, 8);
+                    layoutUpcomingPayments.addView(tv);
+                    count++;
+                }
+                if (txtNoUpcomingPayments != null) {
+                    txtNoUpcomingPayments.setVisibility(count == 0 ? View.VISIBLE : View.GONE);
+                }
             }
         }
     }

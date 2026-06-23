@@ -6,11 +6,10 @@
     android:background="@color/colorBackground">
 
     <!-- Header -->
-    <LinearLayout
+    <RelativeLayout
         android:id="@+id/header"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
         android:paddingHorizontal="20dp"
         android:paddingTop="24dp"
         android:paddingBottom="16dp"
@@ -18,14 +17,29 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
+        <ImageView
+            android:id="@+id/btnBack"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:src="@drawable/abc_ic_ab_back_material"
+            android:padding="6dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:layout_alignParentStart="true"
+            android:layout_centerVertical="true"
+            app:tint="?android:attr/textColorPrimary"
+            android:contentDescription="Back" />
+
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_toEndOf="@id/btnBack"
+            android:layout_marginStart="12dp"
+            android:layout_centerVertical="true"
             android:text="Timed reminders"
             android:textColor="@color/colorTextPrimary"
             android:textSize="22sp"
             android:textStyle="bold" />
-    </LinearLayout>
+    </RelativeLayout>
 
     <!-- Divider -->
     <View
@@ -48,104 +62,138 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
-        <androidx.constraintlayout.widget.ConstraintLayout
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:orientation="vertical"
             android:paddingHorizontal="20dp"
             android:paddingTop="20dp"
             android:paddingBottom="24dp">
 
-            <!-- Input row -->
-            <LinearLayout
-                android:id="@+id/inputRow"
-                android:layout_width="0dp"
+            <!-- Input Card -->
+            <com.google.android.material.card.MaterialCardView
+                style="?attr/materialCardViewFilledStyle"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                app:layout_constraintTop_toTopOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintEnd_toEndOf="parent">
+                android:layout_marginBottom="24dp"
+                app:cardElevation="1dp"
+                app:cardCornerRadius="16dp"
+                app:strokeWidth="1dp"
+                app:strokeColor="@color/colorDivider">
 
-                <EditText
-                    android:id="@+id/editTextReminder"
-                    android:layout_width="0dp"
-                    android:layout_height="48dp"
-                    android:layout_weight="1"
-                    android:background="@drawable/rounded_edittext"
-                    android:hint="Reminder message..."
-                    android:textColor="@color/colorTextSecondary"
-                    android:textColorHint="@color/colorHint"
-                    android:textSize="14sp"
-                    android:paddingHorizontal="14dp"
-                    android:paddingVertical="0dp"
-                    android:inputType="text"
-                    android:maxLines="1" />
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
 
-                <Button
-                    android:id="@+id/btnSetReminderFull"
-                    android:layout_width="wrap_content"
-                    android:layout_height="48dp"
-                    android:layout_marginStart="10dp"
-                    android:background="@drawable/rounded_primary_button"
-                    android:text="Set"
-                    android:textColor="#FFFFFF"
-                    android:textSize="13sp"
-                    android:paddingHorizontal="18dp" />
-            </LinearLayout>
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="NEW REMINDER"
+                        android:textColor="@color/colorTextMuted"
+                        android:textSize="11sp"
+                        android:textStyle="bold"
+                        android:letterSpacing="0.05"
+                        android:layout_marginBottom="12dp" />
 
-            <!-- Pending label -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+
+                        <EditText
+                            android:id="@+id/editTextReminder"
+                            android:layout_width="0dp"
+                            android:layout_height="48dp"
+                            android:layout_weight="1"
+                            android:background="@drawable/rounded_edittext"
+                            android:hint="Reminder message..."
+                            android:textColor="?android:attr/textColorPrimary"
+                            android:textColorHint="@color/colorHint"
+                            android:textSize="14sp"
+                            android:paddingHorizontal="14dp"
+                            android:paddingVertical="0dp"
+                            android:inputType="text"
+                            android:maxLines="1" />
+
+                        <Button
+                            android:id="@+id/btnSetReminderFull"
+                            android:layout_width="wrap_content"
+                            android:layout_height="48dp"
+                            android:layout_marginStart="10dp"
+                            android:background="@drawable/rounded_primary_button"
+                            android:text="Set"
+                            android:textColor="#FFFFFF"
+                            android:textSize="13sp"
+                            android:paddingHorizontal="18dp" />
+                    </LinearLayout>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Pending Section -->
             <TextView
                 android:id="@+id/pendingLabel"
-                android:layout_width="0dp"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="PENDING"
+                android:text="PENDING REMINDERS"
                 android:textColor="@color/colorTextMuted"
-                android:textSize="10sp"
-                android:letterSpacing="0.1"
-                android:layout_marginTop="24dp"
-                android:visibility="gone"
-                app:layout_constraintTop_toBottomOf="@id/inputRow"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintEnd_toEndOf="parent" />
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:letterSpacing="0.08"
+                android:layout_marginBottom="8dp"
+                android:visibility="gone" />
 
-            <!-- Pending RecyclerView -->
+            <TextView
+                android:id="@+id/txtNoPendingReminders"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="No pending reminders"
+                android:textColor="@color/colorTextSecondary"
+                android:textSize="13sp"
+                android:layout_marginBottom="16dp"
+                android:visibility="gone"
+                android:paddingVertical="12dp" />
+
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/rv_pending_reminders"
-                android:layout_width="0dp"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="10dp"
-                android:nestedScrollingEnabled="false"
-                app:layout_constraintTop_toBottomOf="@id/pendingLabel"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintEnd_toEndOf="parent" />
+                android:layout_marginBottom="16dp"
+                android:nestedScrollingEnabled="false" />
 
-            <!-- Expired label -->
+            <!-- Expired Section -->
             <TextView
                 android:id="@+id/expiredLabel"
-                android:layout_width="0dp"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="EXPIRED"
+                android:text="EXPIRED REMINDERS"
                 android:textColor="@color/colorTextMuted"
-                android:textSize="10sp"
-                android:letterSpacing="0.1"
-                android:layout_marginTop="24dp"
-                android:visibility="gone"
-                app:layout_constraintTop_toBottomOf="@id/rv_pending_reminders"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintEnd_toEndOf="parent" />
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:letterSpacing="0.08"
+                android:layout_marginTop="12dp"
+                android:layout_marginBottom="8dp"
+                android:visibility="gone" />
 
-            <!-- Expired RecyclerView -->
+            <TextView
+                android:id="@+id/txtNoExpiredReminders"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="No expired reminders"
+                android:textColor="@color/colorTextSecondary"
+                android:textSize="13sp"
+                android:visibility="gone"
+                android:paddingVertical="12dp" />
+
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/rv_expired_reminders"
-                android:layout_width="0dp"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="10dp"
-                android:nestedScrollingEnabled="false"
-                app:layout_constraintTop_toBottomOf="@id/expiredLabel"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintEnd_toEndOf="parent" />
+                android:nestedScrollingEnabled="false" />
 
-        </androidx.constraintlayout.widget.ConstraintLayout>
+        </LinearLayout>
     </androidx.core.widget.NestedScrollView>
 
     <!-- Clear all button pinned to bottom -->

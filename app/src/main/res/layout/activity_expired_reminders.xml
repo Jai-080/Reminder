@@ -3,14 +3,13 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#0F0F0F">
+    android:background="@color/colorBackground">
 
     <!-- Header -->
-    <LinearLayout
+    <RelativeLayout
         android:id="@+id/header"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
         android:paddingHorizontal="20dp"
         android:paddingTop="24dp"
         android:paddingBottom="16dp"
@@ -18,22 +17,37 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
+        <ImageView
+            android:id="@+id/btnBack"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:src="@drawable/abc_ic_ab_back_material"
+            android:padding="6dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:layout_alignParentStart="true"
+            android:layout_centerVertical="true"
+            app:tint="?android:attr/textColorPrimary"
+            android:contentDescription="Back" />
+
         <TextView
             android:id="@+id/textViewTitle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_toEndOf="@id/btnBack"
+            android:layout_marginStart="12dp"
+            android:layout_centerVertical="true"
             android:text="Expired reminders"
-            android:textColor="#F0F0F0"
+            android:textColor="@color/colorTextPrimary"
             android:textSize="22sp"
             android:textStyle="bold" />
-    </LinearLayout>
+    </RelativeLayout>
 
     <!-- Divider -->
     <View
         android:id="@+id/headerDivider"
         android:layout_width="0dp"
         android:layout_height="0.5dp"
-        android:background="#1F1F1F"
+        android:background="@color/colorDivider"
         app:layout_constraintTop_toBottomOf="@id/header"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
@@ -44,13 +58,29 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:text="PAST REMINDERS"
-        android:textColor="#555555"
-        android:textSize="10sp"
-        android:letterSpacing="0.1"
+        android:textColor="@color/colorTextMuted"
+        android:textSize="11sp"
+        android:textStyle="bold"
+        android:letterSpacing="0.08"
         android:paddingHorizontal="20dp"
         android:paddingTop="20dp"
         android:paddingBottom="10dp"
         app:layout_constraintTop_toBottomOf="@id/headerDivider"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <!-- Empty State -->
+    <TextView
+        android:id="@+id/txtNoExpiredReminders"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:text="No expired reminders"
+        android:textColor="@color/colorTextSecondary"
+        android:textSize="13sp"
+        android:paddingHorizontal="20dp"
+        android:paddingVertical="12dp"
+        android:visibility="gone"
+        app:layout_constraintTop_toBottomOf="@id/sectionLabel"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 

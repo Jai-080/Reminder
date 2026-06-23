@@ -11,6 +11,8 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
 import android.widget.TextView;
+import android.widget.CheckBox;
+import android.widget.ImageView;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
@@ -42,20 +44,23 @@ public class QuickNoteAdapter extends RecyclerView.Adapter<QuickNoteAdapter.Note
         QuickNote note = notes.get(position);
         holder.noteText.setText(note.getText());
 
-        // Strikethrough if completed
+        // Dynamic styling depending on whether the note is completed
         if (note.isCompleted()) {
             holder.noteText.setPaintFlags(holder.noteText.getPaintFlags() | android.graphics.Paint.STRIKE_THRU_TEXT_FLAG);
-            holder.noteText.setTextColor(0xFF555555);
+            holder.noteText.setTextColor(context.getResources().getColor(R.color.colorTextMuted, context.getTheme()));
         } else {
             holder.noteText.setPaintFlags(holder.noteText.getPaintFlags() & (~android.graphics.Paint.STRIKE_THRU_TEXT_FLAG));
-            holder.noteText.setTextColor(0xFFBBBBBB);
+            holder.noteText.setTextColor(context.getResources().getColor(R.color.colorTextPrimary, context.getTheme()));
         }
 
-        // ✅ Toggle completion on the whole item row click
-        holder.itemView.setOnLongClickListener(v -> {
+        // Set checkbox checked state
+        holder.noteCheckBox.setChecked(note.isCompleted());
+
+        // Toggle completion on card click or checkbox click
+        View.OnClickListener toggleListener = v -> {
             note.setCompleted(!note.isCompleted());
             noteDbHelper.updateNote(note.getId(), note.getText(), note.isCompleted());
-            
+
             // Sync update to server
             SyncManager.getInstance(context).uploadNote(note.getId(), note.getText(), note.isCompleted(), note.getPosition(), note.getServerId(), new SyncManager.SyncCallback<Long>() {
                 @Override
@@ -69,40 +74,58 @@ public class QuickNoteAdapter extends RecyclerView.Adapter<QuickNoteAdapter.Note
                 }
             });
 
-            notes.remove(position);
-            notes.add(note);
-            notifyDataSetChanged();
+            // Update item view state
+            holder.noteCheckBox.setChecked(note.isCompleted());
+            if (note.isCompleted()) {
+                holder.noteText.setPaintFlags(holder.noteText.getPaintFlags() | android.graphics.Paint.STRIKE_THRU_TEXT_FLAG);
+                holder.noteText.setTextColor(context.getResources().getColor(R.color.colorTextMuted, context.getTheme()));
+            } else {
+                holder.noteText.setPaintFlags(holder.noteText.getPaintFlags() & (~android.graphics.Paint.STRIKE_THRU_TEXT_FLAG));
+                holder.noteText.setTextColor(context.getResources().getColor(R.color.colorTextPrimary, context.getTheme()));
+            }
+
             QuickNotesWidgetProvider.updateWidget(context);
-            return true;
+            if (context instanceof MainActivity) {
+                ((MainActivity) context).refreshDashboardStats();
+            }
+        };
+
+        holder.noteCheckBox.setOnClickListener(toggleListener);
+        holder.itemView.setOnClickListener(toggleListener);
+
+        // Edit note text on clicking the text directly
+        holder.noteText.setOnClickListener(v -> {
+            showEditDialog(position);
         });
 
-        // Single tap shows Edit/Delete options
-        holder.noteText.setOnClickListener(v -> {
-            String[] options = {"Edit", "Delete"};
+        // Quick delete note button click
+        holder.btnDeleteNote.setOnClickListener(v -> {
             new AlertDialog.Builder(context)
-                    .setTitle("Choose Action")
-                    .setItems(options, (dialog, which) -> {
-                        if (which == 0) {
-                            showEditDialog(position);
-                        } else {
-                            // Sync deletion
-                            SyncManager.getInstance(context).deleteNote(note.getId(), note.getServerId(), new SyncManager.SyncCallback<Void>() {
-                                @Override
-                                public void onSuccess(Void result) {
-                                    Log.d("QuickNoteAdapter", "Note deletion synced to server");
-                                }
+                    .setTitle("Delete Note")
+                    .setMessage("Are you sure you want to delete this note?")
+                    .setPositiveButton("Delete", (dialog, which) -> {
+                        // Sync deletion
+                        SyncManager.getInstance(context).deleteNote(note.getId(), note.getServerId(), new SyncManager.SyncCallback<Void>() {
+                            @Override
+                            public void onSuccess(Void result) {
+                                Log.d("QuickNoteAdapter", "Note deletion synced to server");
+                            }
 
-                                @Override
-                                public void onError(String error) {
-                                    Log.e("QuickNoteAdapter", "Failed to sync note deletion: " + error);
-                                }
-                            });
-                            
-                            notes.remove(position);
-                            notifyItemRemoved(position);
-                            QuickNotesWidgetProvider.updateWidget(context);
+                            @Override
+                            public void onError(String error) {
+                                Log.e("QuickNoteAdapter", "Failed to sync note deletion: " + error);
+                            }
+                        });
+
+                        notes.remove(position);
+                        notifyItemRemoved(position);
+                        notifyItemRangeChanged(position, notes.size());
+                        QuickNotesWidgetProvider.updateWidget(context);
+                        if (context instanceof MainActivity) {
+                            ((MainActivity) context).refreshDashboardStats();
                         }
                     })
+                    .setNegativeButton("Cancel", null)
                     .show();
         });
     }
@@ -121,7 +144,7 @@ public class QuickNoteAdapter extends RecyclerView.Adapter<QuickNoteAdapter.Note
                         QuickNote note = notes.get(position);
                         note.setText(newText);
                         noteDbHelper.updateNote(note.getId(), newText, note.isCompleted());
-                        
+
                         // Sync update text to server
                         SyncManager.getInstance(context).uploadNote(note.getId(), newText, note.isCompleted(), note.getPosition(), note.getServerId(), new SyncManager.SyncCallback<Long>() {
                             @Override
@@ -137,6 +160,9 @@ public class QuickNoteAdapter extends RecyclerView.Adapter<QuickNoteAdapter.Note
 
                         notifyItemChanged(position);
                         QuickNotesWidgetProvider.updateWidget(context);
+                        if (context instanceof MainActivity) {
+                            ((MainActivity) context).refreshDashboardStats();
+                        }
                     }
                 })
                 .setNegativeButton("Cancel", null)
@@ -159,7 +185,7 @@ public class QuickNoteAdapter extends RecyclerView.Adapter<QuickNoteAdapter.Note
             }
         }
         notifyItemMoved(fromPosition, toPosition);
-        
+
         // Update positions in database
         for (int i = 0; i < notes.size(); i++) {
             QuickNote note = notes.get(i);
@@ -167,15 +193,21 @@ public class QuickNoteAdapter extends RecyclerView.Adapter<QuickNoteAdapter.Note
             noteDbHelper.updateNotePosition(note.getId(), i);
         }
         QuickNotesWidgetProvider.updateWidget(context);
+        if (context instanceof MainActivity) {
+            ((MainActivity) context).refreshDashboardStats();
+        }
     }
 
     static class NoteViewHolder extends RecyclerView.ViewHolder {
         TextView noteText;
+        CheckBox noteCheckBox;
+        ImageView btnDeleteNote;
 
         public NoteViewHolder(@NonNull View itemView) {
             super(itemView);
             noteText = itemView.findViewById(R.id.noteText);
-            // ✅ bulletIcon removed — dot is now a decorative View, no ID needed
+            noteCheckBox = itemView.findViewById(R.id.noteCheckBox);
+            btnDeleteNote = itemView.findViewById(R.id.btnDeleteNote);
         }
     }
 }

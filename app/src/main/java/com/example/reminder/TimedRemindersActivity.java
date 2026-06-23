@@ -41,6 +41,7 @@ public class TimedRemindersActivity extends AppCompatActivity {
     private final Calendar selectedDateTime = Calendar.getInstance();
 
     private TextView pendingLabel, expiredLabel;
+    private TextView txtNoPendingReminders, txtNoExpiredReminders;
 
     private static final int REQUEST_NOTIFICATION_PERMISSION = 1001;
     private static final String CHANNEL_ID = "reminder_channel";
@@ -61,12 +62,19 @@ public class TimedRemindersActivity extends AppCompatActivity {
         requestExactAlarmPermission();
         requestNotificationPermission();
 
+        View btnBack = findViewById(R.id.btnBack);
+        if (btnBack != null) {
+            btnBack.setOnClickListener(v -> finish());
+        }
+
         editTextReminder = findViewById(R.id.editTextReminder);
         Button btnSetReminderFull = findViewById(R.id.btnSetReminderFull);
         RecyclerView rvPending = findViewById(R.id.rv_pending_reminders);
         RecyclerView rvExpired = findViewById(R.id.rv_expired_reminders);
         pendingLabel = findViewById(R.id.pendingLabel);
         expiredLabel = findViewById(R.id.expiredLabel);
+        txtNoPendingReminders = findViewById(R.id.txtNoPendingReminders);
+        txtNoExpiredReminders = findViewById(R.id.txtNoExpiredReminders);
 
         dbHelper = new ReminderDatabaseHelper(this);
 
@@ -221,6 +229,8 @@ public class TimedRemindersActivity extends AppCompatActivity {
 
         pendingLabel.setVisibility(pendingReminders.isEmpty() ? View.GONE : View.VISIBLE);
         expiredLabel.setVisibility(expiredReminders.isEmpty() ? View.GONE : View.VISIBLE);
+        txtNoPendingReminders.setVisibility(pendingReminders.isEmpty() ? View.VISIBLE : View.GONE);
+        txtNoExpiredReminders.setVisibility(expiredReminders.isEmpty() ? View.VISIBLE : View.GONE);
 
         pendingAdapter.notifyDataSetChanged();
         expiredAdapter.notifyDataSetChanged();

@@ -9,6 +9,7 @@ import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
+import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
@@ -28,6 +29,7 @@ public class MonthlyPaymentsActivity extends AppCompatActivity {
     private PaymentDatabaseHelper dbHelper;
     private MonthlyPaymentAdapter adapter;
     private ArrayList<MonthlyPayment> payments;
+    private android.widget.TextView txtNoPayments;
 
     private BroadcastReceiver syncCompletedReceiver;
 
@@ -40,12 +42,21 @@ public class MonthlyPaymentsActivity extends AppCompatActivity {
         Button addButton = findViewById(R.id.addPaymentButton);
         Button clearAllButton = findViewById(R.id.clearAllBtn);
         RecyclerView recyclerView = findViewById(R.id.paymentRecyclerView);
+        txtNoPayments = findViewById(R.id.txtNoPayments);
+
+        View btnBack = findViewById(R.id.btnBack);
+        if (btnBack != null) {
+            btnBack.setOnClickListener(v -> finish());
+        }
 
         payments = dbHelper.getAllPayments();
         adapter = new MonthlyPaymentAdapter(this, payments, dbHelper);
 
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         recyclerView.setAdapter(adapter);
+        if (txtNoPayments != null) {
+            txtNoPayments.setVisibility(payments.isEmpty() ? View.VISIBLE : View.GONE);
+        }
 
         addButton.setOnClickListener(v -> {
             showPaymentCreateDialog("");
@@ -60,6 +71,9 @@ public class MonthlyPaymentsActivity extends AppCompatActivity {
             }
             payments.clear();
             adapter.notifyDataSetChanged();
+            if (txtNoPayments != null) {
+                txtNoPayments.setVisibility(View.VISIBLE);
+            }
 
             Toast.makeText(this, "All payments deleted", Toast.LENGTH_SHORT).show();
             ReminderApplication.enqueueSyncWorker(this);
@@ -75,6 +89,9 @@ public class MonthlyPaymentsActivity extends AppCompatActivity {
                         payments.clear();
                         payments.addAll(dbHelper.getAllPayments());
                         adapter.notifyDataSetChanged();
+                        if (txtNoPayments != null) {
+                            txtNoPayments.setVisibility(payments.isEmpty() ? View.VISIBLE : View.GONE);
+                        }
                         Log.d("MonthlyPayments", "UI refresh executed");
                         System.out.println("UI refresh executed");
                         Log.d("MonthlyPayments", "Dataset size after refresh: " + payments.size());
@@ -232,6 +249,9 @@ public class MonthlyPaymentsActivity extends AppCompatActivity {
             payments.clear();
             payments.addAll(dbHelper.getAllPayments());
             adapter.notifyDataSetChanged();
+            if (txtNoPayments != null) {
+                txtNoPayments.setVisibility(payments.isEmpty() ? View.VISIBLE : View.GONE);
+            }
         }
 
         com.example.reminder.auth.TokenManager tokenManager = com.example.reminder.auth.TokenManager.getInstance(this);
@@ -246,6 +266,9 @@ public class MonthlyPaymentsActivity extends AppCompatActivity {
                                 payments.clear();
                                 payments.addAll(dbHelper.getAllPayments());
                                 adapter.notifyDataSetChanged();
+                                if (txtNoPayments != null) {
+                                    txtNoPayments.setVisibility(payments.isEmpty() ? View.VISIBLE : View.GONE);
+                                }
                             }
                         });
                     }

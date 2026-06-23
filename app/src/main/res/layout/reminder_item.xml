@@ -1,63 +1,76 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:orientation="horizontal"
-    android:gravity="center_vertical"
-    android:background="@drawable/rounded_item_background"
-    android:layout_marginBottom="10dp"
-    android:paddingHorizontal="14dp"
-    android:paddingVertical="14dp">
+    android:layout_marginBottom="8dp"
+    app:cardElevation="0dp"
+    app:cardCornerRadius="12dp"
+    app:strokeWidth="1dp"
+    app:strokeColor="@color/colorDivider"
+    app:cardBackgroundColor="@color/colorBackground">
 
-    <!-- Text block -->
     <LinearLayout
-        android:layout_width="0dp"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_weight="1"
-        android:orientation="vertical">
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingHorizontal="14dp"
+        android:paddingVertical="12dp">
 
+        <!-- Text block -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/reminderText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="?android:attr/textColorPrimary"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/reminderTime"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="?android:attr/textColorSecondary"
+                android:textSize="12sp"
+                android:layout_marginTop="4dp" />
+        </LinearLayout>
+
+        <!-- Expired badge -->
         <TextView
-            android:id="@+id/reminderText"
+            android:id="@+id/expiredIcon"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textColor="?android:attr/textColorPrimary"
-            android:textSize="14sp"
-            android:textStyle="bold" />
+            android:text="Expired"
+            android:textColor="#FFFFFF"
+            android:textSize="10sp"
+            android:textStyle="bold"
+            android:background="@drawable/rounded_secondary_button"
+            android:paddingHorizontal="8dp"
+            android:paddingVertical="3dp"
+            android:layout_marginEnd="10dp"
+            android:visibility="visible"
+            app:backgroundTint="@color/accent_red" />
 
-        <TextView
-            android:id="@+id/reminderTime"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textColor="?android:attr/textColorSecondary"
-            android:textSize="12sp"
-            android:layout_marginTop="4dp" />
+        <!-- Delete button -->
+        <ImageView
+            android:id="@+id/deleteButton"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:padding="4dp"
+            android:contentDescription="Delete Reminder"
+            android:src="@android:drawable/ic_menu_delete"
+            android:scaleType="centerInside"
+            app:tint="@color/accent_red"
+            android:clickable="true"
+            android:focusable="true"/>
+
     </LinearLayout>
-
-    <!-- Expired badge -->
-    <TextView
-        android:id="@+id/expiredIcon"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Expired"
-        android:textColor="#D9604A"
-        android:textSize="10sp"
-        android:background="@drawable/rounded_secondary_button"
-        android:paddingHorizontal="8dp"
-        android:paddingVertical="3dp"
-        android:layout_marginEnd="10dp"
-        android:visibility="visible" />
-
-    <!-- Delete button -->
-    <ImageView
-        android:id="@+id/deleteButton"
-        android:layout_width="32dp"
-        android:layout_height="32dp"
-        android:background="?attr/selectableItemBackgroundBorderless"
-        android:padding="4dp"
-        android:contentDescription="Delete Reminder"
-        android:src="@android:drawable/ic_menu_delete"
-        android:scaleType="centerInside"
-        app:tint="#993C1D" />
-
-</LinearLayout>
+</com.google.android.material.card.MaterialCardView>

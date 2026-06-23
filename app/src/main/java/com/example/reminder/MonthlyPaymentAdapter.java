@@ -145,6 +145,12 @@ public class MonthlyPaymentAdapter extends RecyclerView.Adapter<MonthlyPaymentAd
 
                 sortPayments();
                 notifyDataSetChanged();
+                if (context instanceof MonthlyPaymentsActivity) {
+                    View txtNoPayments = ((MonthlyPaymentsActivity) context).findViewById(R.id.txtNoPayments);
+                    if (txtNoPayments != null) {
+                        txtNoPayments.setVisibility(payments.isEmpty() ? View.VISIBLE : View.GONE);
+                    }
+                }
             }
         });
 
@@ -171,6 +177,13 @@ public class MonthlyPaymentAdapter extends RecyclerView.Adapter<MonthlyPaymentAd
  
                 payments.remove(pos);
                 notifyItemRemoved(pos);
+                notifyItemRangeChanged(pos, payments.size());
+                if (context instanceof MonthlyPaymentsActivity) {
+                    View txtNoPayments = ((MonthlyPaymentsActivity) context).findViewById(R.id.txtNoPayments);
+                    if (txtNoPayments != null) {
+                        txtNoPayments.setVisibility(payments.isEmpty() ? View.VISIBLE : View.GONE);
+                    }
+                }
                 Toast.makeText(context, "Payment deleted", Toast.LENGTH_SHORT).show();
             }
         });
