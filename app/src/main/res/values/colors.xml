@@ -16,6 +16,8 @@
     <color name="colorReschedule">@color/light_reschedule</color>
     <color name="colorButtonGradientStart">@color/light_button_gradient_start</color>
     <color name="colorButtonGradientEnd">@color/light_button_gradient_end</color>
+    <color name="colorInputBackground">@color/light_input_bg</color>
+    <color name="colorInputBorder">@color/light_input_border</color>
 
     <!-- Legacy / Redirect mappings for existing references -->
     <color name="accent_purple">@color/colorAccent</color>
@@ -34,6 +36,8 @@
     <color name="light_reschedule">#8D80FF</color>
     <color name="light_button_gradient_start">#7B6FEA</color>
     <color name="light_button_gradient_end">#7B6FEA</color>
+    <color name="light_input_bg">#FFFFFF</color>
+    <color name="light_input_border">#E8E6F5</color>
 
     <!-- Dark theme values -->
     <color name="dark_background">#111113</color>
@@ -48,6 +52,8 @@
     <color name="dark_reschedule">#9D8EFF</color>
     <color name="dark_button_gradient_start">#7E72F5</color>
     <color name="dark_button_gradient_end">#9B86FF</color>
+    <color name="dark_input_bg">#1F1F1F</color>
+    <color name="dark_input_border">#343240</color>
 
     <!-- Legacy / Android defaults -->
     <color name="purple_200">#FFBB86FC</color>

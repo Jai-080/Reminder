@@ -259,12 +259,6 @@
                     android:textColor="@color/colorTextPrimary"
                     android:textSize="15sp"
                     android:textStyle="bold" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="📅"
-                    android:textSize="18sp" />
             </LinearLayout>
 
         </LinearLayout>

@@ -83,7 +83,7 @@ public class PaymentNotificationService extends Service {
     private Notification createNotification(String paymentName) {
         return new NotificationCompat.Builder(this, CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_notification)
-                .setContentTitle("💳 Payment Due Today!")
+                .setContentTitle("Payment Due Today!")
                 .setContentText(paymentName + " is due today. Don't forget to pay!")
                 .setPriority(NotificationCompat.PRIORITY_LOW)
                 .setSound(null)
