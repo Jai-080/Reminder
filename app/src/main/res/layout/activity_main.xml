@@ -447,9 +447,14 @@
 
                     <!-- Reminders Sub-section -->
                     <LinearLayout
+                        android:id="@+id/sectionUpcomingReminders"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:orientation="vertical">
+                        android:orientation="vertical"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:background="?android:attr/selectableItemBackground"
+                        android:paddingVertical="4dp">
 
                         <TextView
                             android:layout_width="wrap_content"
@@ -485,9 +490,14 @@
 
                     <!-- Payments Sub-section -->
                     <LinearLayout
+                        android:id="@+id/sectionUpcomingPayments"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:orientation="vertical">
+                        android:orientation="vertical"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:background="?android:attr/selectableItemBackground"
+                        android:paddingVertical="4dp">
 
                         <TextView
                             android:layout_width="wrap_content"

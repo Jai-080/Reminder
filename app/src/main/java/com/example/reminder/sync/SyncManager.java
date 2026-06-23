@@ -549,6 +549,9 @@ public class SyncManager {
                                 tokenManager.setLastSyncTimestamp(System.currentTimeMillis());
                                 Log.d(TAG, "performFullSync completed");
                                 System.out.println("performFullSync completed");
+
+                                // Update the widget automatically
+                                com.example.reminder.QuickNotesWidgetProvider.updateWidget(context);
                                 
                                 // Broadcast sync completed
                                 android.content.Intent intent = new android.content.Intent(ACTION_SYNC_COMPLETED);

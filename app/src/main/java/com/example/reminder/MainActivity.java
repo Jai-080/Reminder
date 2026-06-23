@@ -153,6 +153,20 @@ public class MainActivity extends AppCompatActivity {
             });
         }
 
+        View sectionUpcomingReminders = findViewById(R.id.sectionUpcomingReminders);
+        if (sectionUpcomingReminders != null) {
+            sectionUpcomingReminders.setOnClickListener(v -> {
+                startActivity(new Intent(MainActivity.this, TimedRemindersActivity.class));
+            });
+        }
+
+        View sectionUpcomingPayments = findViewById(R.id.sectionUpcomingPayments);
+        if (sectionUpcomingPayments != null) {
+            sectionUpcomingPayments.setOnClickListener(v -> {
+                startActivity(new Intent(MainActivity.this, MonthlyPaymentsActivity.class));
+            });
+        }
+
         noteDbHelper = new QuickNoteDatabaseHelper(this);
         reminderDbHelper = new ReminderDatabaseHelper(this);
         paymentDbHelper = new PaymentDatabaseHelper(this);
