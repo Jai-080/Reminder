@@ -168,12 +168,6 @@ public class QuickNoteDatabaseHelper extends SQLiteOpenHelper {
         db.close();
     }
 
-    public void clearAllNotes() {
-        SQLiteDatabase db = getWritableDatabase();
-        db.delete(TABLE_NAME, null, null);
-        db.close();
-    }
-
     public long insertOrUpdateSyncedNote(long serverId, String text, boolean isCompleted, int position, long updatedAt) {
         SQLiteDatabase db = getWritableDatabase();
         ContentValues values = new ContentValues();

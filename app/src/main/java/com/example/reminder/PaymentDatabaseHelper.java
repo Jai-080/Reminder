@@ -261,12 +261,6 @@ public class PaymentDatabaseHelper extends SQLiteOpenHelper {
         db.close();
     }
 
-    public void deleteAllPayments() {
-        SQLiteDatabase db = this.getWritableDatabase();
-        db.delete(TABLE_NAME, null, null);
-        db.close();
-    }
-
     public long insertOrUpdateSyncedPayment(long serverId, String name, long dueDate, boolean completed, long updatedAt) {
         return insertOrUpdateSyncedPayment(serverId, name, dueDate, completed, updatedAt, null, RecurrenceType.MONTHLY, "0");
     }

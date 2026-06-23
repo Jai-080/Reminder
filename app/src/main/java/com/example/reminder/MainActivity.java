@@ -169,10 +169,13 @@ public class MainActivity extends AppCompatActivity {
                     .setTitle("Clear All Notes")
                     .setMessage("Are you sure you want to delete all notes?")
                     .setPositiveButton("Clear All", (dialog, which) -> {
-                        noteDbHelper.clearAllNotes();
+                        for (QuickNote note : noteList) {
+                            noteDbHelper.softDeleteNote(note.getId());
+                        }
                         noteList.clear();
                         quickNoteAdapter.notifyDataSetChanged();
                         QuickNotesWidgetProvider.updateWidget(getApplicationContext());
+                        ReminderApplication.enqueueSyncWorker(this);
                     })
                     .setNegativeButton("Cancel", null)
                     .show();

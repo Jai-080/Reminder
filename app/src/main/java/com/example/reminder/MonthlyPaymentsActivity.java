@@ -56,12 +56,13 @@ public class MonthlyPaymentsActivity extends AppCompatActivity {
             for (MonthlyPayment payment : payments) {
                 AlarmUtils.cancelPaymentAlarm(this, payment.getId(), payment.getName());
                 AlarmUtils.cancelNotification(this, payment.getId());
+                dbHelper.softDeletePayment(payment.getId());
             }
-            dbHelper.deleteAllPayments();
             payments.clear();
             adapter.notifyDataSetChanged();
 
             Toast.makeText(this, "All payments deleted", Toast.LENGTH_SHORT).show();
+            ReminderApplication.enqueueSyncWorker(this);
         });
 
         syncCompletedReceiver = new BroadcastReceiver() {
