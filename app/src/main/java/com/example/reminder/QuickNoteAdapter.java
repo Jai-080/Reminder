@@ -151,13 +151,13 @@ public class QuickNoteAdapter extends RecyclerView.Adapter<QuickNoteAdapter.Note
     }
 
     private void showEditDialog(int position) {
-        EditText input = new EditText(context);
-        input.setInputType(InputType.TYPE_CLASS_TEXT);
+        View dialogView = LayoutInflater.from(context).inflate(R.layout.dialog_edit_quick_note, null);
+        com.google.android.material.textfield.TextInputEditText input = dialogView.findViewById(R.id.dialogNoteTextInput);
         input.setText(notes.get(position).getText());
 
         new AlertDialog.Builder(context)
                 .setTitle("Edit Note")
-                .setView(input)
+                .setView(dialogView)
                 .setPositiveButton("Save", (dialog, which) -> {
                     String newText = input.getText().toString().trim();
                     if (!newText.isEmpty()) {
