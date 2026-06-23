@@ -63,6 +63,8 @@ public class MainActivity extends AppCompatActivity {
     private android.widget.LinearLayout layoutUpcomingPayments;
     private TextView txtNoUpcomingReminders;
     private TextView txtNoUpcomingPayments;
+    private TextView txtNextPaymentDetail;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -168,6 +170,8 @@ public class MainActivity extends AppCompatActivity {
         layoutUpcomingPayments = findViewById(R.id.layoutUpcomingPayments);
         txtNoUpcomingReminders = findViewById(R.id.txtNoUpcomingReminders);
         txtNoUpcomingPayments = findViewById(R.id.txtNoUpcomingPayments);
+        txtNextPaymentDetail = findViewById(R.id.txtNextPaymentDetail);
+
 
         setupQuickNotes();
 
@@ -459,6 +463,7 @@ public class MainActivity extends AppCompatActivity {
             }
             if (txtPaymentsCount != null) txtPaymentsCount.setText(String.valueOf(activePayments));
             
+            java.util.Collections.sort(pendingPayments, (p1, p2) -> Long.compare(p1.getDueDate(), p2.getDueDate()));
             // Calculate due this calendar month
             java.util.Calendar cal = java.util.Calendar.getInstance();
             int currentMonth = cal.get(java.util.Calendar.MONTH);
@@ -471,7 +476,18 @@ public class MainActivity extends AppCompatActivity {
                     dueThisMonth++;
                 }
             }
-            if (txtPaymentsSub != null) txtPaymentsSub.setText(overduePayments + " overdue | " + dueThisMonth + " due this month");
+            if (txtPaymentsSub != null) txtPaymentsSub.setText(overduePayments + " overdue | " + dueThisMonth + " due");
+
+            if (txtNextPaymentDetail != null) {
+                if (pendingPayments.isEmpty()) {
+                    txtNextPaymentDetail.setText("No upcoming bills");
+                } else {
+                    MonthlyPayment next = pendingPayments.get(0);
+                    java.text.SimpleDateFormat dateSdf = new java.text.SimpleDateFormat("MMM dd, yyyy", java.util.Locale.getDefault());
+                    String amtStr = next.getAmount() == null ? "" : String.format(" (₹%.2f)", next.getAmount());
+                    txtNextPaymentDetail.setText(next.getName() + amtStr + "\nDue: " + dateSdf.format(new java.util.Date(next.getDueDate())));
+                }
+            }
 
             // Populate upcoming payments
             if (layoutUpcomingPayments != null) {
