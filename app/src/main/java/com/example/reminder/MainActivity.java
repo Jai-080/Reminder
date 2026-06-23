@@ -495,15 +495,19 @@ public class MainActivity extends AppCompatActivity {
                 int count = 0;
                 java.text.SimpleDateFormat dateSdf = new java.text.SimpleDateFormat("MMM dd", java.util.Locale.getDefault());
                 for (MonthlyPayment p : pendingPayments) {
-                    if (count >= 3) break;
-                    TextView tv = new TextView(this);
-                    String amtStr = p.getAmount() == null ? "" : String.format(" (₹%.2f)", p.getAmount());
-                    tv.setText("• " + p.getName() + amtStr + " - Due: " + dateSdf.format(new java.util.Date(p.getDueDate())));
-                    tv.setTextColor(getResources().getColor(R.color.colorTextSecondary, getTheme()));
-                    tv.setTextSize(14);
-                    tv.setPadding(0, 8, 0, 8);
-                    layoutUpcomingPayments.addView(tv);
-                    count++;
+                    java.util.Calendar dueCal = java.util.Calendar.getInstance();
+                    dueCal.setTimeInMillis(p.getDueDate());
+                    if (dueCal.get(java.util.Calendar.MONTH) == currentMonth && dueCal.get(java.util.Calendar.YEAR) == currentYear) {
+                        if (count >= 3) break;
+                        TextView tv = new TextView(this);
+                        String amtStr = p.getAmount() == null ? "" : String.format(" (₹%.2f)", p.getAmount());
+                        tv.setText("• " + p.getName() + amtStr + " - Due: " + dateSdf.format(new java.util.Date(p.getDueDate())));
+                        tv.setTextColor(getResources().getColor(R.color.colorTextSecondary, getTheme()));
+                        tv.setTextSize(14);
+                        tv.setPadding(0, 8, 0, 8);
+                        layoutUpcomingPayments.addView(tv);
+                        count++;
+                    }
                 }
                 if (txtNoUpcomingPayments != null) {
                     txtNoUpcomingPayments.setVisibility(count == 0 ? View.VISIBLE : View.GONE);
