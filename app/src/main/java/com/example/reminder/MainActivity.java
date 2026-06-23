@@ -479,13 +479,21 @@ public class MainActivity extends AppCompatActivity {
             if (txtPaymentsSub != null) txtPaymentsSub.setText(overduePayments + " overdue | " + dueThisMonth + " due");
 
             if (txtNextPaymentDetail != null) {
-                if (pendingPayments.isEmpty()) {
-                    txtNextPaymentDetail.setText("No upcoming bills");
+                MonthlyPayment nextThisMonth = null;
+                for (MonthlyPayment p : pendingPayments) {
+                    java.util.Calendar dueCal = java.util.Calendar.getInstance();
+                    dueCal.setTimeInMillis(p.getDueDate());
+                    if (dueCal.get(java.util.Calendar.MONTH) == currentMonth && dueCal.get(java.util.Calendar.YEAR) == currentYear) {
+                        nextThisMonth = p;
+                        break;
+                    }
+                }
+                if (nextThisMonth == null) {
+                    txtNextPaymentDetail.setText("No upcoming payments for the month");
                 } else {
-                    MonthlyPayment next = pendingPayments.get(0);
                     java.text.SimpleDateFormat dateSdf = new java.text.SimpleDateFormat("MMM dd, yyyy", java.util.Locale.getDefault());
-                    String amtStr = next.getAmount() == null ? "" : String.format(" (₹%.2f)", next.getAmount());
-                    txtNextPaymentDetail.setText(next.getName() + amtStr + "\nDue: " + dateSdf.format(new java.util.Date(next.getDueDate())));
+                    String amtStr = nextThisMonth.getAmount() == null ? "" : String.format(" (₹%.2f)", nextThisMonth.getAmount());
+                    txtNextPaymentDetail.setText(nextThisMonth.getName() + amtStr + "\nDue: " + dateSdf.format(new java.util.Date(nextThisMonth.getDueDate())));
                 }
             }
 
@@ -510,6 +518,7 @@ public class MainActivity extends AppCompatActivity {
                     }
                 }
                 if (txtNoUpcomingPayments != null) {
+                    txtNoUpcomingPayments.setText("No upcoming payments for the month");
                     txtNoUpcomingPayments.setVisibility(count == 0 ? View.VISIBLE : View.GONE);
                 }
             }
