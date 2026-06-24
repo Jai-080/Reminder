@@ -23,11 +23,6 @@ public class Paymentalarmreceiver extends BroadcastReceiver {
         }
 
         // ✅ Directly show persistent notification to bypass foreground service background limits
-        AlarmUtils.showMonthlyPaymentNotification(context, paymentId, paymentName, offsetDays);
-
-        // ✅ Reschedule next offset alarm for loop propagation
-        if (scheduledTime != -1L) {
-            AlarmUtils.schedulePaymentAlarm(context, paymentId, paymentName, scheduledTime);
-        }
+        AlarmUtils.showMonthlyPaymentNotification(context, paymentId, paymentName, 0);
     }
 }

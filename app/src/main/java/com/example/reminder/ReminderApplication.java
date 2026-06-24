@@ -39,6 +39,9 @@ public class ReminderApplication extends Application {
         if (com.example.reminder.auth.TokenManager.getInstance(this).isLoggedIn()) {
             WebSocketManager.getInstance(this).connect();
         }
+
+        // Restore due payment notifications/alarms on app launch/update
+        AlarmUtils.restoreDuePaymentNotifications(this);
     }
 
     private void registerConnectivityMonitor() {

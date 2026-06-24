@@ -105,7 +105,7 @@ public class MonthlyPaymentsActivity extends AppCompatActivity {
     }
 
     private void showPaymentCreateDialog(String initialName) {
-        androidx.appcompat.app.AlertDialog.Builder builder = new androidx.appcompat.app.AlertDialog.Builder(this);
+        com.google.android.material.dialog.MaterialAlertDialogBuilder builder = new com.google.android.material.dialog.MaterialAlertDialogBuilder(this);
         builder.setTitle("Add Payment Reminder");
 
         android.view.LayoutInflater inflater = getLayoutInflater();
@@ -118,9 +118,10 @@ public class MonthlyPaymentsActivity extends AppCompatActivity {
         final com.google.android.material.textfield.TextInputEditText amountInput = dialogView.findViewById(R.id.dialogPaymentAmountInput);
         
         final android.widget.Spinner recurrenceSpinner = dialogView.findViewById(R.id.dialogRecurrenceSpinner);
-        android.widget.ArrayAdapter<String> spinnerAdapter = new android.widget.ArrayAdapter<>(this, android.R.layout.simple_spinner_item, new String[]{"Monthly", "Quarterly", "Yearly"});
+        android.widget.ArrayAdapter<String> spinnerAdapter = new android.widget.ArrayAdapter<>(this, android.R.layout.simple_spinner_item, new String[]{"One-Time", "Monthly", "Quarterly", "Yearly"});
         spinnerAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         recurrenceSpinner.setAdapter(spinnerAdapter);
+        recurrenceSpinner.setSelection(1); // Default to Monthly
 
         final com.google.android.material.button.MaterialButton dateButton = dialogView.findViewById(R.id.dialogDateButton);
         final java.util.Calendar dueCalendar = java.util.Calendar.getInstance();
@@ -148,11 +149,6 @@ public class MonthlyPaymentsActivity extends AppCompatActivity {
             datePickerDialog.show();
         });
 
-        final android.widget.CheckBox checkbox7d = dialogView.findViewById(R.id.checkboxNotify7d);
-        final android.widget.CheckBox checkbox3d = dialogView.findViewById(R.id.checkboxNotify3d);
-        final android.widget.CheckBox checkbox1d = dialogView.findViewById(R.id.checkboxNotify1d);
-        final android.widget.CheckBox checkboxDue = dialogView.findViewById(R.id.checkboxNotifyDue);
-
         builder.setPositiveButton("Save", (dialog, which) -> {
             String name = nameInput.getText().toString().trim();
             if (name.isEmpty()) {
@@ -173,41 +169,27 @@ public class MonthlyPaymentsActivity extends AppCompatActivity {
 
             int spinnerPos = recurrenceSpinner.getSelectedItemPosition();
             RecurrenceType recurrence = RecurrenceType.MONTHLY;
-            if (spinnerPos == 1) {
-                recurrence = RecurrenceType.QUARTERLY;
+            if (spinnerPos == 0) {
+                recurrence = RecurrenceType.ONE_TIME;
+            } else if (spinnerPos == 1) {
+                recurrence = RecurrenceType.MONTHLY;
             } else if (spinnerPos == 2) {
+                recurrence = RecurrenceType.QUARTERLY;
+            } else if (spinnerPos == 3) {
                 recurrence = RecurrenceType.YEARLY;
             }
 
             long dueDateMillis = dueCalendar.getTimeInMillis();
-
-            // Construct notificationOffsets based on checkboxes
-            java.util.List<String> offsetsList = new java.util.ArrayList<>();
-            if (checkbox7d.isChecked()) offsetsList.add("7");
-            if (checkbox3d.isChecked()) offsetsList.add("3");
-            if (checkbox1d.isChecked()) offsetsList.add("1");
-            if (checkboxDue.isChecked()) offsetsList.add("0");
-
-            String notificationOffsets = "0"; // Default fallback
-            if (!offsetsList.isEmpty()) {
-                notificationOffsets = android.text.TextUtils.join(",", offsetsList);
-            }
+            String notificationOffsets = "0";
 
             int paymentId = dbHelper.insertPayment(name, dueDateMillis, false, amount, recurrence, notificationOffsets);
 
-            java.util.Calendar cal = java.util.Calendar.getInstance();
-            cal.set(java.util.Calendar.HOUR_OF_DAY, 0);
-            cal.set(java.util.Calendar.MINUTE, 0);
-            cal.set(java.util.Calendar.SECOND, 0);
-            cal.set(java.util.Calendar.MILLISECOND, 0);
-            long startOfToday = cal.getTimeInMillis();
-
-            if (dueDateMillis > System.currentTimeMillis()) {
+            if (dueDateMillis <= System.currentTimeMillis()) {
+                Log.d("PAYMENT SCHEDULER", "Triggering immediate payment notification:\nlocalId=" + paymentId + "\nserverId=-1\ndueDate=" + dueDateMillis);
+                AlarmUtils.showMonthlyPaymentNotification(this, paymentId, name);
+            } else {
                 Log.d("PAYMENT SCHEDULER", "Scheduling payment:\nlocalId=" + paymentId + "\nserverId=-1\ndueDate=" + dueDateMillis + "\nsuccess=true");
                 AlarmUtils.schedulePaymentAlarm(this, paymentId, name, dueDateMillis);
-            } else if (dueDateMillis >= startOfToday) {
-                Log.d("PAYMENT SCHEDULER", "Triggering immediate payment notification (due today):\nlocalId=" + paymentId + "\nserverId=-1\ndueDate=" + dueDateMillis);
-                AlarmUtils.showMonthlyPaymentNotification(this, paymentId, name);
             }
 
             payments.clear();

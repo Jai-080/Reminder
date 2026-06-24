@@ -22,128 +22,254 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Locale;
 
-public class MonthlyPaymentAdapter extends RecyclerView.Adapter<MonthlyPaymentAdapter.ViewHolder> {
+public class MonthlyPaymentAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
+
+    private static final int VIEW_TYPE_HEADER = 0;
+    private static final int VIEW_TYPE_ITEM = 1;
 
     private final Context context;
     private final ArrayList<MonthlyPayment> payments;
     private final PaymentDatabaseHelper dbHelper;
+    private final ArrayList<Object> displayItems = new ArrayList<>();
 
     public MonthlyPaymentAdapter(Context context, ArrayList<MonthlyPayment> payments, PaymentDatabaseHelper dbHelper) {
         this.context = context;
         this.payments = payments;
         this.dbHelper = dbHelper;
-        sortPayments();
+        rebuildDisplayItems();
+    }
+
+    private void rebuildDisplayItems() {
+        displayItems.clear();
+        ArrayList<MonthlyPayment> upcomingList = new ArrayList<>();
+        ArrayList<MonthlyPayment> recentlyPaidList = new ArrayList<>();
+        ArrayList<MonthlyPayment> dueLaterList = new ArrayList<>();
+
+        java.util.Calendar nowCal = java.util.Calendar.getInstance();
+        int currentMonth = nowCal.get(java.util.Calendar.MONTH) + 1;
+        int currentYear = nowCal.get(java.util.Calendar.YEAR);
+
+        for (MonthlyPayment p : payments) {
+            if (p.isRecentlyPaid(currentMonth, currentYear)) {
+                recentlyPaidList.add(p);
+            } else if (p.isUpcoming(currentMonth, currentYear)) {
+                upcomingList.add(p);
+            } else if (p.isDueLater(currentMonth, currentYear)) {
+                dueLaterList.add(p);
+            }
+        }
+
+        // Sort upcoming list by dueDate ascending
+        upcomingList.sort((p1, p2) -> Long.compare(p1.getDueDate(), p2.getDueDate()));
+
+        // Sort recently paid list by lastPaidAt descending
+        recentlyPaidList.sort((p1, p2) -> {
+            Long lpa1 = p1.getLastPaidAt();
+            Long lpa2 = p2.getLastPaidAt();
+            if (lpa1 == null) return 1;
+            if (lpa2 == null) return -1;
+            return Long.compare(lpa2, lpa1);
+        });
+
+        // Sort due later list by dueDate ascending
+        dueLaterList.sort((p1, p2) -> Long.compare(p1.getDueDate(), p2.getDueDate()));
+
+        if (!upcomingList.isEmpty()) {
+            displayItems.add("Due This Month");
+            displayItems.addAll(upcomingList);
+        }
+        if (!recentlyPaidList.isEmpty()) {
+            displayItems.add("Recently Paid");
+            displayItems.addAll(recentlyPaidList);
+        }
+        if (!dueLaterList.isEmpty()) {
+            displayItems.add("Due Later");
+            displayItems.addAll(dueLaterList);
+        }
+    }
+
+    @Override
+    public int getItemViewType(int position) {
+        rebuildDisplayItems();
+        if (displayItems.get(position) instanceof String) {
+            return VIEW_TYPE_HEADER;
+        }
+        return VIEW_TYPE_ITEM;
     }
 
     @NonNull
     @Override
-    public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View view = LayoutInflater.from(context).inflate(R.layout.item_payment, parent, false);
-        return new ViewHolder(view);
+    public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        if (viewType == VIEW_TYPE_HEADER) {
+            TextView tv = new TextView(context);
+            ViewGroup.MarginLayoutParams lp = new ViewGroup.MarginLayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT
+            );
+            lp.setMargins(0, 32, 0, 16);
+            tv.setLayoutParams(lp);
+            tv.setTextSize(14f);
+            tv.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
+            tv.setLetterSpacing(0.08f);
+            try {
+                tv.setTextColor(context.getColor(R.color.colorTextMuted));
+            } catch (Exception e) {
+                tv.setTextColor(0xFF888888);
+            }
+            return new HeaderViewHolder(tv);
+        } else {
+            View view = LayoutInflater.from(context).inflate(R.layout.item_payment, parent, false);
+            return new ViewHolder(view);
+        }
     }
 
     @Override
-    public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
-        MonthlyPayment payment = payments.get(position);
-        
+    public void onBindViewHolder(@NonNull RecyclerView.ViewHolder rawHolder, int position) {
+        if (rawHolder instanceof HeaderViewHolder) {
+            HeaderViewHolder holder = (HeaderViewHolder) rawHolder;
+            String headerText = (String) displayItems.get(position);
+            holder.textView.setText(headerText.toUpperCase());
+            return;
+        }
+
+        ViewHolder holder = (ViewHolder) rawHolder;
+        MonthlyPayment payment = (MonthlyPayment) displayItems.get(position);
+
         String amountText = payment.getAmount() == null ? "Amount Unknown" : String.format(Locale.getDefault(), "₹%.2f", payment.getAmount());
         holder.paymentName.setText(payment.getName() + " (" + amountText + ")");
 
         String recurrenceStr = payment.getRecurrence() != null ? payment.getRecurrence().name() : "MONTHLY";
-        String recurrenceDisplay = recurrenceStr.substring(0, 1).toUpperCase() + recurrenceStr.substring(1).toLowerCase();
+        String recurrenceDisplay = recurrenceStr.replace("_", "-");
+        recurrenceDisplay = recurrenceDisplay.substring(0, 1).toUpperCase() + recurrenceDisplay.substring(1).toLowerCase();
 
         String formattedDate = new SimpleDateFormat("dd MMM yyyy", Locale.getDefault())
                 .format(payment.getDueDate());
-        holder.dueDateView.setText(context.getString(R.string.due_date_format, formattedDate) + " (" + recurrenceDisplay + ")");
 
         holder.checkBox.setOnCheckedChangeListener(null);
-        holder.checkBox.setChecked(payment.isCompleted());
+
+        java.util.Calendar nowCal = java.util.Calendar.getInstance();
+        int currentMonth = nowCal.get(java.util.Calendar.MONTH) + 1;
+        int currentYear = nowCal.get(java.util.Calendar.YEAR);
+
+        boolean isRecentlyPaid = payment.isRecentlyPaid(currentMonth, currentYear);
+        boolean isUpcoming = payment.isUpcoming(currentMonth, currentYear);
+        boolean isDueLater = payment.isDueLater(currentMonth, currentYear);
+
+        if (isRecentlyPaid) {
+            holder.checkBox.setVisibility(View.VISIBLE);
+            holder.checkBox.setChecked(true);
+            holder.checkBox.setEnabled(false);
+            if (payment.getRecurrence() == RecurrenceType.ONE_TIME) {
+                holder.dueDateView.setText("✓ Paid  |  Due: " + formattedDate + " (" + recurrenceDisplay + ")");
+            } else {
+                holder.dueDateView.setText("✓ Paid  |  Next Due: " + formattedDate + " (" + recurrenceDisplay + ")");
+            }
+            holder.dueDateView.setTextColor(0xFF888888); // gray secondary text
+            holder.paymentName.setTextColor(0xFF888888);
+        } else if (isDueLater) {
+            holder.checkBox.setVisibility(View.GONE);
+            holder.checkBox.setChecked(false);
+            holder.checkBox.setEnabled(false);
+            holder.dueDateView.setText("Due Date: " + formattedDate + " (" + recurrenceDisplay + ")");
+            try {
+                holder.dueDateView.setTextColor(context.getColor(R.color.colorTextSecondary));
+            } catch (Exception e) {
+                holder.dueDateView.setTextColor(0xFF666666);
+            }
+            try {
+                holder.paymentName.setTextColor(context.getColor(R.color.colorTextPrimary));
+            } catch (Exception e) {
+                holder.paymentName.setTextColor(0xFF000000);
+            }
+        } else { // isUpcoming
+            holder.checkBox.setVisibility(View.VISIBLE);
+            holder.checkBox.setChecked(false);
+            holder.checkBox.setEnabled(true);
+            
+            long now = System.currentTimeMillis();
+            if (payment.getDueDate() < now) {
+                holder.dueDateView.setText("Due Date: " + formattedDate + " (" + recurrenceDisplay + ") [Overdue]");
+                holder.dueDateView.setTextColor(0xFFFF3333); // red text for overdue
+            } else {
+                holder.dueDateView.setText("Due Date: " + formattedDate + " (" + recurrenceDisplay + ")");
+                try {
+                    holder.dueDateView.setTextColor(context.getColor(R.color.colorTextSecondary));
+                } catch (Exception e) {
+                    holder.dueDateView.setTextColor(0xFF666666);
+                }
+            }
+            try {
+                holder.paymentName.setTextColor(context.getColor(R.color.colorTextPrimary));
+            } catch (Exception e) {
+                holder.paymentName.setTextColor(0xFF000000);
+            }
+        }
 
         holder.checkBox.setOnCheckedChangeListener((buttonView, isChecked) -> {
             int pos = holder.getAdapterPosition();
-            if (pos != RecyclerView.NO_POSITION && pos < payments.size()) {
-                MonthlyPayment currentPayment = payments.get(pos);
+            if (pos != RecyclerView.NO_POSITION && pos < displayItems.size()) {
+                MonthlyPayment currentPayment = (MonthlyPayment) displayItems.get(pos);
                 if (isChecked) {
-                    // 1. Advance due date
-                    java.util.Calendar cal = java.util.Calendar.getInstance();
-                    cal.setTimeInMillis(currentPayment.getDueDate());
-                    if (currentPayment.getRecurrence() == RecurrenceType.QUARTERLY) {
-                        cal.add(java.util.Calendar.MONTH, 3);
-                    } else if (currentPayment.getRecurrence() == RecurrenceType.YEARLY) {
-                        cal.add(java.util.Calendar.YEAR, 1);
+                    if (currentPayment.getRecurrence() == RecurrenceType.ONE_TIME) {
+                        currentPayment.setLastPaidAt(System.currentTimeMillis());
+                        currentPayment.setCompleted(false);
+                        currentPayment.setSyncStatus("PENDING");
+                        
+                        dbHelper.updatePayment(currentPayment);
+
+                        // Cancel current alarm & notification
+                        AlarmUtils.cancelPaymentAlarm(context, currentPayment.getId(), currentPayment.getName());
+                        AlarmUtils.cancelNotification(context, currentPayment.getId());
                     } else {
-                        cal.add(java.util.Calendar.MONTH, 1);
+                        // Advance due date based on recurrence frequency
+                        java.util.Calendar cal = java.util.Calendar.getInstance();
+                        cal.setTimeInMillis(currentPayment.getDueDate());
+                        if (currentPayment.getRecurrence() == RecurrenceType.QUARTERLY) {
+                            cal.add(java.util.Calendar.MONTH, 3);
+                        } else if (currentPayment.getRecurrence() == RecurrenceType.YEARLY) {
+                            cal.add(java.util.Calendar.YEAR, 1);
+                        } else {
+                            cal.add(java.util.Calendar.MONTH, 1);
+                        }
+                        long newDueDate = cal.getTimeInMillis();
+
+                        currentPayment.setDueDateMillis(newDueDate);
+                        currentPayment.setLastPaidAt(System.currentTimeMillis());
+                        currentPayment.setCompleted(false);
+                        currentPayment.setSyncStatus("PENDING");
+                        
+                        dbHelper.updatePayment(currentPayment);
+
+                        // Cancel current alarm & notification
+                        AlarmUtils.cancelPaymentAlarm(context, currentPayment.getId(), currentPayment.getName());
+                        AlarmUtils.cancelNotification(context, currentPayment.getId());
+
+                        // Schedule next upcoming alarm
+                        if (newDueDate > System.currentTimeMillis()) {
+                            Log.d("PAYMENT SCHEDULER", "Scheduling next cycle payment:\nlocalId=" + currentPayment.getId() + "\nserverId=" + (currentPayment.getServerId() != null ? currentPayment.getServerId() : -1) + "\ndueDate=" + newDueDate + "\nsuccess=true");
+                            AlarmUtils.schedulePaymentAlarm(context, currentPayment.getId(), currentPayment.getName(), newDueDate);
+                        }
                     }
-                    long newDueDate = cal.getTimeInMillis();
 
-                    currentPayment.setDueDateMillis(newDueDate);
-                    currentPayment.setCompleted(false);
-                    currentPayment.setSyncStatus("PENDING");
-                    
-                    dbHelper.updatePayment(currentPayment);
-
-                    // 2. Cancel current alarm & notification
-                    AlarmUtils.cancelPaymentAlarm(context, currentPayment.getId(), currentPayment.getName());
-                    AlarmUtils.cancelNotification(context, currentPayment.getId());
-
-                    // 3. Schedule next upcoming alarm
-                    if (newDueDate > System.currentTimeMillis()) {
-                        Log.d("PAYMENT SCHEDULER", "Scheduling next cycle payment:\nlocalId=" + currentPayment.getId() + "\nserverId=" + (currentPayment.getServerId() != null ? currentPayment.getServerId() : -1) + "\ndueDate=" + newDueDate + "\nsuccess=true");
-                        AlarmUtils.schedulePaymentAlarm(context, currentPayment.getId(), currentPayment.getName(), newDueDate);
-                    }
-
-                    // 4. Sync status to server
+                    // Sync status to server
                     SyncManager.getInstance(context).uploadPayment(
                             currentPayment,
                             new SyncManager.SyncCallback<Long>() {
                                 @Override
                                 public void onSuccess(Long result) {
-                                    Log.d("MonthlyPaymentAdapter", "Payment auto-renew synced to server");
+                                    Log.d("MonthlyPaymentAdapter", "Payment completion synced to server");
                                 }
 
                                 @Override
                                 public void onError(String error) {
-                                    Log.e("MonthlyPaymentAdapter", "Failed to sync auto-renew: " + error);
+                                    Log.e("MonthlyPaymentAdapter", "Failed to sync payment completion: " + error);
                                 }
                             }
                     );
 
-                    Toast.makeText(context, "Payment completed, auto-renewed", Toast.LENGTH_SHORT).show();
-                } else {
-                    // Handled if somehow unchecked manually
-                    currentPayment.setCompleted(false);
-                    currentPayment.setSyncStatus("PENDING");
-                    dbHelper.updatePayment(currentPayment);
-
-                    AlarmUtils.cancelPaymentAlarm(context, currentPayment.getId(), currentPayment.getName());
-                    AlarmUtils.cancelNotification(context, currentPayment.getId());
-
-                    java.util.Calendar cal = java.util.Calendar.getInstance();
-                    cal.set(java.util.Calendar.HOUR_OF_DAY, 0);
-                    cal.set(java.util.Calendar.MINUTE, 0);
-                    cal.set(java.util.Calendar.SECOND, 0);
-                    cal.set(java.util.Calendar.MILLISECOND, 0);
-                    long startOfToday = cal.getTimeInMillis();
-
-                    if (currentPayment.getDueDate() > System.currentTimeMillis()) {
-                        AlarmUtils.schedulePaymentAlarm(context, currentPayment.getId(), currentPayment.getName(), currentPayment.getDueDate());
-                    } else if (currentPayment.getDueDate() >= startOfToday) {
-                        AlarmUtils.showMonthlyPaymentNotification(context, currentPayment.getId(), currentPayment.getName());
-                    }
-
-                    SyncManager.getInstance(context).uploadPayment(
-                            currentPayment,
-                            new SyncManager.SyncCallback<Long>() {
-                                @Override
-                                public void onSuccess(Long result) {}
-                                @Override
-                                public void onError(String error) {}
-                            }
-                    );
-                    Toast.makeText(context, "Payment marked as pending", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(context, "Payment completed", Toast.LENGTH_SHORT).show();
                 }
 
-                sortPayments();
                 notifyDataSetChanged();
                 if (context instanceof MonthlyPaymentsActivity) {
                     View txtNoPayments = ((MonthlyPaymentsActivity) context).findViewById(R.id.txtNoPayments);
@@ -156,8 +282,8 @@ public class MonthlyPaymentAdapter extends RecyclerView.Adapter<MonthlyPaymentAd
 
         holder.deleteButton.setOnClickListener(v -> {
             int pos = holder.getAdapterPosition();
-            if (pos != RecyclerView.NO_POSITION && pos < payments.size()) {
-                MonthlyPayment toDelete = payments.get(pos);
+            if (pos != RecyclerView.NO_POSITION && pos < displayItems.size()) {
+                MonthlyPayment toDelete = (MonthlyPayment) displayItems.get(pos);
  
                 AlarmUtils.cancelPaymentAlarm(context, toDelete.getId(), toDelete.getName());
                 AlarmUtils.cancelNotification(context, toDelete.getId());
@@ -175,9 +301,8 @@ public class MonthlyPaymentAdapter extends RecyclerView.Adapter<MonthlyPaymentAd
                     }
                 });
  
-                payments.remove(pos);
-                notifyItemRemoved(pos);
-                notifyItemRangeChanged(pos, payments.size());
+                payments.remove(toDelete);
+                notifyDataSetChanged();
                 if (context instanceof MonthlyPaymentsActivity) {
                     View txtNoPayments = ((MonthlyPaymentsActivity) context).findViewById(R.id.txtNoPayments);
                     if (txtNoPayments != null) {
@@ -191,11 +316,8 @@ public class MonthlyPaymentAdapter extends RecyclerView.Adapter<MonthlyPaymentAd
 
     @Override
     public int getItemCount() {
-        return payments.size();
-    }
-
-    private void sortPayments() {
-        payments.sort((p1, p2) -> Boolean.compare(p1.isCompleted(), p2.isCompleted()));
+        rebuildDisplayItems();
+        return displayItems.size();
     }
 
     public static class ViewHolder extends RecyclerView.ViewHolder {
@@ -209,6 +331,14 @@ public class MonthlyPaymentAdapter extends RecyclerView.Adapter<MonthlyPaymentAd
             dueDateView = itemView.findViewById(R.id.dueDateTextView);
             checkBox = itemView.findViewById(R.id.paymentCheckBox);
             deleteButton = itemView.findViewById(R.id.deletePaymentBtn);
+        }
+    }
+
+    public static class HeaderViewHolder extends RecyclerView.ViewHolder {
+        TextView textView;
+        public HeaderViewHolder(TextView itemView) {
+            super(itemView);
+            this.textView = itemView;
         }
     }
 }

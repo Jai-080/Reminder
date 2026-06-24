@@ -8,6 +8,7 @@ public class PaymentRequest {
     private Double amount;
     private String recurrence;
     private String notificationOffsets;
+    private Long lastPaidAt;
 
     public PaymentRequest(String name, Long dueDate, Boolean completed) {
         this.name = name;
@@ -65,4 +66,6 @@ public class PaymentRequest {
     public Double getAmount() { return amount; }
     public String getRecurrence() { return recurrence; }
     public String getNotificationOffsets() { return notificationOffsets; }
+    public Long getLastPaidAt() { return lastPaidAt; }
+    public void setLastPaidAt(Long lastPaidAt) { this.lastPaidAt = lastPaidAt; }
 }

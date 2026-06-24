@@ -178,16 +178,34 @@ public class SyncManager {
                                 System.currentTimeMillis(),
                                 amt,
                                 rec,
-                                offsets
+                                offsets,
+                                payment.getLastPaidAt()
                         );
-                        boolean completed = payment.getCompleted() != null ? payment.getCompleted() : false;
-                        if (!completed) {
-                            if (payment.getDueDate() > System.currentTimeMillis()) {
+                        Long lpa = payment.getLastPaidAt();
+                        boolean isRecentlyPaid = false;
+                        if (lpa != null) {
+                            if (rec == RecurrenceType.ONE_TIME) {
+                                isRecentlyPaid = true;
+                            } else {
+                                java.util.Calendar calPaid = java.util.Calendar.getInstance();
+                                calPaid.setTimeInMillis(lpa);
+                                int paidMonth = calPaid.get(java.util.Calendar.MONTH) + 1;
+                                int paidYear = calPaid.get(java.util.Calendar.YEAR);
+                                java.util.Calendar calNow = java.util.Calendar.getInstance();
+                                int curMonth = calNow.get(java.util.Calendar.MONTH) + 1;
+                                int curYear = calNow.get(java.util.Calendar.YEAR);
+                                isRecentlyPaid = (paidMonth == curMonth && paidYear == curYear);
+                            }
+                        }
+                        if (isRecentlyPaid) {
+                            AlarmUtils.cancelNotification(context, (int) localId);
+                        } else {
+                            if (payment.getDueDate() <= System.currentTimeMillis()) {
+                                Log.d("PAYMENT SCHEDULER", "Triggering immediate payment notification:\nlocalId=" + localId + "\nserverId=" + payment.getId() + "\ndueDate=" + payment.getDueDate());
+                                AlarmUtils.showMonthlyPaymentNotification(context, (int) localId, payment.getName());
+                            } else {
                                 Log.d("PAYMENT SCHEDULER", "Scheduling payment:\nlocalId=" + localId + "\nserverId=" + payment.getId() + "\ndueDate=" + payment.getDueDate() + "\nsuccess=true");
                                 AlarmUtils.schedulePaymentAlarm(context, (int) localId, payment.getName(), payment.getDueDate());
-                            } else if (payment.getDueDate() >= startOfToday) {
-                                Log.d("PAYMENT SCHEDULER", "Triggering immediate payment notification (due today):\nlocalId=" + localId + "\nserverId=" + payment.getId() + "\ndueDate=" + payment.getDueDate());
-                                AlarmUtils.showMonthlyPaymentNotification(context, (int) localId, payment.getName());
                             }
                         }
                     }
@@ -414,6 +432,7 @@ public class SyncManager {
                 payment.getRecurrence() != null ? payment.getRecurrence().name() : "MONTHLY",
                 payment.getNotificationOffsets() != null ? payment.getNotificationOffsets() : "0"
         );
+        request.setLastPaidAt(payment.getLastPaidAt());
         Long serverId = payment.getServerId();
 
         if (serverId != null && serverId > 0) {
@@ -1172,19 +1191,37 @@ public class SyncManager {
                                             serverMillis,
                                             amt,
                                             rec,
-                                            offsets
+                                            offsets,
+                                            serverPayment.getLastPaidAt()
                                     );
                                     Log.d("PAYMENT SCHEDULER", "Cancelling previous payment alarm: localId=" + localId);
                                     AlarmUtils.cancelPaymentAlarm(context, (int) localId, serverPayment.getName());
-                                    if (completed) {
+                                    
+                                    Long lpa = serverPayment.getLastPaidAt();
+                                    boolean isRecentlyPaid = false;
+                                    if (lpa != null) {
+                                        if (rec == RecurrenceType.ONE_TIME) {
+                                            isRecentlyPaid = true;
+                                        } else {
+                                            java.util.Calendar calPaid = java.util.Calendar.getInstance();
+                                            calPaid.setTimeInMillis(lpa);
+                                            int paidMonth = calPaid.get(java.util.Calendar.MONTH) + 1;
+                                            int paidYear = calPaid.get(java.util.Calendar.YEAR);
+                                            java.util.Calendar calNow = java.util.Calendar.getInstance();
+                                            int curMonth = calNow.get(java.util.Calendar.MONTH) + 1;
+                                            int curYear = calNow.get(java.util.Calendar.YEAR);
+                                            isRecentlyPaid = (paidMonth == curMonth && paidYear == curYear);
+                                        }
+                                    }
+                                    if (isRecentlyPaid) {
                                         AlarmUtils.cancelNotification(context, (int) localId);
                                     } else {
-                                        if (serverPayment.getDueDate() > System.currentTimeMillis()) {
+                                        if (serverPayment.getDueDate() <= System.currentTimeMillis()) {
+                                            Log.d("PAYMENT SCHEDULER", "Triggering immediate payment notification:\nlocalId=" + localId + "\nserverId=" + serverPayment.getId() + "\ndueDate=" + serverPayment.getDueDate());
+                                            AlarmUtils.showMonthlyPaymentNotification(context, (int) localId, serverPayment.getName());
+                                        } else {
                                             Log.d("PAYMENT SCHEDULER", "Scheduling payment:\nlocalId=" + localId + "\nserverId=" + serverPayment.getId() + "\ndueDate=" + serverPayment.getDueDate() + "\nsuccess=true");
                                             AlarmUtils.schedulePaymentAlarm(context, (int) localId, serverPayment.getName(), serverPayment.getDueDate());
-                                        } else if (serverPayment.getDueDate() >= startOfToday) {
-                                            Log.d("PAYMENT SCHEDULER", "Triggering immediate payment notification (due today):\nlocalId=" + localId + "\nserverId=" + serverPayment.getId() + "\ndueDate=" + serverPayment.getDueDate());
-                                            AlarmUtils.showMonthlyPaymentNotification(context, (int) localId, serverPayment.getName());
                                         }
                                     }
                                 } else {
@@ -1218,15 +1255,35 @@ public class SyncManager {
                                         serverMillis,
                                         amt,
                                         rec,
-                                        offsets
+                                        offsets,
+                                        serverPayment.getLastPaidAt()
                                 );
-                                if (!completed) {
-                                    if (serverPayment.getDueDate() > System.currentTimeMillis()) {
+                                
+                                Long lpa = serverPayment.getLastPaidAt();
+                                boolean isRecentlyPaid = false;
+                                if (lpa != null) {
+                                    if (rec == RecurrenceType.ONE_TIME) {
+                                        isRecentlyPaid = true;
+                                    } else {
+                                        java.util.Calendar calPaid = java.util.Calendar.getInstance();
+                                        calPaid.setTimeInMillis(lpa);
+                                        int paidMonth = calPaid.get(java.util.Calendar.MONTH) + 1;
+                                        int paidYear = calPaid.get(java.util.Calendar.YEAR);
+                                        java.util.Calendar calNow = java.util.Calendar.getInstance();
+                                        int curMonth = calNow.get(java.util.Calendar.MONTH) + 1;
+                                        int curYear = calNow.get(java.util.Calendar.YEAR);
+                                        isRecentlyPaid = (paidMonth == curMonth && paidYear == curYear);
+                                    }
+                                }
+                                if (isRecentlyPaid) {
+                                    AlarmUtils.cancelNotification(context, (int) localId);
+                                } else {
+                                    if (serverPayment.getDueDate() <= System.currentTimeMillis()) {
+                                        Log.d("PAYMENT SCHEDULER", "Triggering immediate payment notification:\nlocalId=" + localId + "\nserverId=" + serverPayment.getId() + "\ndueDate=" + serverPayment.getDueDate());
+                                        AlarmUtils.showMonthlyPaymentNotification(context, (int) localId, serverPayment.getName());
+                                    } else {
                                         Log.d("PAYMENT SCHEDULER", "Scheduling payment:\nlocalId=" + localId + "\nserverId=" + serverPayment.getId() + "\ndueDate=" + serverPayment.getDueDate() + "\nsuccess=true");
                                         AlarmUtils.schedulePaymentAlarm(context, (int) localId, serverPayment.getName(), serverPayment.getDueDate());
-                                    } else if (serverPayment.getDueDate() >= startOfToday) {
-                                        Log.d("PAYMENT SCHEDULER", "Triggering immediate payment notification (due today):\nlocalId=" + localId + "\nserverId=" + serverPayment.getId() + "\ndueDate=" + serverPayment.getDueDate());
-                                        AlarmUtils.showMonthlyPaymentNotification(context, (int) localId, serverPayment.getName());
                                     }
                                 }
                             }

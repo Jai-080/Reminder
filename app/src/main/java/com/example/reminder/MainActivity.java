@@ -488,31 +488,33 @@ public class MainActivity extends AppCompatActivity {
         // 4. Payments stats & list
         if (paymentDbHelper != null) {
             ArrayList<MonthlyPayment> allPayments = paymentDbHelper.getAllPayments();
-            int activePayments = 0;
+            int upcomingCount = 0;
             int overduePayments = 0;
-            ArrayList<MonthlyPayment> pendingPayments = new ArrayList<>();
+            ArrayList<MonthlyPayment> upcomingPaymentsList = new ArrayList<>();
             long now = System.currentTimeMillis();
+
+            java.util.Calendar cal = java.util.Calendar.getInstance();
+            int currentMonth = cal.get(java.util.Calendar.MONTH) + 1; // 1-based
+            int currentYear = cal.get(java.util.Calendar.YEAR);
+
             for (MonthlyPayment p : allPayments) {
-                if (!p.isCompleted()) {
-                    activePayments++;
-                    pendingPayments.add(p);
+                if (p.isUpcoming(currentMonth, currentYear)) {
+                    upcomingCount++;
+                    upcomingPaymentsList.add(p);
                     if (p.getDueDate() < now) {
                         overduePayments++;
                     }
                 }
             }
-            if (txtPaymentsCount != null) txtPaymentsCount.setText(String.valueOf(activePayments));
+            if (txtPaymentsCount != null) txtPaymentsCount.setText(String.valueOf(upcomingCount));
             
-            java.util.Collections.sort(pendingPayments, (p1, p2) -> Long.compare(p1.getDueDate(), p2.getDueDate()));
+            java.util.Collections.sort(upcomingPaymentsList, (p1, p2) -> Long.compare(p1.getDueDate(), p2.getDueDate()));
             // Calculate due this calendar month
-            java.util.Calendar cal = java.util.Calendar.getInstance();
-            int currentMonth = cal.get(java.util.Calendar.MONTH);
-            int currentYear = cal.get(java.util.Calendar.YEAR);
             int dueThisMonth = 0;
-            for (MonthlyPayment p : pendingPayments) {
+            for (MonthlyPayment p : upcomingPaymentsList) {
                 java.util.Calendar dueCal = java.util.Calendar.getInstance();
                 dueCal.setTimeInMillis(p.getDueDate());
-                if (dueCal.get(java.util.Calendar.MONTH) == currentMonth && dueCal.get(java.util.Calendar.YEAR) == currentYear) {
+                if (dueCal.get(java.util.Calendar.MONTH) + 1 == currentMonth && dueCal.get(java.util.Calendar.YEAR) == currentYear) {
                     dueThisMonth++;
                 }
             }
@@ -520,10 +522,10 @@ public class MainActivity extends AppCompatActivity {
 
             if (txtNextPaymentDetail != null) {
                 MonthlyPayment nextThisMonth = null;
-                for (MonthlyPayment p : pendingPayments) {
+                for (MonthlyPayment p : upcomingPaymentsList) {
                     java.util.Calendar dueCal = java.util.Calendar.getInstance();
                     dueCal.setTimeInMillis(p.getDueDate());
-                    if (dueCal.get(java.util.Calendar.MONTH) == currentMonth && dueCal.get(java.util.Calendar.YEAR) == currentYear) {
+                    if (dueCal.get(java.util.Calendar.MONTH) + 1 == currentMonth && dueCal.get(java.util.Calendar.YEAR) == currentYear) {
                         nextThisMonth = p;
                         break;
                     }
@@ -542,10 +544,10 @@ public class MainActivity extends AppCompatActivity {
                 layoutUpcomingPayments.removeAllViews();
                 int count = 0;
                 java.text.SimpleDateFormat dateSdf = new java.text.SimpleDateFormat("MMM dd", java.util.Locale.getDefault());
-                for (MonthlyPayment p : pendingPayments) {
+                for (MonthlyPayment p : upcomingPaymentsList) {
                     java.util.Calendar dueCal = java.util.Calendar.getInstance();
                     dueCal.setTimeInMillis(p.getDueDate());
-                    if (dueCal.get(java.util.Calendar.MONTH) == currentMonth && dueCal.get(java.util.Calendar.YEAR) == currentYear) {
+                    if (dueCal.get(java.util.Calendar.MONTH) + 1 == currentMonth && dueCal.get(java.util.Calendar.YEAR) == currentYear) {
                         if (count >= 3) break;
                         TextView tv = new TextView(this);
                         String amtStr = p.getAmount() == null ? "" : String.format(" (₹%.2f)", p.getAmount());

@@ -13,7 +13,7 @@
     <string name="add_note_hint">Add a note...</string>
     <string name="add_note_desc">Add Note</string>
     <string name="timed_reminders_title">Timed reminders</string>
-    <string name="monthly_payments_title">Monthly payments</string>
+    <string name="monthly_payments_title">Payments</string>
     <string name="due_date_format">Due: %1$s</string>
     <string name="arrow_right">›</string>
 </resources>

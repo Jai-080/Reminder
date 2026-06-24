@@ -446,84 +446,99 @@
                         android:layout_marginBottom="16dp" />
 
                     <!-- Reminders Sub-section -->
-                    <LinearLayout
+                    <com.google.android.material.card.MaterialCardView
                         android:id="@+id/sectionUpcomingReminders"
+                        style="?attr/materialCardViewFilledStyle"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:orientation="vertical"
                         android:clickable="true"
                         android:focusable="true"
-                        android:background="?android:attr/selectableItemBackground"
-                        android:paddingVertical="4dp">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Timed Reminders"
-                            android:textColor="?android:attr/textColorPrimary"
-                            android:textSize="14sp"
-                            android:textStyle="bold"
-                            android:layout_marginBottom="8dp" />
-
-                        <TextView
-                            android:id="@+id/txtNoUpcomingReminders"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:text="No upcoming reminders"
-                            android:textColor="@color/colorTextSecondary"
-                            android:textSize="13sp"
-                            android:visibility="gone"
-                            android:paddingVertical="8dp" />
+                        app:cardElevation="0dp"
+                        app:cardCornerRadius="12dp"
+                        app:strokeWidth="@dimen/card_stroke_width"
+                        app:strokeColor="@color/colorDivider"
+                        app:cardBackgroundColor="@color/colorSurface">
 
                         <LinearLayout
-                            android:id="@+id/layoutUpcomingReminders"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:orientation="vertical" />
-                    </LinearLayout>
+                            android:orientation="vertical"
+                            android:padding="12dp">
 
-                    <View
-                        android:layout_width="match_parent"
-                        android:layout_height="0.5dp"
-                        android:background="@color/colorDivider"
-                        android:layout_marginVertical="16dp" />
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Timed Reminders"
+                                android:textColor="?android:attr/textColorPrimary"
+                                android:textSize="14sp"
+                                android:textStyle="bold"
+                                android:layout_marginBottom="8dp" />
+
+                            <TextView
+                                android:id="@+id/txtNoUpcomingReminders"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:text="No upcoming reminders"
+                                android:textColor="@color/colorTextSecondary"
+                                android:textSize="13sp"
+                                android:visibility="gone"
+                                android:paddingVertical="8dp" />
+
+                            <LinearLayout
+                                android:id="@+id/layoutUpcomingReminders"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:orientation="vertical" />
+                        </LinearLayout>
+                    </com.google.android.material.card.MaterialCardView>
 
                     <!-- Payments Sub-section -->
-                    <LinearLayout
+                    <com.google.android.material.card.MaterialCardView
                         android:id="@+id/sectionUpcomingPayments"
+                        style="?attr/materialCardViewFilledStyle"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:orientation="vertical"
+                        android:layout_marginTop="12dp"
                         android:clickable="true"
                         android:focusable="true"
-                        android:background="?android:attr/selectableItemBackground"
-                        android:paddingVertical="4dp">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Monthly Payments"
-                            android:textColor="?android:attr/textColorPrimary"
-                            android:textSize="14sp"
-                            android:textStyle="bold"
-                            android:layout_marginBottom="8dp" />
-
-                        <TextView
-                            android:id="@+id/txtNoUpcomingPayments"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:text="No upcoming payments"
-                            android:textColor="@color/colorTextSecondary"
-                            android:textSize="13sp"
-                            android:visibility="gone"
-                            android:paddingVertical="8dp" />
+                        app:cardElevation="0dp"
+                        app:cardCornerRadius="12dp"
+                        app:strokeWidth="@dimen/card_stroke_width"
+                        app:strokeColor="@color/colorDivider"
+                        app:cardBackgroundColor="@color/colorSurface">
 
                         <LinearLayout
-                            android:id="@+id/layoutUpcomingPayments"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:orientation="vertical" />
-                    </LinearLayout>
+                            android:orientation="vertical"
+                            android:padding="12dp">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Payments"
+                                android:textColor="?android:attr/textColorPrimary"
+                                android:textSize="14sp"
+                                android:textStyle="bold"
+                                android:layout_marginBottom="8dp" />
+
+                            <TextView
+                                android:id="@+id/txtNoUpcomingPayments"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:text="No upcoming payments"
+                                android:textColor="@color/colorTextSecondary"
+                                android:textSize="13sp"
+                                android:visibility="gone"
+                                android:paddingVertical="8dp" />
+
+                            <LinearLayout
+                                android:id="@+id/layoutUpcomingPayments"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:orientation="vertical" />
+                        </LinearLayout>
+                    </com.google.android.material.card.MaterialCardView>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 

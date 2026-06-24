@@ -38,7 +38,7 @@
             android:layout_toEndOf="@id/btnBack"
             android:layout_marginStart="12dp"
             android:layout_centerVertical="true"
-            android:text="Monthly payments"
+            android:text="Payments"
             android:textColor="@color/colorTextPrimary"
             android:textSize="22sp"
             android:textStyle="bold" />
@@ -79,22 +79,6 @@
             app:backgroundTint="@color/accent_purple" />
     </LinearLayout>
 
-    <!-- Section label -->
-    <TextView
-        android:id="@+id/sectionLabel"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:text="PAYMENT SCHEDULE"
-        android:textColor="@color/colorTextMuted"
-        android:textSize="11sp"
-        android:textStyle="bold"
-        android:letterSpacing="0.08"
-        android:paddingHorizontal="20dp"
-        android:paddingBottom="10dp"
-        app:layout_constraintTop_toBottomOf="@id/inputRow"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
-
     <!-- Empty State -->
     <TextView
         android:id="@+id/txtNoPayments"
@@ -106,7 +90,7 @@
         android:paddingHorizontal="20dp"
         android:paddingVertical="12dp"
         android:visibility="gone"
-        app:layout_constraintTop_toBottomOf="@id/sectionLabel"
+        app:layout_constraintTop_toBottomOf="@id/inputRow"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
@@ -118,7 +102,7 @@
         android:paddingHorizontal="20dp"
         android:paddingBottom="80dp"
         android:clipToPadding="false"
-        app:layout_constraintTop_toBottomOf="@id/sectionLabel"
+        app:layout_constraintTop_toBottomOf="@id/inputRow"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />

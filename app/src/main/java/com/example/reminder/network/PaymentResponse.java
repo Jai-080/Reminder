@@ -10,6 +10,7 @@ public class PaymentResponse {
     private String notificationOffsets;
     private String createdAt;
     private String updatedAt;
+    private Long lastPaidAt;
 
     public Long getId() { return id; }
     public String getName() { return name; }
@@ -20,4 +21,6 @@ public class PaymentResponse {
     public String getNotificationOffsets() { return notificationOffsets; }
     public String getCreatedAt() { return createdAt; }
     public String getUpdatedAt() { return updatedAt; }
+    public Long getLastPaidAt() { return lastPaidAt; }
+    public void setLastPaidAt(Long lastPaidAt) { this.lastPaidAt = lastPaidAt; }
 }

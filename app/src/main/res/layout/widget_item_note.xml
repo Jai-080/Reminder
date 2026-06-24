@@ -7,15 +7,15 @@
     android:paddingTop="0dp"
     android:paddingBottom="0dp"
     android:paddingLeft="4dp"
-    android:paddingRight="12dp">
+    android:paddingRight="4dp">
 
     <!-- Bullet point / Check checkbox in widget -->
+
     <ImageView
         android:id="@+id/widget_item_check_btn"
-        android:layout_width="32dp"
-        android:layout_height="32dp"
-        android:padding="13dp"
-        android:layout_marginRight="2dp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginRight="4dp"
         android:src="@drawable/ic_bullet"
         android:clickable="true"
         android:focusable="true"
@@ -28,6 +28,8 @@
         android:layout_height="wrap_content"
         android:layout_weight="1"
         android:textColor="@color/colorTextPrimary"
-        android:textSize="14sp" />
+        android:textSize="13sp"
+        android:paddingVertical="4dp"
+        android:paddingHorizontal="4dp" />
 
 </LinearLayout>

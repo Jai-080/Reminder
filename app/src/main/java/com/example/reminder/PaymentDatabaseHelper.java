@@ -12,7 +12,7 @@ import java.util.ArrayList;
 public class PaymentDatabaseHelper extends SQLiteOpenHelper {
 
     private static final String DB_NAME = "payments.db";
-    private static final int DB_VERSION = 2;
+    private static final int DB_VERSION = 6;
     private static final String TAG = "PaymentDB";
 
     private static final String TABLE_NAME = "monthly_payments";
@@ -26,9 +26,10 @@ public class PaymentDatabaseHelper extends SQLiteOpenHelper {
     private static final String COL_AMOUNT = "amount";
     private static final String COL_RECURRENCE = "recurrence";
     private static final String COL_NOTIFICATION_OFFSETS = "notification_offsets";
+    private static final String COL_LAST_PAID_AT = "last_paid_at";
 
     public PaymentDatabaseHelper(Context context) {
-        super(context, DB_NAME, null, 3);
+        super(context, DB_NAME, null, DB_VERSION);
     }
 
     @Override
@@ -44,7 +45,11 @@ public class PaymentDatabaseHelper extends SQLiteOpenHelper {
                         COL_SYNC_STATUS + " TEXT, " +
                         COL_AMOUNT + " REAL, " +
                         COL_RECURRENCE + " TEXT DEFAULT 'MONTHLY', " +
-                        COL_NOTIFICATION_OFFSETS + " TEXT DEFAULT '0')"
+                        COL_NOTIFICATION_OFFSETS + " TEXT DEFAULT '0', " +
+                        "last_completed_month INTEGER, " +
+                        "last_completed_year INTEGER, " +
+                        "completed_at INTEGER, " +
+                        COL_LAST_PAID_AT + " INTEGER)"
         );
     }
 
@@ -81,6 +86,16 @@ public class PaymentDatabaseHelper extends SQLiteOpenHelper {
                 db.execSQL("ALTER TABLE " + TABLE_NAME + " ADD COLUMN " + COL_NOTIFICATION_OFFSETS + " TEXT DEFAULT '0'");
             } catch (Exception ignored) {}
         }
+        if (oldVersion < 4) {
+            try { db.execSQL("ALTER TABLE " + TABLE_NAME + " ADD COLUMN last_completed_month INTEGER;"); } catch (Exception ignored) {}
+            try { db.execSQL("ALTER TABLE " + TABLE_NAME + " ADD COLUMN last_completed_year INTEGER;"); } catch (Exception ignored) {}
+        }
+        if (oldVersion < 5) {
+            try { db.execSQL("ALTER TABLE " + TABLE_NAME + " ADD COLUMN completed_at INTEGER;"); } catch (Exception ignored) {}
+        }
+        if (oldVersion < 6) {
+            try { db.execSQL("ALTER TABLE " + TABLE_NAME + " ADD COLUMN " + COL_LAST_PAID_AT + " INTEGER;"); } catch (Exception ignored) {}
+        }
     }
 
     public int insertPayment(String name, long dueDate, boolean isCompleted) {
@@ -110,6 +125,7 @@ public class PaymentDatabaseHelper extends SQLiteOpenHelper {
         values.put(COL_NOTIFICATION_OFFSETS, notificationOffsets != null ? notificationOffsets : "0");
         values.put(COL_UPDATED_AT, System.currentTimeMillis());
         values.put(COL_SYNC_STATUS, "PENDING");
+        values.putNull(COL_LAST_PAID_AT);
 
         long id = db.insert(TABLE_NAME, null, values);
         db.close();
@@ -158,8 +174,15 @@ public class PaymentDatabaseHelper extends SQLiteOpenHelper {
             if (offsetsIdx != -1 && !cursor.isNull(offsetsIdx)) {
                 notificationOffsets = cursor.getString(offsetsIdx);
             }
+            Long lastPaidAt = null;
+            int lastPaidAtIdx = cursor.getColumnIndex(COL_LAST_PAID_AT);
+            if (lastPaidAtIdx != -1 && !cursor.isNull(lastPaidAtIdx)) {
+                lastPaidAt = cursor.getLong(lastPaidAtIdx);
+            }
 
-            list.add(new MonthlyPayment(id, serverId, name, completed, dueDate, syncStatus, amount, recurrence, notificationOffsets));
+            MonthlyPayment payment = new MonthlyPayment(id, serverId, name, completed, dueDate, syncStatus, amount, recurrence, notificationOffsets);
+            payment.setLastPaidAt(lastPaidAt);
+            list.add(payment);
         }
 
         cursor.close();
@@ -217,8 +240,15 @@ public class PaymentDatabaseHelper extends SQLiteOpenHelper {
             if (offsetsIdx != -1 && !cursor.isNull(offsetsIdx)) {
                 notificationOffsets = cursor.getString(offsetsIdx);
             }
+            Long lastPaidAt = null;
+            int lastPaidAtIdx = cursor.getColumnIndex(COL_LAST_PAID_AT);
+            if (lastPaidAtIdx != -1 && !cursor.isNull(lastPaidAtIdx)) {
+                lastPaidAt = cursor.getLong(lastPaidAtIdx);
+            }
 
-            list.add(new MonthlyPayment(id, serverId, name, completed, dueDate, syncStatus, amount, recurrence, notificationOffsets));
+            MonthlyPayment payment = new MonthlyPayment(id, serverId, name, completed, dueDate, syncStatus, amount, recurrence, notificationOffsets);
+            payment.setLastPaidAt(lastPaidAt);
+            list.add(payment);
         }
 
         cursor.close();
@@ -251,6 +281,11 @@ public class PaymentDatabaseHelper extends SQLiteOpenHelper {
         values.put(COL_NOTIFICATION_OFFSETS, payment.getNotificationOffsets() != null ? payment.getNotificationOffsets() : "0");
         values.put(COL_UPDATED_AT, System.currentTimeMillis());
         values.put(COL_SYNC_STATUS, "PENDING");
+        if (payment.getLastPaidAt() != null) {
+            values.put(COL_LAST_PAID_AT, payment.getLastPaidAt());
+        } else {
+            values.putNull(COL_LAST_PAID_AT);
+        }
         db.update(TABLE_NAME, values, COL_ID + " = ?", new String[]{String.valueOf(payment.getId())});
         db.close();
     }
@@ -262,18 +297,22 @@ public class PaymentDatabaseHelper extends SQLiteOpenHelper {
     }
 
     public long insertOrUpdateSyncedPayment(long serverId, String name, long dueDate, boolean completed, long updatedAt) {
-        return insertOrUpdateSyncedPayment(serverId, name, dueDate, completed, updatedAt, null, RecurrenceType.MONTHLY, "0");
+        return insertOrUpdateSyncedPayment(serverId, name, dueDate, completed, updatedAt, null, RecurrenceType.MONTHLY, "0", null);
     }
 
     public long insertOrUpdateSyncedPayment(long serverId, String name, long dueDate, boolean completed, long updatedAt, Double amount) {
-        return insertOrUpdateSyncedPayment(serverId, name, dueDate, completed, updatedAt, amount, RecurrenceType.MONTHLY, "0");
+        return insertOrUpdateSyncedPayment(serverId, name, dueDate, completed, updatedAt, amount, RecurrenceType.MONTHLY, "0", null);
     }
 
     public long insertOrUpdateSyncedPayment(long serverId, String name, long dueDate, boolean completed, long updatedAt, Double amount, RecurrenceType recurrence) {
-        return insertOrUpdateSyncedPayment(serverId, name, dueDate, completed, updatedAt, amount, recurrence, "0");
+        return insertOrUpdateSyncedPayment(serverId, name, dueDate, completed, updatedAt, amount, recurrence, "0", null);
     }
 
     public long insertOrUpdateSyncedPayment(long serverId, String name, long dueDate, boolean completed, long updatedAt, Double amount, RecurrenceType recurrence, String notificationOffsets) {
+        return insertOrUpdateSyncedPayment(serverId, name, dueDate, completed, updatedAt, amount, recurrence, notificationOffsets, null);
+    }
+
+    public long insertOrUpdateSyncedPayment(long serverId, String name, long dueDate, boolean completed, long updatedAt, Double amount, RecurrenceType recurrence, String notificationOffsets, Long lastPaidAt) {
         SQLiteDatabase db = getWritableDatabase();
         ContentValues values = new ContentValues();
         values.put("server_id", serverId);
@@ -289,6 +328,11 @@ public class PaymentDatabaseHelper extends SQLiteOpenHelper {
         }
         values.put(COL_RECURRENCE, recurrence != null ? recurrence.name() : RecurrenceType.MONTHLY.name());
         values.put(COL_NOTIFICATION_OFFSETS, notificationOffsets != null ? notificationOffsets : "0");
+        if (lastPaidAt != null) {
+            values.put(COL_LAST_PAID_AT, lastPaidAt);
+        } else {
+            values.putNull(COL_LAST_PAID_AT);
+        }
 
         long localId = -1;
         Cursor cursor = db.query(TABLE_NAME, new String[]{"id"}, "server_id = ?", new String[]{String.valueOf(serverId)}, null, null, null);
