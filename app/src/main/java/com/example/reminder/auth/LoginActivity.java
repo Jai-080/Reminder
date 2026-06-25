@@ -2,7 +2,7 @@ package com.example.reminder.auth;
 
 import android.content.Context;
 import android.content.Intent;
-import android.os.Build;
+import com.example.reminder.utils.DeviceUtils;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.view.View;
@@ -104,7 +104,7 @@ public class LoginActivity extends AppCompatActivity {
 
         setLoading(true);
 
-        String deviceName = Build.MANUFACTURER + " " + Build.MODEL;
+        String deviceName = DeviceUtils.getDeviceName();
         String platform = "android";
 
         authManager.login(email, password, deviceName, platform, new AuthManager.AuthCallback() {
@@ -126,7 +126,7 @@ public class LoginActivity extends AppCompatActivity {
                     public void onError(String error) {
                         setLoading(false);
                         // Per constraints: If backend sync fails (e.g. network issue), the local app must continue working
-                        Toast.makeText(LoginActivity.this, "Sync failure: " + error + ". Using local DB offline.", Toast.LENGTH_LONG).show();
+                        Toast.makeText(LoginActivity.this, "Sync failure: " + com.example.reminder.utils.UIUtils.sanitizeError(LoginActivity.this, error) + ". Using local DB offline.", Toast.LENGTH_LONG).show();
                         startActivity(new Intent(LoginActivity.this, MainActivity.class));
                         finish();
                     }
@@ -136,7 +136,7 @@ public class LoginActivity extends AppCompatActivity {
             @Override
             public void onError(String message) {
                 setLoading(false);
-                Toast.makeText(LoginActivity.this, message, Toast.LENGTH_LONG).show();
+                Toast.makeText(LoginActivity.this, com.example.reminder.utils.UIUtils.sanitizeError(LoginActivity.this, message), Toast.LENGTH_LONG).show();
             }
         });
     }

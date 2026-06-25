@@ -61,18 +61,6 @@
         android:layout_marginBottom="12dp" />
 
     <EditText
-        android:id="@+id/deviceNameInput"
-        android:layout_width="match_parent"
-        android:layout_height="48dp"
-        android:hint="Device Name"
-        android:inputType="text"
-        android:background="@drawable/rounded_edittext"
-        android:paddingHorizontal="16dp"
-        android:textColor="?android:attr/textColorPrimary"
-        android:textColorHint="@color/light_text_muted"
-        android:layout_marginBottom="12dp" />
-
-    <EditText
         android:id="@+id/baseUrlInput"
         android:layout_width="match_parent"
         android:layout_height="48dp"
