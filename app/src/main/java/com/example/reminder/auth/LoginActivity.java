@@ -126,7 +126,7 @@ public class LoginActivity extends AppCompatActivity {
                     public void onError(String error) {
                         setLoading(false);
                         // Per constraints: If backend sync fails (e.g. network issue), the local app must continue working
-                        Toast.makeText(LoginActivity.this, "Sync failure: " + error + ". Using local DB offline.", Toast.LENGTH_LONG).show();
+                        Toast.makeText(LoginActivity.this, "Sync failure: " + com.example.reminder.utils.UIUtils.sanitizeError(LoginActivity.this, error) + ". Using local DB offline.", Toast.LENGTH_LONG).show();
                         startActivity(new Intent(LoginActivity.this, MainActivity.class));
                         finish();
                     }
@@ -136,7 +136,7 @@ public class LoginActivity extends AppCompatActivity {
             @Override
             public void onError(String message) {
                 setLoading(false);
-                Toast.makeText(LoginActivity.this, message, Toast.LENGTH_LONG).show();
+                Toast.makeText(LoginActivity.this, com.example.reminder.utils.UIUtils.sanitizeError(LoginActivity.this, message), Toast.LENGTH_LONG).show();
             }
         });
     }

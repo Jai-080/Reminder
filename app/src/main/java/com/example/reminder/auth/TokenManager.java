@@ -108,8 +108,8 @@ public class TokenManager {
     }
 
     public synchronized String getBaseUrl() {
-        // Return default emulator host address if none configured
-        return prefs.getString(KEY_BASE_URL, "http://10.0.2.2:8080/");
+        // Return default server address if none configured
+        return prefs.getString(KEY_BASE_URL, "http://115.99.50.73:50000/");
     }
 
     public synchronized void setLastSyncTimestamp(long timestamp) {

@@ -158,7 +158,7 @@ public class TimedRemindersActivity extends AppCompatActivity {
                                 @Override
                                 public void onError(String error) {
                                     Log.e(TAG, "Failed to sync reminder: " + error);
-                                    Toast.makeText(TimedRemindersActivity.this, "Sync error: " + error, Toast.LENGTH_SHORT).show();
+                                    Toast.makeText(TimedRemindersActivity.this, "Sync error: " + com.example.reminder.utils.UIUtils.sanitizeError(TimedRemindersActivity.this, error), Toast.LENGTH_SHORT).show();
                                 }
                             }
                     );

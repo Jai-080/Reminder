@@ -138,7 +138,7 @@ public class RegisterActivity extends AppCompatActivity {
                     @Override
                     public void onError(String error) {
                         setLoading(false);
-                        Toast.makeText(RegisterActivity.this, "Sync failure: " + error + ". Using local DB offline.", Toast.LENGTH_LONG).show();
+                        Toast.makeText(RegisterActivity.this, "Sync failure: " + com.example.reminder.utils.UIUtils.sanitizeError(RegisterActivity.this, error) + ". Using local DB offline.", Toast.LENGTH_LONG).show();
                         Intent intent = new Intent(RegisterActivity.this, MainActivity.class);
                         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
                         startActivity(intent);
@@ -150,7 +150,7 @@ public class RegisterActivity extends AppCompatActivity {
             @Override
             public void onError(String message) {
                 setLoading(false);
-                Toast.makeText(RegisterActivity.this, message, Toast.LENGTH_LONG).show();
+                Toast.makeText(RegisterActivity.this, com.example.reminder.utils.UIUtils.sanitizeError(RegisterActivity.this, message), Toast.LENGTH_LONG).show();
             }
         });
     }

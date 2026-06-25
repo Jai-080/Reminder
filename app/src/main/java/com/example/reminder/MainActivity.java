@@ -133,7 +133,7 @@ public class MainActivity extends AppCompatActivity {
                     public void onError(String error) {
                         runOnUiThread(() -> {
                             btnSync.setEnabled(true);
-                            Toast.makeText(MainActivity.this, "Sync failed: " + error, Toast.LENGTH_LONG).show();
+                            Toast.makeText(MainActivity.this, "Sync failed: " + com.example.reminder.utils.UIUtils.sanitizeError(MainActivity.this, error), Toast.LENGTH_LONG).show();
                         });
                     }
                 });
@@ -316,7 +316,7 @@ public class MainActivity extends AppCompatActivity {
                         public void onError(String error) {
                             Log.e(TAG, "Note sync failed: " + error);
                             note.setSyncStatus("FAILED");
-                            Toast.makeText(MainActivity.this, "Sync error: " + error, Toast.LENGTH_SHORT).show();
+                            Toast.makeText(MainActivity.this, "Sync error: " + com.example.reminder.utils.UIUtils.sanitizeError(MainActivity.this, error), Toast.LENGTH_SHORT).show();
                         }
                     });
                 } else {
