@@ -1,4 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <network-security-config>
+    <!-- 
+      WARNING: Cleartext traffic is enabled globally here to support connections to HTTP development/staging servers 
+      (like the default http://your-server-address:50000/).
+      
+      For production deployments, it is highly recommended to:
+      1. Enforce HTTPS/SSL on the backend.
+      2. Set cleartextTrafficPermitted="false".
+      3. Use <domain-config> to restrict cleartext to specific local/debug IPs if necessary.
+    -->
     <base-config cleartextTrafficPermitted="true" />
 </network-security-config>
