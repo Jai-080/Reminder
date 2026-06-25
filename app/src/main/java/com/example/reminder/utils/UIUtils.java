@@ -2,6 +2,7 @@ package com.example.reminder.utils;
 
 import android.content.Context;
 import com.example.reminder.auth.TokenManager;
+import com.example.reminder.config.ServerConfig;
 
 public class UIUtils {
     public static String sanitizeError(Context context, String message) {
@@ -24,9 +25,14 @@ public class UIUtils {
         } catch (Exception ignored) {}
 
         // Fallbacks
-        message = message.replace("115.99.50.73:50000", "the server")
-                         .replace("115.99.50.73", "the server")
-                         .replace("localhost:8080", "the server")
+        String fallbackHost = ServerConfig.getServerHost();
+        if (!fallbackHost.isEmpty()) {
+            message = message.replace(fallbackHost, "the server");
+            if (fallbackHost.contains(":")) {
+                message = message.replace(fallbackHost.split(":")[0], "the server");
+            }
+        }
+        message = message.replace("localhost:8080", "the server")
                          .replace("10.0.2.2:8080", "the server");
         return message;
     }

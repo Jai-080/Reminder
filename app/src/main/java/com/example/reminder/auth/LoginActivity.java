@@ -2,7 +2,7 @@ package com.example.reminder.auth;
 
 import android.content.Context;
 import android.content.Intent;
-import android.os.Build;
+import com.example.reminder.utils.DeviceUtils;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.view.View;
@@ -104,7 +104,7 @@ public class LoginActivity extends AppCompatActivity {
 
         setLoading(true);
 
-        String deviceName = Build.MANUFACTURER + " " + Build.MODEL;
+        String deviceName = DeviceUtils.getDeviceName();
         String platform = "android";
 
         authManager.login(email, password, deviceName, platform, new AuthManager.AuthCallback() {

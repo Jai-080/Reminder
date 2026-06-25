@@ -2,6 +2,7 @@ package com.example.reminder.auth;
 
 import android.content.Context;
 import android.content.Intent;
+import com.example.reminder.utils.DeviceUtils;
 import android.os.Build;
 import android.os.Bundle;
 import android.text.TextUtils;
@@ -24,7 +25,6 @@ public class RegisterActivity extends AppCompatActivity {
     private EditText usernameInput;
     private EditText emailInput;
     private EditText passwordInput;
-    private EditText deviceNameInput;
     private EditText baseUrlInput;
     private Button registerButton;
     private TextView backToLoginButton;
@@ -49,7 +49,6 @@ public class RegisterActivity extends AppCompatActivity {
         usernameInput = findViewById(R.id.usernameInput);
         emailInput = findViewById(R.id.emailInput);
         passwordInput = findViewById(R.id.passwordInput);
-        deviceNameInput = findViewById(R.id.deviceNameInput);
         baseUrlInput = findViewById(R.id.baseUrlInput);
         registerButton = findViewById(R.id.btnRegister);
         backToLoginButton = findViewById(R.id.btnBackToLogin);
@@ -58,7 +57,6 @@ public class RegisterActivity extends AppCompatActivity {
 
         // Pre-populate fields
         baseUrlInput.setText(tokenManager.getBaseUrl());
-        deviceNameInput.setText(Build.MANUFACTURER + " " + Build.MODEL);
 
         registerButton.setOnClickListener(v -> {
             hideKeyboard();
@@ -84,7 +82,7 @@ public class RegisterActivity extends AppCompatActivity {
         String username = usernameInput.getText().toString().trim();
         String email = emailInput.getText().toString().trim();
         String password = passwordInput.getText().toString().trim();
-        String deviceName = deviceNameInput.getText().toString().trim();
+        String deviceName = DeviceUtils.getDeviceName();
         String baseUrl = baseUrlInput.getText().toString().trim();
 
         if (TextUtils.isEmpty(username)) {
@@ -101,10 +99,6 @@ public class RegisterActivity extends AppCompatActivity {
         }
         if (password.length() < 8) {
             passwordInput.setError("Password must be at least 8 characters");
-            return;
-        }
-        if (TextUtils.isEmpty(deviceName)) {
-            deviceNameInput.setError("Device Name is required");
             return;
         }
         if (TextUtils.isEmpty(baseUrl)) {
@@ -163,7 +157,6 @@ public class RegisterActivity extends AppCompatActivity {
         usernameInput.setEnabled(!isLoading);
         emailInput.setEnabled(!isLoading);
         passwordInput.setEnabled(!isLoading);
-        deviceNameInput.setEnabled(!isLoading);
         baseUrlInput.setEnabled(!isLoading);
     }
 

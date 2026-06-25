@@ -1,5 +1,6 @@
 package com.example.reminder.auth;
 
+import com.example.reminder.config.ServerConfig;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.util.Log;
@@ -109,7 +110,7 @@ public class TokenManager {
 
     public synchronized String getBaseUrl() {
         // Return default server address if none configured
-        return prefs.getString(KEY_BASE_URL, "http://115.99.50.73:50000/");
+        return prefs.getString(KEY_BASE_URL, ServerConfig.BASE_URL);
     }
 
     public synchronized void setLastSyncTimestamp(long timestamp) {
