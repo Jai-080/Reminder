@@ -23,7 +23,7 @@ public class LoginActivity extends AppCompatActivity {
 
     private EditText emailInput;
     private EditText passwordInput;
-    private EditText baseUrlInput;
+
     private Button loginButton;
     private TextView registerButton;
     private Button bypassButton;
@@ -53,14 +53,13 @@ public class LoginActivity extends AppCompatActivity {
 
         emailInput = findViewById(R.id.emailInput);
         passwordInput = findViewById(R.id.passwordInput);
-        baseUrlInput = findViewById(R.id.baseUrlInput);
+
         loginButton = findViewById(R.id.btnLogin);
         registerButton = findViewById(R.id.btnGoToRegister);
         bypassButton = findViewById(R.id.btnBypass);
         progressBar = findViewById(R.id.progressBar);
 
-        // Pre-populate Base URL from token manager
-        baseUrlInput.setText(tokenManager.getBaseUrl());
+
 
         loginButton.setOnClickListener(v -> {
             hideKeyboard();
@@ -74,7 +73,6 @@ public class LoginActivity extends AppCompatActivity {
         bypassButton.setOnClickListener(v -> {
             // Save dummy session tokens to bypass auth check and use local DB offline
             tokenManager.saveSession("developer_bypass", "developer_bypass", -1L, "Developer");
-            tokenManager.setBaseUrl(baseUrlInput.getText().toString().trim());
             Toast.makeText(this, "Logged in via Developer Bypass (Offline Mode)", Toast.LENGTH_SHORT).show();
             startActivity(new Intent(LoginActivity.this, MainActivity.class));
             finish();
@@ -84,7 +82,7 @@ public class LoginActivity extends AppCompatActivity {
     private void attemptLogin() {
         String email = emailInput.getText().toString().trim();
         String password = passwordInput.getText().toString().trim();
-        String baseUrl = baseUrlInput.getText().toString().trim();
+
 
         if (TextUtils.isEmpty(email)) {
             emailInput.setError("Email is required");
@@ -94,13 +92,7 @@ public class LoginActivity extends AppCompatActivity {
             passwordInput.setError("Password is required");
             return;
         }
-        if (TextUtils.isEmpty(baseUrl)) {
-            baseUrlInput.setError("Base Server URL is required");
-            return;
-        }
 
-        // Save server URL configuration
-        tokenManager.setBaseUrl(baseUrl);
 
         setLoading(true);
 
@@ -148,7 +140,7 @@ public class LoginActivity extends AppCompatActivity {
         bypassButton.setEnabled(!isLoading);
         emailInput.setEnabled(!isLoading);
         passwordInput.setEnabled(!isLoading);
-        baseUrlInput.setEnabled(!isLoading);
+
     }
 
     private void hideKeyboard() {

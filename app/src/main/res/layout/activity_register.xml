@@ -60,17 +60,7 @@
         android:textColorHint="@color/light_text_muted"
         android:layout_marginBottom="12dp" />
 
-    <EditText
-        android:id="@+id/baseUrlInput"
-        android:layout_width="match_parent"
-        android:layout_height="48dp"
-        android:hint="Base Server URL"
-        android:inputType="textUri"
-        android:background="@drawable/rounded_edittext"
-        android:paddingHorizontal="16dp"
-        android:textColor="?android:attr/textColorPrimary"
-        android:textColorHint="@color/light_text_muted"
-        android:layout_marginBottom="20dp" />
+
 
     <Button
         android:id="@+id/btnRegister"

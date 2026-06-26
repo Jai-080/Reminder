@@ -110,7 +110,7 @@ public class TokenManager {
 
     public synchronized String getBaseUrl() {
         // Return default server address if none configured
-        return prefs.getString(KEY_BASE_URL, ServerConfig.BASE_URL);
+        return ServerConfig.BASE_URL;
     }
 
     public synchronized void setLastSyncTimestamp(long timestamp) {

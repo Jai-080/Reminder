@@ -25,7 +25,7 @@ public class RegisterActivity extends AppCompatActivity {
     private EditText usernameInput;
     private EditText emailInput;
     private EditText passwordInput;
-    private EditText baseUrlInput;
+
     private Button registerButton;
     private TextView backToLoginButton;
     private Button bypassButton;
@@ -49,14 +49,13 @@ public class RegisterActivity extends AppCompatActivity {
         usernameInput = findViewById(R.id.usernameInput);
         emailInput = findViewById(R.id.emailInput);
         passwordInput = findViewById(R.id.passwordInput);
-        baseUrlInput = findViewById(R.id.baseUrlInput);
+
         registerButton = findViewById(R.id.btnRegister);
         backToLoginButton = findViewById(R.id.btnBackToLogin);
         bypassButton = findViewById(R.id.btnBypass);
         progressBar = findViewById(R.id.progressBar);
 
-        // Pre-populate fields
-        baseUrlInput.setText(tokenManager.getBaseUrl());
+
 
         registerButton.setOnClickListener(v -> {
             hideKeyboard();
@@ -69,7 +68,6 @@ public class RegisterActivity extends AppCompatActivity {
 
         bypassButton.setOnClickListener(v -> {
             tokenManager.saveSession("developer_bypass", "developer_bypass", -1L, "Developer");
-            tokenManager.setBaseUrl(baseUrlInput.getText().toString().trim());
             Toast.makeText(this, "Logged in via Developer Bypass (Offline Mode)", Toast.LENGTH_SHORT).show();
             Intent intent = new Intent(RegisterActivity.this, MainActivity.class);
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
@@ -83,7 +81,7 @@ public class RegisterActivity extends AppCompatActivity {
         String email = emailInput.getText().toString().trim();
         String password = passwordInput.getText().toString().trim();
         String deviceName = DeviceUtils.getDeviceName();
-        String baseUrl = baseUrlInput.getText().toString().trim();
+
 
         if (TextUtils.isEmpty(username)) {
             usernameInput.setError("Username is required");
@@ -101,13 +99,7 @@ public class RegisterActivity extends AppCompatActivity {
             passwordInput.setError("Password must be at least 8 characters");
             return;
         }
-        if (TextUtils.isEmpty(baseUrl)) {
-            baseUrlInput.setError("Base Server URL is required");
-            return;
-        }
 
-        // Save server URL configuration
-        tokenManager.setBaseUrl(baseUrl);
 
         setLoading(true);
 
@@ -157,7 +149,7 @@ public class RegisterActivity extends AppCompatActivity {
         usernameInput.setEnabled(!isLoading);
         emailInput.setEnabled(!isLoading);
         passwordInput.setEnabled(!isLoading);
-        baseUrlInput.setEnabled(!isLoading);
+
     }
 
     private void hideKeyboard() {
