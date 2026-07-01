@@ -144,4 +144,73 @@ public class AuthManager {
             }
         });
     }
+
+    private final Object refreshLock = new Object();
+
+    public boolean isTokenExpired(String token) {
+        if (token == null || token.isEmpty()) return true;
+        try {
+            String[] parts = token.split("\\.");
+            if (parts.length < 2) return true;
+            String payloadEnc = parts[1];
+            byte[] bytes = android.util.Base64.decode(payloadEnc, android.util.Base64.DEFAULT);
+            String payloadDec = new String(bytes, "UTF-8");
+            org.json.JSONObject json = new org.json.JSONObject(payloadDec);
+            if (json.has("exp")) {
+                long exp = json.getLong("exp");
+                long current = System.currentTimeMillis() / 1000;
+                // Add a 10 seconds buffer
+                return exp <= (current + 10);
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error checking token expiration", e);
+        }
+        return true;
+    }
+
+    public String getValidAccessToken() throws java.io.IOException {
+        String token = tokenManager.getAccessToken();
+        if (token != null && !isTokenExpired(token)) {
+            return token;
+        }
+
+        synchronized (refreshLock) {
+            // Re-read token after acquiring lock in case another thread refreshed it
+            token = tokenManager.getAccessToken();
+            if (token != null && !isTokenExpired(token)) {
+                Log.d(TAG, "Access token refreshed by another concurrent thread. Reusing.");
+                return token;
+            }
+
+            String refreshToken = tokenManager.getRefreshToken();
+            if (refreshToken == null) {
+                throw new java.io.IOException("No refresh token available");
+            }
+
+            Log.d(TAG, "Access token expired or missing. Centralized coordinator starting refresh...");
+            AuthApi authApi = ApiClient.getAuthServiceNoAuth(context);
+            retrofit2.Response<AuthResponse> response = authApi.refresh(new RefreshTokenRequest(refreshToken)).execute();
+
+            if (response.isSuccessful() && response.body() != null) {
+                AuthResponse authResponse = response.body();
+                tokenManager.saveSession(
+                        authResponse.getAccessToken(),
+                        authResponse.getRefreshToken(),
+                        authResponse.getUserId(),
+                        authResponse.getUsername()
+                );
+                Log.d(TAG, "Centralized refresh request completed successfully.");
+                return authResponse.getAccessToken();
+            } else {
+                String errMsg = "Refresh failed: " + response.code();
+                try {
+                    if (response.errorBody() != null) {
+                        errMsg = response.errorBody().string();
+                    }
+                } catch (Exception ignored) {}
+                Log.e(TAG, "Centralized refresh failed. Error: " + errMsg);
+                throw new retrofit2.HttpException(response);
+            }
+        }
+    }
 }

@@ -61,63 +61,14 @@ public class WebSocketManager {
         executeConnect();
     }
 
-    private boolean isTokenExpired(String token) {
-        if (token == null || token.isEmpty()) return true;
-        try {
-            String[] parts = token.split("\\.");
-            if (parts.length < 2) return true;
-            String payloadEnc = parts[1];
-            byte[] bytes = android.util.Base64.decode(payloadEnc, android.util.Base64.DEFAULT);
-            String payloadDec = new String(bytes, "UTF-8");
-            org.json.JSONObject json = new org.json.JSONObject(payloadDec);
-            if (json.has("exp")) {
-                long exp = json.getLong("exp");
-                long current = System.currentTimeMillis() / 1000;
-                // Add a 10 seconds buffer
-                return exp <= (current + 10);
-            }
-        } catch (Exception e) {
-            Log.e(TAG, "Error checking token expiration", e);
-        }
-        return true;
-    }
-
     private String getValidTokenOrRefresh() {
-        String token = tokenManager.getAccessToken();
-        if (token == null) return null;
-
-        if (isTokenExpired(token)) {
-            Log.d(TAG, "Access token is expired or close to expiration. Attempting refresh...");
-            String refreshToken = tokenManager.getRefreshToken();
-            if (refreshToken == null) {
-                Log.w(TAG, "No refresh token available.");
-                return null;
-            }
-
-            try {
-                com.example.reminder.network.AuthApi authApi = com.example.reminder.network.ApiClient.getAuthServiceNoAuth(context);
-                retrofit2.Response<com.example.reminder.network.AuthResponse> response = authApi.refresh(
-                        new com.example.reminder.network.RefreshTokenRequest(refreshToken)
-                ).execute();
-
-                if (response.isSuccessful() && response.body() != null) {
-                    com.example.reminder.network.AuthResponse body = response.body();
-                    tokenManager.saveSession(
-                            body.getAccessToken(),
-                            body.getRefreshToken(),
-                            body.getUserId(),
-                            body.getUsername()
-                    );
-                    Log.d(TAG, "Token refresh succeeded during WebSocket pre-connect.");
-                    return body.getAccessToken();
-                } else {
-                    Log.e(TAG, "Token refresh failed with code: " + response.code() + " during WebSocket pre-connect.");
-                }
-            } catch (Exception e) {
-                Log.e(TAG, "Exception during token refresh for WebSocket connect", e);
-            }
+        try {
+            com.example.reminder.auth.AuthManager authManager = com.example.reminder.auth.AuthManager.getInstance(context);
+            return authManager.getValidAccessToken();
+        } catch (Exception e) {
+            Log.e(TAG, "Error obtaining valid access token from coordinator. Falling back to currently stored token.", e);
+            return tokenManager.getAccessToken();
         }
-        return tokenManager.getAccessToken();
     }
 
     private synchronized void executeConnect() {
