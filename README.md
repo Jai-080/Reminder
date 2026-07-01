@@ -74,17 +74,3 @@ Build the debug APK using the Gradle wrapper:
 ```bash
 ./gradlew assembleDebug
 ```
-The compiled APK will be output at:
-`app/build/outputs/apk/debug/app-debug.apk`
-
----
-
-## 🔍 Diagnostics & Troubleshooting
-
-To troubleshoot authentication, synchronization, or connection issues, the app logs all major system activities to a local debug file:
-* **Log Location**: `/Android/data/com.example.reminder/files/logs/auth_debug_log.txt`
-
-Because this path resides in the app-specific external storage directory, **no Android runtime storage permissions are required**. You can copy the log file directly off the device or emulator using ADB:
-```bash
-adb pull /sdcard/Android/data/com.example.reminder/files/logs/auth_debug_log.txt
-```

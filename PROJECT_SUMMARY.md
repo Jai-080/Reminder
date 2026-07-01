@@ -10,7 +10,6 @@
 7. [Background Processing](#7-background-processing)
 8. [Ecosystem Synchronization Architecture](#8-ecosystem-synchronization-architecture)
 9. [Permissions](#9-permissions)
-10. [Diagnostics & Logs](#10-diagnostics--logs)
 
 ---
 
@@ -95,9 +94,6 @@ com.example.reminder/
 │   ├── SyncRepository.java              — Access layer to trigger Retrofit REST API endpoints
 │   ├── SyncWorker.java                  — WorkManager periodic background execution task
 │   └── WebSocketManager.java            — STOMP WebSocket push notifications client listener
-│
-└── utils/
-    └── AuthLogger.java                  — Diagnostical persistent logging helper
 ```
 
 ---
@@ -209,12 +205,3 @@ To avoid race conditions when the access token expires (such as concurrent reque
 * `POST_NOTIFICATIONS`: Shows alarm and payment notifications on Android 13+.
 * `SCHEDULE_EXACT_ALARM` & `USE_EXACT_ALARM`: Schedules exact timed reminders.
 * `FOREGROUND_SERVICE` & `FOREGROUND_SERVICE_SPECIAL_USE`: Runs the monthly payment foreground notification tracker.
-
----
-
-## 10. Diagnostics & Logs
-
-A robust, thread-safe, append-only logger utility writes diagnostic statements to:
-* **Log File Location**: `/Android/data/com.example.reminder/files/logs/auth_debug_log.txt`
-
-This directory does not require runtime permissions on Android 4.4+. It captures all database operations, token refreshes, server response states, and thread details.
