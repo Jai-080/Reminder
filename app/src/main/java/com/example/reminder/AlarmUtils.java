@@ -196,6 +196,15 @@ public class AlarmUtils {
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
         );
 
+        Intent contentIntent = new Intent(context, MonthlyPaymentsActivity.class);
+        contentIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        PendingIntent contentPendingIntent = PendingIntent.getActivity(
+                context,
+                paymentId + 20000,
+                contentIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+        );
+
         Notification notification = new NotificationCompat.Builder(context, CHANNEL_ID)
                 .setContentTitle("Payment Due Today")
                 .setContentText(paymentName + " is due today")
@@ -204,6 +213,7 @@ public class AlarmUtils {
                 .setOngoing(true)
                 .setAutoCancel(false)
                 .setOnlyAlertOnce(true)
+                .setContentIntent(contentPendingIntent)
                 .setDeleteIntent(deletePendingIntent)
                 .setCategory(NotificationCompat.CATEGORY_REMINDER)
                 .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)

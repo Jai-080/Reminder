@@ -5,6 +5,7 @@ import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.Service;
 import android.content.Intent;
+import android.app.PendingIntent;
 import android.os.IBinder;
 
 import androidx.core.app.NotificationCompat;
@@ -81,6 +82,15 @@ public class PaymentNotificationService extends Service {
     }
 
     private Notification createNotification(String paymentName) {
+        Intent contentIntent = new Intent(this, MonthlyPaymentsActivity.class);
+        contentIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        PendingIntent contentPendingIntent = PendingIntent.getActivity(
+                this,
+                0,
+                contentIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+        );
+
         return new NotificationCompat.Builder(this, CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_notification)
                 .setContentTitle("Payment Due Today!")
@@ -89,6 +99,7 @@ public class PaymentNotificationService extends Service {
                 .setSound(null)
                 .setVibrate(null)
                 .setOngoing(true)
+                .setContentIntent(contentPendingIntent)
                 .build();
     }
 

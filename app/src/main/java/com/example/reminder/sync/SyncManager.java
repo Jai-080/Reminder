@@ -42,6 +42,10 @@ public class SyncManager {
 
     private final java.util.concurrent.atomic.AtomicBoolean syncRunning = new java.util.concurrent.atomic.AtomicBoolean(false);
 
+    private final java.util.Set<Integer> uploadingNotes = java.util.Collections.synchronizedSet(new java.util.HashSet<>());
+    private final java.util.Set<Integer> uploadingReminders = java.util.Collections.synchronizedSet(new java.util.HashSet<>());
+    private final java.util.Set<Integer> uploadingPayments = java.util.Collections.synchronizedSet(new java.util.HashSet<>());
+
     public interface SyncCallback<T> {
         void onSuccess(T result);
         void onError(String error);
@@ -229,51 +233,89 @@ public class SyncManager {
 
     // --- Notes CRUD ---
     public void uploadNote(int localId, String text, boolean completed, int position, Long serverId, SyncCallback<Long> callback) {
-        ReminderApplication.enqueueSyncWorker(context);
-        long localUpdatedAt = noteDb.getNoteUpdatedAt(localId);
-        NoteRequest request = new NoteRequest(text, completed, position, localUpdatedAt);
+        if (!uploadingNotes.add(localId)) {
+            Log.d(TAG, "Note " + localId + " upload in progress. Skipping.");
+            if (callback != null) callback.onError("Upload already in progress.");
+            return;
+        }
 
-        if (serverId != null && serverId > 0) {
-            // Update (PUT)
-            repository.updateNote(serverId, request, new Callback<NoteResponse>() {
-                @Override
-                public void onResponse(Call<NoteResponse> call, Response<NoteResponse> response) {
-                    if (response.isSuccessful() && response.body() != null) {
-                        noteDb.updateSyncStatus(localId, serverId, "SYNCED");
-                        callback.onSuccess(serverId);
-                    } else {
-                        noteDb.updateSyncStatus(localId, serverId, "FAILED");
-                        callback.onError("Server update failed: HTTP " + response.code());
+        try {
+            QuickNoteDatabaseHelper.SyncMeta dbMeta = noteDb.getSyncMeta(localId);
+            if (dbMeta == null) {
+                uploadingNotes.remove(localId);
+                if (callback != null) callback.onError("Note not found in database.");
+                return;
+            }
+
+            if ("SYNCED".equals(dbMeta.syncStatus)) {
+                uploadingNotes.remove(localId);
+                if (callback != null) callback.onSuccess(dbMeta.serverId);
+                return;
+            }
+
+            Long resolvedServerId = (dbMeta.serverId != null && dbMeta.serverId > 0) ? dbMeta.serverId : serverId;
+
+            if ((serverId == null || serverId <= 0) && (resolvedServerId != null && resolvedServerId > 0)) {
+                uploadingNotes.remove(localId);
+                Log.d(TAG, "Note " + localId + " already has server ID " + resolvedServerId + " in DB. Skipping duplicate POST.");
+                noteDb.updateSyncStatus(localId, resolvedServerId, "SYNCED");
+                if (callback != null) callback.onSuccess(resolvedServerId);
+                return;
+            }
+
+            ReminderApplication.enqueueSyncWorker(context);
+            long localUpdatedAt = noteDb.getNoteUpdatedAt(localId);
+            NoteRequest request = new NoteRequest(text, completed, position, localUpdatedAt);
+
+            if (resolvedServerId != null && resolvedServerId > 0) {
+                // Update (PUT)
+                repository.updateNote(resolvedServerId, request, new Callback<NoteResponse>() {
+                    @Override
+                    public void onResponse(Call<NoteResponse> call, Response<NoteResponse> response) {
+                        uploadingNotes.remove(localId);
+                        if (response.isSuccessful() && response.body() != null) {
+                            noteDb.updateSyncStatus(localId, resolvedServerId, "SYNCED");
+                            if (callback != null) callback.onSuccess(resolvedServerId);
+                        } else {
+                            noteDb.updateSyncStatus(localId, resolvedServerId, "FAILED");
+                            if (callback != null) callback.onError("Server update failed: HTTP " + response.code());
+                        }
                     }
-                }
 
-                @Override
-                public void onFailure(Call<NoteResponse> call, Throwable t) {
-                    noteDb.updateSyncStatus(localId, serverId, "FAILED");
-                    callback.onError("Network failure: " + t.getMessage());
-                }
-            });
-        } else {
-            // Create (POST)
-            repository.createNote(request, new Callback<NoteResponse>() {
-                @Override
-                public void onResponse(Call<NoteResponse> call, Response<NoteResponse> response) {
-                    if (response.isSuccessful() && response.body() != null) {
-                        long newServerId = response.body().getId();
-                        noteDb.updateSyncStatus(localId, newServerId, "SYNCED");
-                        callback.onSuccess(newServerId);
-                    } else {
+                    @Override
+                    public void onFailure(Call<NoteResponse> call, Throwable t) {
+                        uploadingNotes.remove(localId);
+                        noteDb.updateSyncStatus(localId, resolvedServerId, "FAILED");
+                        if (callback != null) callback.onError("Network failure: " + t.getMessage());
+                    }
+                });
+            } else {
+                // Create (POST)
+                repository.createNote(request, new Callback<NoteResponse>() {
+                    @Override
+                    public void onResponse(Call<NoteResponse> call, Response<NoteResponse> response) {
+                        uploadingNotes.remove(localId);
+                        if (response.isSuccessful() && response.body() != null) {
+                            long newServerId = response.body().getId();
+                            noteDb.updateSyncStatus(localId, newServerId, "SYNCED");
+                            if (callback != null) callback.onSuccess(newServerId);
+                        } else {
+                            noteDb.updateSyncStatus(localId, null, "FAILED");
+                            if (callback != null) callback.onError("Server upload failed: HTTP " + response.code());
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(Call<NoteResponse> call, Throwable t) {
+                        uploadingNotes.remove(localId);
                         noteDb.updateSyncStatus(localId, null, "FAILED");
-                        callback.onError("Server upload failed: HTTP " + response.code());
+                        if (callback != null) callback.onError("Network failure: " + t.getMessage());
                     }
-                }
-
-                @Override
-                public void onFailure(Call<NoteResponse> call, Throwable t) {
-                    noteDb.updateSyncStatus(localId, null, "FAILED");
-                    callback.onError("Network failure: " + t.getMessage());
-                }
-            });
+                });
+            }
+        } catch (Exception e) {
+            uploadingNotes.remove(localId);
+            if (callback != null) callback.onError("Unexpected error: " + e.getMessage());
         }
     }
 
@@ -310,51 +352,89 @@ public class SyncManager {
 
     // --- Reminders CRUD ---
     public void uploadReminder(int localId, String text, long time, boolean expired, long snoozedTime, Long serverId, SyncCallback<Long> callback) {
-        ReminderApplication.enqueueSyncWorker(context);
-        long localUpdatedAt = reminderDb.getReminderUpdatedAt(localId);
-        ReminderRequest request = new ReminderRequest(text, time, expired, snoozedTime, localUpdatedAt);
+        if (!uploadingReminders.add(localId)) {
+            Log.d(TAG, "Reminder " + localId + " upload in progress. Skipping.");
+            if (callback != null) callback.onError("Upload already in progress.");
+            return;
+        }
 
-        if (serverId != null && serverId > 0) {
-            // Update (PUT)
-            repository.updateReminder(serverId, request, new Callback<ReminderResponse>() {
-                @Override
-                public void onResponse(Call<ReminderResponse> call, Response<ReminderResponse> response) {
-                    if (response.isSuccessful() && response.body() != null) {
-                        reminderDb.updateSyncStatus(localId, serverId, "SYNCED");
-                        callback.onSuccess(serverId);
-                    } else {
-                        reminderDb.updateSyncStatus(localId, serverId, "FAILED");
-                        callback.onError("Server update failed: HTTP " + response.code());
+        try {
+            ReminderDatabaseHelper.SyncMeta dbMeta = reminderDb.getSyncMeta(localId);
+            if (dbMeta == null) {
+                uploadingReminders.remove(localId);
+                if (callback != null) callback.onError("Reminder not found in database.");
+                return;
+            }
+
+            if ("SYNCED".equals(dbMeta.syncStatus)) {
+                uploadingReminders.remove(localId);
+                if (callback != null) callback.onSuccess(dbMeta.serverId);
+                return;
+            }
+
+            Long resolvedServerId = (dbMeta.serverId != null && dbMeta.serverId > 0) ? dbMeta.serverId : serverId;
+
+            if ((serverId == null || serverId <= 0) && (resolvedServerId != null && resolvedServerId > 0)) {
+                uploadingReminders.remove(localId);
+                Log.d(TAG, "Reminder " + localId + " already has server ID " + resolvedServerId + " in DB. Skipping duplicate POST.");
+                reminderDb.updateSyncStatus(localId, resolvedServerId, "SYNCED");
+                if (callback != null) callback.onSuccess(resolvedServerId);
+                return;
+            }
+
+            ReminderApplication.enqueueSyncWorker(context);
+            long localUpdatedAt = reminderDb.getReminderUpdatedAt(localId);
+            ReminderRequest request = new ReminderRequest(text, time, expired, snoozedTime, localUpdatedAt);
+
+            if (resolvedServerId != null && resolvedServerId > 0) {
+                // Update (PUT)
+                repository.updateReminder(resolvedServerId, request, new Callback<ReminderResponse>() {
+                    @Override
+                    public void onResponse(Call<ReminderResponse> call, Response<ReminderResponse> response) {
+                        uploadingReminders.remove(localId);
+                        if (response.isSuccessful() && response.body() != null) {
+                            reminderDb.updateSyncStatus(localId, resolvedServerId, "SYNCED");
+                            if (callback != null) callback.onSuccess(resolvedServerId);
+                        } else {
+                            reminderDb.updateSyncStatus(localId, resolvedServerId, "FAILED");
+                            if (callback != null) callback.onError("Server update failed: HTTP " + response.code());
+                        }
                     }
-                }
 
-                @Override
-                public void onFailure(Call<ReminderResponse> call, Throwable t) {
-                    reminderDb.updateSyncStatus(localId, serverId, "FAILED");
-                    callback.onError("Network failure: " + t.getMessage());
-                }
-            });
-        } else {
-            // Create (POST)
-            repository.createReminder(request, new Callback<ReminderResponse>() {
-                @Override
-                public void onResponse(Call<ReminderResponse> call, Response<ReminderResponse> response) {
-                    if (response.isSuccessful() && response.body() != null) {
-                        long newServerId = response.body().getId();
-                        reminderDb.updateSyncStatus(localId, newServerId, "SYNCED");
-                        callback.onSuccess(newServerId);
-                    } else {
+                    @Override
+                    public void onFailure(Call<ReminderResponse> call, Throwable t) {
+                        uploadingReminders.remove(localId);
+                        reminderDb.updateSyncStatus(localId, resolvedServerId, "FAILED");
+                        if (callback != null) callback.onError("Network failure: " + t.getMessage());
+                    }
+                });
+            } else {
+                // Create (POST)
+                repository.createReminder(request, new Callback<ReminderResponse>() {
+                    @Override
+                    public void onResponse(Call<ReminderResponse> call, Response<ReminderResponse> response) {
+                        uploadingReminders.remove(localId);
+                        if (response.isSuccessful() && response.body() != null) {
+                            long newServerId = response.body().getId();
+                            reminderDb.updateSyncStatus(localId, newServerId, "SYNCED");
+                            if (callback != null) callback.onSuccess(newServerId);
+                        } else {
+                            reminderDb.updateSyncStatus(localId, null, "FAILED");
+                            if (callback != null) callback.onError("Server upload failed: HTTP " + response.code());
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(Call<ReminderResponse> call, Throwable t) {
+                        uploadingReminders.remove(localId);
                         reminderDb.updateSyncStatus(localId, null, "FAILED");
-                        callback.onError("Server upload failed: HTTP " + response.code());
+                        if (callback != null) callback.onError("Network failure: " + t.getMessage());
                     }
-                }
-
-                @Override
-                public void onFailure(Call<ReminderResponse> call, Throwable t) {
-                    reminderDb.updateSyncStatus(localId, null, "FAILED");
-                    callback.onError("Network failure: " + t.getMessage());
-                }
-            });
+                });
+            }
+        } catch (Exception e) {
+            uploadingReminders.remove(localId);
+            if (callback != null) callback.onError("Unexpected error: " + e.getMessage());
         }
     }
 
@@ -417,62 +497,99 @@ public class SyncManager {
     }
 
     public void uploadPayment(MonthlyPayment payment, SyncCallback<Long> callback) {
-        ReminderApplication.enqueueSyncWorker(context);
         int localId = payment.getId();
-        long localUpdatedAt = paymentDb.getPaymentUpdatedAt(localId);
-        PaymentRequest request = new PaymentRequest(
-                payment.getName(),
-                payment.getDueDate(),
-                payment.isCompleted(),
-                localUpdatedAt,
-                payment.getAmount(),
-                payment.getRecurrence() != null ? payment.getRecurrence().name() : "MONTHLY",
-                payment.getNotificationOffsets() != null ? payment.getNotificationOffsets() : "0"
-        );
-        request.setLastPaidAt(payment.getLastPaidAt());
-        Long serverId = payment.getServerId();
+        if (!uploadingPayments.add(localId)) {
+            Log.d(TAG, "Payment " + localId + " upload in progress. Skipping.");
+            if (callback != null) callback.onError("Upload already in progress.");
+            return;
+        }
 
-        if (serverId != null && serverId > 0) {
-            // Update (PUT)
-            repository.updatePayment(serverId, request, new Callback<PaymentResponse>() {
-                @Override
-                public void onResponse(Call<PaymentResponse> call, Response<PaymentResponse> response) {
-                    if (response.isSuccessful() && response.body() != null) {
-                        paymentDb.updateSyncStatus(localId, serverId, "SYNCED");
-                        callback.onSuccess(serverId);
-                    } else {
-                        paymentDb.updateSyncStatus(localId, serverId, "FAILED");
-                        callback.onError("Server update failed: HTTP " + response.code());
+        try {
+            PaymentDatabaseHelper.SyncMeta dbMeta = paymentDb.getSyncMeta(localId);
+            if (dbMeta == null) {
+                uploadingPayments.remove(localId);
+                if (callback != null) callback.onError("Payment not found in database.");
+                return;
+            }
+
+            if ("SYNCED".equals(dbMeta.syncStatus)) {
+                uploadingPayments.remove(localId);
+                if (callback != null) callback.onSuccess(dbMeta.serverId);
+                return;
+            }
+
+            Long resolvedServerId = (dbMeta.serverId != null && dbMeta.serverId > 0) ? dbMeta.serverId : payment.getServerId();
+
+            if ((payment.getServerId() == null || payment.getServerId() <= 0) && (resolvedServerId != null && resolvedServerId > 0)) {
+                uploadingPayments.remove(localId);
+                Log.d(TAG, "Payment " + localId + " already has server ID " + resolvedServerId + " in DB. Skipping duplicate POST.");
+                paymentDb.updateSyncStatus(localId, resolvedServerId, "SYNCED");
+                if (callback != null) callback.onSuccess(resolvedServerId);
+                return;
+            }
+
+            ReminderApplication.enqueueSyncWorker(context);
+            long localUpdatedAt = paymentDb.getPaymentUpdatedAt(localId);
+            PaymentRequest request = new PaymentRequest(
+                    payment.getName(),
+                    payment.getDueDate(),
+                    payment.isCompleted(),
+                    localUpdatedAt,
+                    payment.getAmount(),
+                    payment.getRecurrence() != null ? payment.getRecurrence().name() : "MONTHLY",
+                    payment.getNotificationOffsets() != null ? payment.getNotificationOffsets() : "0"
+            );
+            request.setLastPaidAt(payment.getLastPaidAt());
+
+            if (resolvedServerId != null && resolvedServerId > 0) {
+                // Update (PUT)
+                repository.updatePayment(resolvedServerId, request, new Callback<PaymentResponse>() {
+                    @Override
+                    public void onResponse(Call<PaymentResponse> call, Response<PaymentResponse> response) {
+                        uploadingPayments.remove(localId);
+                        if (response.isSuccessful() && response.body() != null) {
+                            paymentDb.updateSyncStatus(localId, resolvedServerId, "SYNCED");
+                            if (callback != null) callback.onSuccess(resolvedServerId);
+                        } else {
+                            paymentDb.updateSyncStatus(localId, resolvedServerId, "FAILED");
+                            if (callback != null) callback.onError("Server update failed: HTTP " + response.code());
+                        }
                     }
-                }
 
-                @Override
-                public void onFailure(Call<PaymentResponse> call, Throwable t) {
-                    paymentDb.updateSyncStatus(localId, serverId, "FAILED");
-                    callback.onError("Network failure: " + t.getMessage());
-                }
-            });
-        } else {
-            // Create (POST)
-            repository.createPayment(request, new Callback<PaymentResponse>() {
-                @Override
-                public void onResponse(Call<PaymentResponse> call, Response<PaymentResponse> response) {
-                    if (response.isSuccessful() && response.body() != null) {
-                        long newServerId = response.body().getId();
-                        paymentDb.updateSyncStatus(localId, newServerId, "SYNCED");
-                        callback.onSuccess(newServerId);
-                    } else {
+                    @Override
+                    public void onFailure(Call<PaymentResponse> call, Throwable t) {
+                        uploadingPayments.remove(localId);
+                        paymentDb.updateSyncStatus(localId, resolvedServerId, "FAILED");
+                        if (callback != null) callback.onError("Network failure: " + t.getMessage());
+                    }
+                });
+            } else {
+                // Create (POST)
+                repository.createPayment(request, new Callback<PaymentResponse>() {
+                    @Override
+                    public void onResponse(Call<PaymentResponse> call, Response<PaymentResponse> response) {
+                        uploadingPayments.remove(localId);
+                        if (response.isSuccessful() && response.body() != null) {
+                            long newServerId = response.body().getId();
+                            paymentDb.updateSyncStatus(localId, newServerId, "SYNCED");
+                            if (callback != null) callback.onSuccess(newServerId);
+                        } else {
+                            paymentDb.updateSyncStatus(localId, null, "FAILED");
+                            if (callback != null) callback.onError("Server upload failed: HTTP " + response.code());
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(Call<PaymentResponse> call, Throwable t) {
+                        uploadingPayments.remove(localId);
                         paymentDb.updateSyncStatus(localId, null, "FAILED");
-                        callback.onError("Server upload failed: HTTP " + response.code());
+                        if (callback != null) callback.onError("Network failure: " + t.getMessage());
                     }
-                }
-
-                @Override
-                public void onFailure(Call<PaymentResponse> call, Throwable t) {
-                    paymentDb.updateSyncStatus(localId, null, "FAILED");
-                    callback.onError("Network failure: " + t.getMessage());
-                }
-            });
+                });
+            }
+        } catch (Exception e) {
+            uploadingPayments.remove(localId);
+            if (callback != null) callback.onError("Unexpected error: " + e.getMessage());
         }
     }
 

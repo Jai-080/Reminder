@@ -28,7 +28,6 @@ public class RegisterActivity extends AppCompatActivity {
 
     private Button registerButton;
     private TextView backToLoginButton;
-    private Button bypassButton;
     private ProgressBar progressBar;
 
     private TokenManager tokenManager;
@@ -52,7 +51,6 @@ public class RegisterActivity extends AppCompatActivity {
 
         registerButton = findViewById(R.id.btnRegister);
         backToLoginButton = findViewById(R.id.btnBackToLogin);
-        bypassButton = findViewById(R.id.btnBypass);
         progressBar = findViewById(R.id.progressBar);
 
 
@@ -63,15 +61,6 @@ public class RegisterActivity extends AppCompatActivity {
         });
 
         backToLoginButton.setOnClickListener(v -> {
-            finish();
-        });
-
-        bypassButton.setOnClickListener(v -> {
-            tokenManager.saveSession("developer_bypass", "developer_bypass", -1L, "Developer");
-            Toast.makeText(this, "Logged in via Developer Bypass (Offline Mode)", Toast.LENGTH_SHORT).show();
-            Intent intent = new Intent(RegisterActivity.this, MainActivity.class);
-            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-            startActivity(intent);
             finish();
         });
     }
@@ -145,7 +134,6 @@ public class RegisterActivity extends AppCompatActivity {
         progressBar.setVisibility(isLoading ? View.VISIBLE : View.GONE);
         registerButton.setEnabled(!isLoading);
         backToLoginButton.setEnabled(!isLoading);
-        bypassButton.setEnabled(!isLoading);
         usernameInput.setEnabled(!isLoading);
         emailInput.setEnabled(!isLoading);
         passwordInput.setEnabled(!isLoading);

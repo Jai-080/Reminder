@@ -191,6 +191,33 @@ public class QuickNoteDatabaseHelper extends SQLiteOpenHelper {
         return localId;
     }
 
+    public static class SyncMeta {
+        public final Long serverId;
+        public final String syncStatus;
+        public SyncMeta(Long serverId, String syncStatus) {
+            this.serverId = serverId;
+            this.syncStatus = syncStatus;
+        }
+    }
+
+    public SyncMeta getSyncMeta(int id) {
+        SQLiteDatabase db = getReadableDatabase();
+        SyncMeta meta = null;
+        try (Cursor cursor = db.query(TABLE_NAME, new String[]{"server_id", "sync_status"}, "id = ?", new String[]{String.valueOf(id)}, null, null, null)) {
+            if (cursor.moveToFirst()) {
+                Long serverId = null;
+                int serverIdIdx = cursor.getColumnIndexOrThrow("server_id");
+                if (!cursor.isNull(serverIdIdx)) {
+                    serverId = cursor.getLong(serverIdIdx);
+                }
+                String syncStatus = cursor.getString(cursor.getColumnIndexOrThrow("sync_status"));
+                meta = new SyncMeta(serverId, syncStatus);
+            }
+        }
+        db.close();
+        return meta;
+    }
+
     public void updateSyncStatus(int localId, Long serverId, String status) {
         SQLiteDatabase db = getWritableDatabase();
         ContentValues values = new ContentValues();

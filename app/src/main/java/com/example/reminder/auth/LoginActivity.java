@@ -26,7 +26,6 @@ public class LoginActivity extends AppCompatActivity {
 
     private Button loginButton;
     private TextView registerButton;
-    private Button bypassButton;
     private ProgressBar progressBar;
 
     private TokenManager tokenManager;
@@ -56,10 +55,7 @@ public class LoginActivity extends AppCompatActivity {
 
         loginButton = findViewById(R.id.btnLogin);
         registerButton = findViewById(R.id.btnGoToRegister);
-        bypassButton = findViewById(R.id.btnBypass);
         progressBar = findViewById(R.id.progressBar);
-
-
 
         loginButton.setOnClickListener(v -> {
             hideKeyboard();
@@ -68,14 +64,6 @@ public class LoginActivity extends AppCompatActivity {
 
         registerButton.setOnClickListener(v -> {
             startActivity(new Intent(LoginActivity.this, RegisterActivity.class));
-        });
-
-        bypassButton.setOnClickListener(v -> {
-            // Save dummy session tokens to bypass auth check and use local DB offline
-            tokenManager.saveSession("developer_bypass", "developer_bypass", -1L, "Developer");
-            Toast.makeText(this, "Logged in via Developer Bypass (Offline Mode)", Toast.LENGTH_SHORT).show();
-            startActivity(new Intent(LoginActivity.this, MainActivity.class));
-            finish();
         });
     }
 
@@ -137,7 +125,6 @@ public class LoginActivity extends AppCompatActivity {
         progressBar.setVisibility(isLoading ? View.VISIBLE : View.GONE);
         loginButton.setEnabled(!isLoading);
         registerButton.setEnabled(!isLoading);
-        bypassButton.setEnabled(!isLoading);
         emailInput.setEnabled(!isLoading);
         passwordInput.setEnabled(!isLoading);
 

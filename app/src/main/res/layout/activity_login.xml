@@ -73,21 +73,7 @@
         android:clickable="true"
         android:focusable="true" />
 
-    <View
-        android:layout_width="match_parent"
-        android:layout_height="1dp"
-        android:background="@color/light_divider"
-        android:layout_marginBottom="24dp" />
 
-    <Button
-        android:id="@+id/btnBypass"
-        android:layout_width="match_parent"
-        android:layout_height="48dp"
-        android:text="Skip Login (Developer Bypass)"
-        android:background="@drawable/rounded_secondary_button"
-        android:textColor="?android:attr/textColorPrimary"
-        android:textStyle="bold"
-        android:layout_marginBottom="16dp" />
 
     <ProgressBar
         android:id="@+id/progressBar"
