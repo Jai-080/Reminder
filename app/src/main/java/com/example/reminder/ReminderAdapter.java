@@ -8,6 +8,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
@@ -97,6 +98,8 @@ public class ReminderAdapter extends RecyclerView.Adapter<ReminderAdapter.ViewHo
                     dbHelper.snoozeReminder(reminder.getId(), triggerTime);
 
                     AlarmUtils.scheduleReminder(context, reminder.getId(), reminder.getText(), triggerTime);
+
+                    Toast.makeText(context, "Reminder rescheduled", Toast.LENGTH_SHORT).show();
 
                     SyncManager.getInstance(context).uploadReminder(
                             reminder.getId(),
