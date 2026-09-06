@@ -126,7 +126,7 @@ public class MonthlyPaymentsActivity extends AppCompatActivity {
         final com.google.android.material.textfield.TextInputEditText amountInput = dialogView.findViewById(R.id.dialogPaymentAmountInput);
         
         final android.widget.Spinner recurrenceSpinner = dialogView.findViewById(R.id.dialogRecurrenceSpinner);
-        android.widget.ArrayAdapter<String> spinnerAdapter = new android.widget.ArrayAdapter<>(this, android.R.layout.simple_spinner_item, new String[]{"One-Time", "Monthly", "Quarterly", "Yearly"});
+        android.widget.ArrayAdapter<String> spinnerAdapter = new android.widget.ArrayAdapter<>(this, android.R.layout.simple_spinner_item, new String[]{"One-Time", "Monthly", "Bi-monthly", "Quarterly", "Half-yearly", "Yearly"});
         spinnerAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         recurrenceSpinner.setAdapter(spinnerAdapter);
         recurrenceSpinner.setSelection(1); // Default to Monthly
@@ -182,8 +182,12 @@ public class MonthlyPaymentsActivity extends AppCompatActivity {
             } else if (spinnerPos == 1) {
                 recurrence = RecurrenceType.MONTHLY;
             } else if (spinnerPos == 2) {
-                recurrence = RecurrenceType.QUARTERLY;
+                recurrence = RecurrenceType.BI_MONTHLY;
             } else if (spinnerPos == 3) {
+                recurrence = RecurrenceType.QUARTERLY;
+            } else if (spinnerPos == 4) {
+                recurrence = RecurrenceType.HALF_YEARLY;
+            } else if (spinnerPos == 5) {
                 recurrence = RecurrenceType.YEARLY;
             }
 

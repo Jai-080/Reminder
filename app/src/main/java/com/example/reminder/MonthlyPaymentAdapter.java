@@ -224,8 +224,12 @@ public class MonthlyPaymentAdapter extends RecyclerView.Adapter<RecyclerView.Vie
                         // Advance due date based on recurrence frequency
                         java.util.Calendar cal = java.util.Calendar.getInstance();
                         cal.setTimeInMillis(currentPayment.getDueDate());
-                        if (currentPayment.getRecurrence() == RecurrenceType.QUARTERLY) {
+                        if (currentPayment.getRecurrence() == RecurrenceType.BI_MONTHLY) {
+                            cal.add(java.util.Calendar.MONTH, 2);
+                        } else if (currentPayment.getRecurrence() == RecurrenceType.QUARTERLY) {
                             cal.add(java.util.Calendar.MONTH, 3);
+                        } else if (currentPayment.getRecurrence() == RecurrenceType.HALF_YEARLY) {
+                            cal.add(java.util.Calendar.MONTH, 6);
                         } else if (currentPayment.getRecurrence() == RecurrenceType.YEARLY) {
                             cal.add(java.util.Calendar.YEAR, 1);
                         } else {
