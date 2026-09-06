@@ -63,20 +63,28 @@ public class MonthlyPaymentsActivity extends AppCompatActivity {
         });
 
         clearAllButton.setOnClickListener(v -> {
-            // Cancel all scheduled alarms before clearing
-            for (MonthlyPayment payment : payments) {
-                AlarmUtils.cancelPaymentAlarm(this, payment.getId(), payment.getName());
-                AlarmUtils.cancelNotification(this, payment.getId());
-                dbHelper.softDeletePayment(payment.getId());
-            }
-            payments.clear();
-            adapter.notifyDataSetChanged();
-            if (txtNoPayments != null) {
-                txtNoPayments.setVisibility(View.VISIBLE);
-            }
+            if (payments.isEmpty()) return;
+            new androidx.appcompat.app.AlertDialog.Builder(this)
+                    .setTitle("Clear All Payments")
+                    .setMessage("Are you sure you want to delete all payments?")
+                    .setPositiveButton("Clear All", (dialog, which) -> {
+                        // Cancel all scheduled alarms before clearing
+                        for (MonthlyPayment payment : payments) {
+                            AlarmUtils.cancelPaymentAlarm(this, payment.getId(), payment.getName());
+                            AlarmUtils.cancelNotification(this, payment.getId());
+                            dbHelper.softDeletePayment(payment.getId());
+                        }
+                        payments.clear();
+                        adapter.notifyDataSetChanged();
+                        if (txtNoPayments != null) {
+                            txtNoPayments.setVisibility(View.VISIBLE);
+                        }
 
-            Toast.makeText(this, "All payments deleted", Toast.LENGTH_SHORT).show();
-            ReminderApplication.enqueueSyncWorker(this);
+                        Toast.makeText(this, "All payments deleted", Toast.LENGTH_SHORT).show();
+                        ReminderApplication.enqueueSyncWorker(this);
+                    })
+                    .setNegativeButton("Cancel", null)
+                    .show();
         });
 
         syncCompletedReceiver = new BroadcastReceiver() {

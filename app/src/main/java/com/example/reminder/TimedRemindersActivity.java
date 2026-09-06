@@ -91,13 +91,21 @@ public class TimedRemindersActivity extends AppCompatActivity {
         Button clearAllBtn = findViewById(R.id.clearAllBtn);
         clearAllBtn.setOnClickListener(v -> {
             List<Reminder> allReminders = dbHelper.getAllReminders();
-            for (Reminder r : allReminders) {
-                AlarmUtils.cancelReminder(this, r.getId());
-                dbHelper.softDeleteReminder(r.getId());
-            }
-            loadReminders();
-            Toast.makeText(this, "All reminders cleared", Toast.LENGTH_SHORT).show();
-            ReminderApplication.enqueueSyncWorker(this);
+            if (allReminders.isEmpty()) return;
+            new androidx.appcompat.app.AlertDialog.Builder(this)
+                    .setTitle("Clear All Reminders")
+                    .setMessage("Are you sure you want to delete all reminders?")
+                    .setPositiveButton("Clear All", (dialog, which) -> {
+                        for (Reminder r : allReminders) {
+                            AlarmUtils.cancelReminder(this, r.getId());
+                            dbHelper.softDeleteReminder(r.getId());
+                        }
+                        loadReminders();
+                        Toast.makeText(this, "All reminders cleared", Toast.LENGTH_SHORT).show();
+                        ReminderApplication.enqueueSyncWorker(this);
+                    })
+                    .setNegativeButton("Cancel", null)
+                    .show();
         });
 
         btnSetReminderFull.setOnClickListener(v -> {
