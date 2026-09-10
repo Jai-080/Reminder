@@ -238,12 +238,17 @@ public class AuthManager {
                 FileLogger.log("TOKEN_REFRESH", "Refresh succeeded");
                 FileLogger.log("TOKEN_REFRESH", "New access token stored");
                 FileLogger.log("TOKEN_REFRESH", "New refresh token stored");
-                tokenManager.saveSession(
+                boolean persisted = tokenManager.saveSessionSynchronous(
                         authResponse.getAccessToken(),
                         authResponse.getRefreshToken(),
                         authResponse.getUserId(),
                         authResponse.getUsername()
                 );
+                if (!persisted) {
+                    FileLogger.log("TOKEN_REFRESH", "Refresh failed: Synchronous session persistence (commit) returned false!");
+                    Log.e(TAG, "Centralized refresh failed: unable to synchronously commit new session tokens to storage.");
+                    throw new java.io.IOException("Failed to synchronously persist refreshed session tokens to disk");
+                }
                 Log.d(TAG, "Centralized refresh request completed successfully.");
                 return authResponse.getAccessToken();
             } else {

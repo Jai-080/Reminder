@@ -85,6 +85,34 @@ public class TokenManager {
         Log.d("TokenManager", "Session saved for user: " + username);
     }
 
+    public synchronized boolean saveSessionSynchronous(String accessToken, String refreshToken, Long userId, String username) {
+        boolean hasAccess = accessToken != null && !accessToken.isEmpty();
+        boolean hasRefresh = refreshToken != null && !refreshToken.isEmpty();
+
+        FileLogger.log("TOKEN_MANAGER", "saveSessionSynchronous(): User ID = " + userId
+                + ", Username = " + username
+                + ", Access Token Exists = " + hasAccess
+                + ", Refresh Token Exists = " + hasRefresh
+                + ", Base URL = " + getBaseUrl());
+        FileLogger.log("SESSION", "Synchronous session persistence started");
+
+        boolean commitSuccess = prefs.edit()
+                .putString(KEY_ACCESS_TOKEN, accessToken)
+                .putString(KEY_REFRESH_TOKEN, refreshToken)
+                .putLong(KEY_USER_ID, userId != null ? userId : -1L)
+                .putString(KEY_USERNAME, username)
+                .commit();
+
+        FileLogger.log("SESSION", "Synchronous session persistence completed, commitSuccess=" + commitSuccess);
+        if (commitSuccess) {
+            Log.d("TokenManager", "Session synchronously committed for user: " + username);
+        } else {
+            Log.e("TokenManager", "Failed to synchronously commit session to storage for user: " + username);
+            FileLogger.log("SESSION", "CRITICAL: Synchronous session persistence FAILED (commit returned false)");
+        }
+        return commitSuccess;
+    }
+
     public synchronized void saveAccessToken(String accessToken) {
         boolean hasAccess = accessToken != null && !accessToken.isEmpty();
         FileLogger.log("TOKEN_MANAGER", "saveAccessToken(): Access Token Exists = " + hasAccess + " " + FileLogger.formatTokenMeta(accessToken));
