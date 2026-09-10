@@ -1,6 +1,7 @@
 package com.example.reminder.auth;
 
 import com.example.reminder.config.ServerConfig;
+import com.example.reminder.utils.FileLogger;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.util.Log;
@@ -38,6 +39,21 @@ public class TokenManager {
             Log.e("TokenManager", "Error creating EncryptedSharedPreferences, falling back to standard SharedPreferences", e);
             prefs = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
         }
+
+        String access = prefs.getString(KEY_ACCESS_TOKEN, null);
+        String refresh = prefs.getString(KEY_REFRESH_TOKEN, null);
+        boolean hasAccess = access != null;
+        boolean hasRefresh = refresh != null;
+        long userId = prefs.getLong(KEY_USER_ID, -1L);
+        String username = prefs.getString(KEY_USERNAME, null);
+        long lastSync = prefs.getLong(KEY_LAST_SYNC, 0L);
+
+        FileLogger.log("SESSION", "Session restored / Session load completed: Access Token Exists = " + hasAccess
+                + ", Refresh Token Exists = " + hasRefresh
+                + ", User ID = " + (userId != -1L ? userId : "null")
+                + ", Username = " + username
+                + ", Base URL = " + getBaseUrl()
+                + ", Last Sync Timestamp = " + lastSync);
     }
 
     public static synchronized TokenManager getInstance(Context context) {
@@ -48,27 +64,52 @@ public class TokenManager {
     }
 
     public synchronized void saveSession(String accessToken, String refreshToken, Long userId, String username) {
+        boolean hasAccess = accessToken != null && !accessToken.isEmpty();
+        boolean hasRefresh = refreshToken != null && !refreshToken.isEmpty();
+
+        FileLogger.log("TOKEN_MANAGER", "saveSession(): User ID = " + userId
+                + ", Username = " + username
+                + ", Access Token Exists = " + hasAccess
+                + ", Refresh Token Exists = " + hasRefresh
+                + ", Base URL = " + getBaseUrl());
+        FileLogger.log("SESSION", "Session persisted: saving session to secure storage");
+
         prefs.edit()
                 .putString(KEY_ACCESS_TOKEN, accessToken)
                 .putString(KEY_REFRESH_TOKEN, refreshToken)
                 .putLong(KEY_USER_ID, userId != null ? userId : -1L)
                 .putString(KEY_USERNAME, username)
                 .apply();
+
+        FileLogger.log("SESSION", "Session save completed");
         Log.d("TokenManager", "Session saved for user: " + username);
     }
 
     public synchronized void saveAccessToken(String accessToken) {
+        boolean hasAccess = accessToken != null && !accessToken.isEmpty();
+        FileLogger.log("TOKEN_MANAGER", "saveAccessToken(): Access Token Exists = " + hasAccess + " " + FileLogger.formatTokenMeta(accessToken));
         prefs.edit().putString(KEY_ACCESS_TOKEN, accessToken).apply();
+        FileLogger.log("SESSION", "Session persisted: access token saved");
     }
 
     public synchronized void saveTokens(String accessToken, String refreshToken) {
+        boolean hasAccess = accessToken != null && !accessToken.isEmpty();
+        boolean hasRefresh = refreshToken != null && !refreshToken.isEmpty();
+        FileLogger.log("TOKEN_MANAGER", "saveTokens(): Access Token Exists = " + hasAccess + ", Refresh Token Exists = " + hasRefresh);
         prefs.edit()
                 .putString(KEY_ACCESS_TOKEN, accessToken)
                 .putString(KEY_REFRESH_TOKEN, refreshToken)
                 .apply();
+        FileLogger.log("SESSION", "Session persisted: tokens saved");
     }
 
     public synchronized void clearSession() {
+        clearSession("Unspecified caller");
+    }
+
+    public synchronized void clearSession(String reason) {
+        FileLogger.log("SESSION", "Session invalidated / Session cleared: Reason = " + reason);
+        FileLogger.logClearSession("TOKEN_MANAGER", reason);
         prefs.edit()
                 .remove(KEY_ACCESS_TOKEN)
                 .remove(KEY_REFRESH_TOKEN)
@@ -76,15 +117,25 @@ public class TokenManager {
                 .remove(KEY_USERNAME)
                 .remove(KEY_LAST_SYNC)
                 .apply();
+        FileLogger.log("TOKEN_MANAGER", "Session cleared: Access Token Exists = false, Refresh Token Exists = false");
         Log.d("TokenManager", "Session cleared.");
     }
 
+    public synchronized void logout() {
+        FileLogger.log("TOKEN_MANAGER", "logout() called");
+        clearSession("logout() invoked on TokenManager");
+    }
+
     public synchronized String getAccessToken() {
-        return prefs.getString(KEY_ACCESS_TOKEN, null);
+        String token = prefs.getString(KEY_ACCESS_TOKEN, null);
+        FileLogger.log("TOKEN_MANAGER", "Access token loaded: Access Token Exists = " + (token != null) + " " + FileLogger.formatTokenMeta(token));
+        return token;
     }
 
     public synchronized String getRefreshToken() {
-        return prefs.getString(KEY_REFRESH_TOKEN, null);
+        String token = prefs.getString(KEY_REFRESH_TOKEN, null);
+        FileLogger.log("TOKEN_MANAGER", "Refresh token loaded: Refresh Token Exists = " + (token != null) + " " + FileLogger.formatTokenMeta(token));
+        return token;
     }
 
     public synchronized Long getUserId() {
@@ -97,7 +148,10 @@ public class TokenManager {
     }
 
     public synchronized boolean isLoggedIn() {
-        return getAccessToken() != null;
+        String token = prefs.getString(KEY_ACCESS_TOKEN, null);
+        boolean loggedIn = token != null;
+        FileLogger.log("TOKEN_MANAGER", "TokenManager.isLoggedIn(): Access Token Exists = " + loggedIn);
+        return loggedIn;
     }
 
     public synchronized void setBaseUrl(String baseUrl) {
@@ -105,6 +159,7 @@ public class TokenManager {
             baseUrl += "/";
         }
         prefs.edit().putString(KEY_BASE_URL, baseUrl).apply();
+        FileLogger.log("TOKEN_MANAGER", "Base URL updated: " + baseUrl);
         Log.d("TokenManager", "Base URL updated: " + baseUrl);
     }
 
@@ -114,10 +169,13 @@ public class TokenManager {
     }
 
     public synchronized void setLastSyncTimestamp(long timestamp) {
+        FileLogger.log("TOKEN_MANAGER", "Last Sync Timestamp saved: " + timestamp);
         prefs.edit().putLong(KEY_LAST_SYNC, timestamp).apply();
     }
 
     public synchronized long getLastSyncTimestamp() {
-        return prefs.getLong(KEY_LAST_SYNC, 0L);
+        long timestamp = prefs.getLong(KEY_LAST_SYNC, 0L);
+        FileLogger.log("TOKEN_MANAGER", "Last Sync Timestamp loaded: " + timestamp);
+        return timestamp;
     }
 }

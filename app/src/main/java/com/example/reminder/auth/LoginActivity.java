@@ -40,11 +40,22 @@ public class LoginActivity extends AppCompatActivity {
             getSupportActionBar().hide();
         }
 
+        com.example.reminder.utils.FileLogger.checkAndRequestStoragePermission(this);
+
         tokenManager = TokenManager.getInstance(this);
         authManager = AuthManager.getInstance(this);
 
+        com.example.reminder.utils.FileLogger.log("LOGIN_ACTIVITY", "LoginActivity.onCreate()");
+        String launchReason = getIntent().getStringExtra("launch_reason");
+        if (launchReason == null) {
+            launchReason = "Initial app launch / unauthenticated navigation";
+        }
+        com.example.reminder.utils.FileLogger.log("LOGIN_ACTIVITY", "Reason LoginActivity was launched: " + launchReason);
+        com.example.reminder.utils.FileLogger.log("LOGIN_ACTIVITY", "TokenManager.isLoggedIn() = " + tokenManager.isLoggedIn());
+
         // If already logged in, redirect straight to MainActivity
         if (tokenManager.isLoggedIn()) {
+            com.example.reminder.utils.FileLogger.log("LOGIN_ACTIVITY", "User already logged in according to TokenManager. Redirecting to MainActivity.");
             startActivity(new Intent(this, MainActivity.class));
             finish();
             return;
@@ -56,6 +67,8 @@ public class LoginActivity extends AppCompatActivity {
         loginButton = findViewById(R.id.btnLogin);
         registerButton = findViewById(R.id.btnGoToRegister);
         progressBar = findViewById(R.id.progressBar);
+
+        com.example.reminder.utils.FileLogger.log("LOGIN_ACTIVITY", "Login screen displayed");
 
         loginButton.setOnClickListener(v -> {
             hideKeyboard();
@@ -71,7 +84,6 @@ public class LoginActivity extends AppCompatActivity {
         String email = emailInput.getText().toString().trim();
         String password = passwordInput.getText().toString().trim();
 
-
         if (TextUtils.isEmpty(email)) {
             emailInput.setError("Email is required");
             return;
@@ -81,15 +93,18 @@ public class LoginActivity extends AppCompatActivity {
             return;
         }
 
-
         setLoading(true);
 
         String deviceName = DeviceUtils.getDeviceName();
         String platform = "android";
 
+        com.example.reminder.utils.FileLogger.log("LOGIN_ACTIVITY", "Login started: email=" + email + ", device=" + deviceName);
+
         authManager.login(email, password, deviceName, platform, new AuthManager.AuthCallback() {
             @Override
             public void onSuccess() {
+                com.example.reminder.utils.FileLogger.log("LOGIN_ACTIVITY", "Login succeeded");
+                com.example.reminder.utils.FileLogger.log("LOGIN_ACTIVITY", "Starting initial sync...");
                 Toast.makeText(LoginActivity.this, "Authentication successful. Performing initial sync...", Toast.LENGTH_SHORT).show();
                 
                 // Trigger initial download sync
@@ -97,6 +112,7 @@ public class LoginActivity extends AppCompatActivity {
                     @Override
                     public void onSuccess(Void result) {
                         setLoading(false);
+                        com.example.reminder.utils.FileLogger.log("LOGIN_ACTIVITY", "Initial sync completed successfully. Launching MainActivity.");
                         Toast.makeText(LoginActivity.this, "Initial synchronization complete!", Toast.LENGTH_SHORT).show();
                         startActivity(new Intent(LoginActivity.this, MainActivity.class));
                         finish();
@@ -105,6 +121,7 @@ public class LoginActivity extends AppCompatActivity {
                     @Override
                     public void onError(String error) {
                         setLoading(false);
+                        com.example.reminder.utils.FileLogger.log("LOGIN_ACTIVITY", "Initial sync failed: " + error + ". Launching MainActivity offline.");
                         // Per constraints: If backend sync fails (e.g. network issue), the local app must continue working
                         Toast.makeText(LoginActivity.this, "Sync failure: " + com.example.reminder.utils.UIUtils.sanitizeError(LoginActivity.this, error) + ". Using local DB offline.", Toast.LENGTH_LONG).show();
                         startActivity(new Intent(LoginActivity.this, MainActivity.class));
@@ -116,6 +133,7 @@ public class LoginActivity extends AppCompatActivity {
             @Override
             public void onError(String message) {
                 setLoading(false);
+                com.example.reminder.utils.FileLogger.log("LOGIN_ACTIVITY", "Login failed: " + message);
                 Toast.makeText(LoginActivity.this, com.example.reminder.utils.UIUtils.sanitizeError(LoginActivity.this, message), Toast.LENGTH_LONG).show();
             }
         });

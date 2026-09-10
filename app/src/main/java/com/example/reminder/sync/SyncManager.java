@@ -22,6 +22,7 @@ import com.example.reminder.network.ReminderResponse;
 import java.util.List;
 import java.util.ArrayList;
 import com.example.reminder.RecurrenceType;
+import com.example.reminder.utils.FileLogger;
 
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -644,17 +645,21 @@ public class SyncManager {
     }
 
     public void performFullSync(SyncCallback<Void> callback) {
+        FileLogger.log("SYNC_MANAGER", "performFullSync() called");
         if (!tokenManager.isLoggedIn()) {
+            FileLogger.log("SYNC_MANAGER", "performFullSync(): User not authenticated. Aborting sync.");
             if (callback != null) callback.onError("Not authenticated.");
             return;
         }
         if (!syncRunning.compareAndSet(false, true)) {
+            FileLogger.log("SYNC_MANAGER", "performFullSync(): Sync already running. Aborting duplicate.");
             Log.d(TAG, "Sync already running.");
             if (callback != null) {
                 callback.onError("Sync already running.");
             }
             return;
         }
+        FileLogger.log("SYNC_MANAGER", "Sync started");
         Log.d(TAG, "syncRunning=true");
         long lastSync = tokenManager.getLastSyncTimestamp();
         long currentSync = System.currentTimeMillis();
@@ -675,6 +680,7 @@ public class SyncManager {
                             @Override
                             public void onSuccess(Void result) {
                                 tokenManager.setLastSyncTimestamp(System.currentTimeMillis());
+                                FileLogger.log("SYNC_MANAGER", "Sync completed");
                                 Log.d(TAG, "performFullSync completed");
 
                                 // Update the widget automatically
@@ -700,6 +706,7 @@ public class SyncManager {
 
                             @Override
                             public void onError(String error) {
+                                FileLogger.log("SYNC_MANAGER", "Sync failed: Payment sync error: " + error);
                                 int finalNotes = noteDb.getAllNotes().size();
                                 int finalReminders = reminderDb.getAllReminders().size();
                                 int finalPayments = paymentDb.getAllPayments().size();
@@ -716,6 +723,7 @@ public class SyncManager {
 
                     @Override
                     public void onError(String error) {
+                        FileLogger.log("SYNC_MANAGER", "Sync failed: Reminder sync error: " + error);
                         int finalNotes = noteDb.getAllNotes().size();
                         int finalReminders = reminderDb.getAllReminders().size();
                         int finalPayments = paymentDb.getAllPayments().size();
@@ -732,6 +740,7 @@ public class SyncManager {
 
             @Override
             public void onError(String error) {
+                FileLogger.log("SYNC_MANAGER", "Sync failed: Notes sync error: " + error);
                 int finalNotes = noteDb.getAllNotes().size();
                 int finalReminders = reminderDb.getAllReminders().size();
                 int finalPayments = paymentDb.getAllPayments().size();

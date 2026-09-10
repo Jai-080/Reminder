@@ -19,6 +19,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.example.reminder.MainActivity;
 import com.example.reminder.R;
 import com.example.reminder.sync.SyncManager;
+import com.example.reminder.utils.FileLogger;
 
 public class RegisterActivity extends AppCompatActivity {
 
@@ -94,15 +95,19 @@ public class RegisterActivity extends AppCompatActivity {
 
         String platform = "android";
 
+        FileLogger.log("REGISTER_ACTIVITY", "attemptRegister: username=" + username + ", email=" + email);
+
         authManager.register(username, email, password, deviceName, platform, new AuthManager.AuthCallback() {
             @Override
             public void onSuccess() {
+                FileLogger.log("REGISTER_ACTIVITY", "Register callback onSuccess. Starting initial sync.");
                 Toast.makeText(RegisterActivity.this, "Registration successful. Performing initial sync...", Toast.LENGTH_SHORT).show();
 
                 SyncManager.getInstance(RegisterActivity.this).performInitialSync(new SyncManager.SyncCallback<Void>() {
                     @Override
                     public void onSuccess(Void result) {
                         setLoading(false);
+                        FileLogger.log("REGISTER_ACTIVITY", "Initial sync onSuccess. Navigating to MainActivity.");
                         Toast.makeText(RegisterActivity.this, "Sync complete!", Toast.LENGTH_SHORT).show();
                         Intent intent = new Intent(RegisterActivity.this, MainActivity.class);
                         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
@@ -113,6 +118,7 @@ public class RegisterActivity extends AppCompatActivity {
                     @Override
                     public void onError(String error) {
                         setLoading(false);
+                        FileLogger.log("REGISTER_ACTIVITY", "Initial sync onError: " + error + ". Navigating to MainActivity offline.");
                         Toast.makeText(RegisterActivity.this, "Sync failure: " + com.example.reminder.utils.UIUtils.sanitizeError(RegisterActivity.this, error) + ". Using local DB offline.", Toast.LENGTH_LONG).show();
                         Intent intent = new Intent(RegisterActivity.this, MainActivity.class);
                         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
@@ -125,6 +131,7 @@ public class RegisterActivity extends AppCompatActivity {
             @Override
             public void onError(String message) {
                 setLoading(false);
+                FileLogger.log("REGISTER_ACTIVITY", "Register callback onError: " + message);
                 Toast.makeText(RegisterActivity.this, com.example.reminder.utils.UIUtils.sanitizeError(RegisterActivity.this, message), Toast.LENGTH_LONG).show();
             }
         });

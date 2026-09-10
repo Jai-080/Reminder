@@ -6,6 +6,7 @@ import android.os.Looper;
 import android.util.Log;
 import com.example.reminder.ReminderApplication;
 import com.example.reminder.auth.TokenManager;
+import com.example.reminder.utils.FileLogger;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import okhttp3.OkHttpClient;
@@ -44,7 +45,10 @@ public class WebSocketManager {
     }
 
     public synchronized void connect() {
+        FileLogger.log("WEBSOCKET", "WebSocket connect() called: isLoggedIn=" + tokenManager.isLoggedIn()
+                + ", isConnected=" + isConnected + ", isConnecting=" + isConnecting);
         if (!tokenManager.isLoggedIn()) {
+            FileLogger.log("WEBSOCKET", "WebSocket connect(): Cannot connect WebSocket: User not logged in.");
             Log.d(TAG, "Cannot connect WebSocket: User not logged in.");
             return;
         }
@@ -52,6 +56,7 @@ public class WebSocketManager {
         userWantsConnection = true;
 
         if (isConnected || isConnecting) {
+            FileLogger.log("WEBSOCKET", "WebSocket connect(): Already connected or connecting.");
             Log.d(TAG, "WebSocket is already connected or connecting.");
             return;
         }
@@ -62,19 +67,27 @@ public class WebSocketManager {
     }
 
     private String getValidTokenOrRefresh() {
+        FileLogger.log("WEBSOCKET", "getValidTokenOrRefresh() called");
+        FileLogger.log("WEBSOCKET", "Access token expired check initiated");
         try {
             com.example.reminder.auth.AuthManager authManager = com.example.reminder.auth.AuthManager.getInstance(context);
-            return authManager.getValidAccessToken();
+            FileLogger.log("WEBSOCKET", "Refresh requested from AuthManager coordinator");
+            String token = authManager.getValidAccessToken();
+            FileLogger.log("WEBSOCKET", "Refresh completed: Token acquired: " + FileLogger.formatTokenMeta(token));
+            return token;
         } catch (Exception e) {
+            FileLogger.log("WEBSOCKET", "Refresh failed: " + e.getMessage(), e);
             Log.e(TAG, "Error obtaining valid access token from coordinator. Falling back to currently stored token.", e);
             return tokenManager.getAccessToken();
         }
     }
 
     private synchronized void executeConnect() {
+        FileLogger.log("WEBSOCKET", "executeConnect() called");
         new Thread(() -> {
             String token = getValidTokenOrRefresh();
             if (token == null) {
+                FileLogger.log("WEBSOCKET", "executeConnect(): Cannot connect: valid token is null");
                 Log.e(TAG, "Cannot connect: valid token is null");
                 synchronized (WebSocketManager.this) {
                     isConnecting = false;
@@ -90,6 +103,7 @@ public class WebSocketManager {
             }
             wsUrl += "ws?token=" + token;
 
+            FileLogger.log("WEBSOCKET", "executeConnect(): Opening WebSocket connection to server");
             Log.d(TAG, "Connecting to WebSocket at: " + wsUrl);
 
             OkHttpClient client = new OkHttpClient.Builder()
@@ -102,6 +116,7 @@ public class WebSocketManager {
 
             synchronized (WebSocketManager.this) {
                 if (!userWantsConnection) {
+                    FileLogger.log("WEBSOCKET", "executeConnect(): userWantsConnection is false. Aborting connection.");
                     isConnecting = false;
                     return;
                 }
@@ -109,6 +124,7 @@ public class WebSocketManager {
                 webSocket = client.newWebSocket(request, new WebSocketListener() {
                     @Override
                     public void onOpen(WebSocket ws, Response response) {
+                        FileLogger.log("WEBSOCKET", "WebSocket transport opened (HTTP " + response.code() + "). Sending STOMP CONNECT frame.");
                         Log.d(TAG, "WebSocket connected");
                         String connectFrame = "CONNECT\n" +
                                 "accept-version:1.1,1.2\n" +
@@ -127,12 +143,14 @@ public class WebSocketManager {
 
                     @Override
                     public void onClosing(WebSocket ws, int code, String reason) {
+                        FileLogger.log("WEBSOCKET", "WebSocket closing: code=" + code + ", reason=" + reason);
                         Log.d(TAG, "WebSocket closing: " + reason);
                         ws.close(1000, null);
                     }
 
                     @Override
                     public void onClosed(WebSocket ws, int code, String reason) {
+                        FileLogger.log("WEBSOCKET", "Socket disconnected: WebSocket closed: code=" + code + ", reason=" + reason);
                         Log.d(TAG, "WebSocket closed: " + reason);
                         synchronized (WebSocketManager.this) {
                             isConnected = false;
@@ -143,6 +161,8 @@ public class WebSocketManager {
 
                     @Override
                     public void onFailure(WebSocket ws, Throwable t, Response response) {
+                        FileLogger.log("WEBSOCKET", "Socket disconnected: WebSocket failure: " + t.getMessage(), t);
+                        FileLogger.log("WEBSOCKET", "Socket authentication failed: connection failure");
                         Log.e(TAG, "WebSocket failure: " + t.getMessage(), t);
                         synchronized (WebSocketManager.this) {
                             isConnected = false;
@@ -165,6 +185,10 @@ public class WebSocketManager {
         Log.d(TAG, "Received STOMP command: " + command);
 
         if ("CONNECTED".equals(command)) {
+            FileLogger.log("WEBSOCKET", "Socket authentication successful: STOMP CONNECTED received");
+            if (reconnectAttempts > 0) {
+                FileLogger.log("WEBSOCKET", "Reconnect successful");
+            }
             Log.d(TAG, "STOMP CONNECTED");
             Log.d(TAG, "STOMP Frame Incoming [CONNECTED]:\n" + frameText);
             synchronized (this) {
@@ -177,6 +201,7 @@ public class WebSocketManager {
                     "destination:/user/topic/sync\n" +
                     "\n" +
                     "\u0000";
+            FileLogger.log("WEBSOCKET", "STOMP SUBSCRIBE sent to /user/topic/sync");
             Log.d(TAG, "SUBSCRIBE sent");
             Log.d(TAG, "STOMP Frame Outgoing [SUBSCRIBE]:\n" + subscribeFrame);
             if (webSocket != null) {
@@ -188,6 +213,7 @@ public class WebSocketManager {
             handler.post(() -> ReminderApplication.enqueueSyncWorker(context));
 
         } else if ("MESSAGE".equals(command)) {
+            FileLogger.log("WEBSOCKET", "STOMP MESSAGE received");
             Log.d(TAG, "MESSAGE received");
             Log.d(TAG, "MESSAGE received on thread: " + Thread.currentThread().getName());
             Log.d(TAG, "MESSAGE handler entered");
@@ -212,17 +238,21 @@ public class WebSocketManager {
                 new Thread(() -> {
                     Log.d(TAG, "Starting sync on thread: " + Thread.currentThread().getName());
                     if (SyncManager.getInstance(context).isSyncRunning()) {
+                        FileLogger.log("WEBSOCKET", "Immediate sync skipped: sync is already running");
                         Log.d(TAG, "Immediate sync skipped because syncRunning=true");
                     } else {
+                        FileLogger.log("WEBSOCKET", "About to execute immediate sync from STOMP event");
                         Log.d(TAG, "About to execute immediate sync");
                         SyncManager.getInstance(context).performFullSync(new SyncManager.SyncCallback<Void>() {
                             @Override
                             public void onSuccess(Void result) {
+                                FileLogger.log("WEBSOCKET", "Immediate sync from STOMP event finished successfully");
                                 Log.d(TAG, "Immediate sync finished");
                             }
 
                             @Override
                             public void onError(String error) {
+                                FileLogger.log("WEBSOCKET", "Immediate sync from STOMP event finished with error: " + error);
                                 Log.d(TAG, "Immediate sync finished");
                             }
                         });
@@ -230,12 +260,15 @@ public class WebSocketManager {
                 }).start();
             }
         } else if ("ERROR".equals(command)) {
+            FileLogger.log("WEBSOCKET", "STOMP ERROR received: " + frameText);
+            FileLogger.log("WEBSOCKET", "Socket authentication failed: STOMP ERROR received");
             Log.e(TAG, "STOMP Frame Incoming [ERROR]:\n" + frameText);
         }
     }
 
     public synchronized void disconnect() {
         userWantsConnection = false;
+        FileLogger.log("WEBSOCKET", "Socket disconnected: WebSocket disconnect() called");
         if (webSocket != null) {
             String disconnectFrame = "DISCONNECT\n\n\u0000";
             Log.d(TAG, "STOMP Frame Outgoing [DISCONNECT]:\n" + disconnectFrame);
@@ -265,10 +298,12 @@ public class WebSocketManager {
         long jitter = random.nextInt(3) - 1; // -1, 0, or 1 seconds
         long finalDelayMs = Math.max(1000, (delaySec + jitter) * 1000);
 
+        FileLogger.log("WEBSOCKET", "Reconnect scheduled: attempt #" + reconnectAttempts + " in " + finalDelayMs + " ms");
         Log.d(TAG, "Scheduling reconnect attempt #" + reconnectAttempts + " in " + finalDelayMs + " ms.");
         handler.postDelayed(() -> {
             synchronized (WebSocketManager.this) {
                 if (userWantsConnection && tokenManager.isLoggedIn() && !isConnected && !isConnecting) {
+                    FileLogger.log("WEBSOCKET", "Reconnect started: executing connection for attempt #" + reconnectAttempts);
                     isConnecting = true;
                     executeConnect();
                 }

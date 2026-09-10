@@ -70,15 +70,27 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        com.example.reminder.utils.FileLogger.checkAndRequestStoragePermission(this);
+        com.example.reminder.utils.FileLogger.log("MAIN_ACTIVITY", "MainActivity.onCreate()");
+        com.example.reminder.utils.FileLogger.log("MAIN_ACTIVITY", "Authentication check started");
+
         // Check authentication status before rendering UI
         TokenManager tokenManager = TokenManager.getInstance(this);
-        if (!tokenManager.isLoggedIn()) {
+        boolean loggedIn = tokenManager.isLoggedIn();
+        com.example.reminder.utils.FileLogger.log("MAIN_ACTIVITY", "TokenManager.isLoggedIn() = " + loggedIn);
+        if (!loggedIn) {
+            com.example.reminder.utils.FileLogger.log("MAIN_ACTIVITY", "Authentication result: User NOT authenticated");
+            com.example.reminder.utils.FileLogger.log("MAIN_ACTIVITY", "Redirecting to LoginActivity");
+            com.example.reminder.utils.FileLogger.log("MAIN_ACTIVITY", "Reason for redirect: TokenManager.isLoggedIn() returned false");
             startActivity(new Intent(this, LoginActivity.class));
             finish();
             return;
         }
 
+        com.example.reminder.utils.FileLogger.log("MAIN_ACTIVITY", "Authentication result: User authenticated (username=" + tokenManager.getUsername() + ", userId=" + tokenManager.getUserId() + ")");
+
         setContentView(R.layout.activity_main);
+        com.example.reminder.utils.FileLogger.log("MAIN_ACTIVITY", "Dashboard displayed");
         if (getSupportActionBar() != null) {
             getSupportActionBar().hide();
         }
@@ -91,9 +103,13 @@ public class MainActivity extends AppCompatActivity {
         View btnLogout = findViewById(R.id.btnLogout);
         if (btnLogout != null) {
             btnLogout.setOnClickListener(v -> {
+                com.example.reminder.utils.FileLogger.log("MAIN_ACTIVITY", "Logout initiated by user from Dashboard");
+                com.example.reminder.utils.FileLogger.log("MAIN_ACTIVITY", "Redirecting to LoginActivity");
+                com.example.reminder.utils.FileLogger.log("MAIN_ACTIVITY", "Reason for redirect: User clicked logout button");
                 AuthManager.getInstance(this).logout(new AuthManager.AuthCallback() {
                     @Override
                     public void onSuccess() {
+                        com.example.reminder.utils.FileLogger.log("MAIN_ACTIVITY", "Logout completed. Launching LoginActivity.");
                         Toast.makeText(MainActivity.this, "Logged out successfully", Toast.LENGTH_SHORT).show();
                         startActivity(new Intent(MainActivity.this, LoginActivity.class));
                         finish();
