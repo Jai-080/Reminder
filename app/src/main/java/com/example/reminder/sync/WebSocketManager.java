@@ -75,9 +75,24 @@ public class WebSocketManager {
             String token = authManager.getValidAccessToken();
             FileLogger.log("WEBSOCKET", "Refresh completed: Token acquired: " + FileLogger.formatTokenMeta(token));
             return token;
+        } catch (retrofit2.HttpException e) {
+            // Definitive server rejection (e.g. HTTP 400/401 from /api/auth/refresh) -
+            // AuthManager has already determined the refresh token is invalid. Do NOT
+            // fall back to the stale access token and do NOT open a WebSocket with it;
+            // abort this connection attempt and let TokenRefreshAuthenticator/
+            // forceLogout() remain the single source of truth for session teardown.
+            FileLogger.log("WEBSOCKET", "Refresh rejected by server (HTTP " + e.code() + "). Not opening WebSocket with stale token.");
+            Log.w(TAG, "Refresh rejected by server. Aborting WebSocket connection instead of using stale token.", e);
+            return null;
+        } catch (java.io.IOException e) {
+            // Network/timeout failure, not a definitive auth rejection - preserve the
+            // existing fallback/retry behavior.
+            FileLogger.log("WEBSOCKET", "Refresh failed (network): " + e.getMessage(), e);
+            Log.w(TAG, "Refresh failed due to network exception. Falling back to currently stored token.", e);
+            return tokenManager.getAccessToken();
         } catch (Exception e) {
             FileLogger.log("WEBSOCKET", "Refresh failed: " + e.getMessage(), e);
-            Log.e(TAG, "Error obtaining valid access token from coordinator. Falling back to currently stored token.", e);
+            Log.e(TAG, "Unexpected error obtaining valid access token from coordinator. Falling back to currently stored token.", e);
             return tokenManager.getAccessToken();
         }
     }
