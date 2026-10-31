@@ -8,3 +8,12 @@
 .externalNativeBuild
 .cxx
 local.properties
+
+# QA & Phase Reports and Reviews
+/ANDROID_COMPREHENSIVE_TESTING_REPORT.md
+/PHASE_*_REPORT.md
+/PHASE_*_REVIEW.md
+/PHASE_1_FIX_REPORT.md
+/PHASE_1_SAFETY_REVIEW.md
+/PHASE_1_FINAL_VALIDATION_REPORT.md
+/PHASE_1_FINAL_CODE_REVIEW.md

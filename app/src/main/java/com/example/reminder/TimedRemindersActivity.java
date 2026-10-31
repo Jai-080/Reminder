@@ -139,19 +139,22 @@ public class TimedRemindersActivity extends AppCompatActivity {
                         return;
                     }
 
-                    dbHelper.addReminder(reminderText, triggerTime);
-                    List<Reminder> updatedReminders = dbHelper.getAllReminders();
-                    Reminder newReminder = updatedReminders.get(updatedReminders.size() - 1);
+                    long newReminderId = dbHelper.addReminder(reminderText, triggerTime);
+                    if (newReminderId == -1) {
+                        Toast.makeText(this, "Failed to add reminder", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                    int reminderId = (int) newReminderId;
 
-                    Log.d("REMINDER SCHEDULER", "Scheduling reminder:\nlocalId=" + newReminder.getId() + "\nserverId=-1\ntime=" + triggerTime + "\nsuccess=true");
-                    AlarmUtils.scheduleReminder(this, newReminder.getId(), reminderText, triggerTime);
+                    Log.d("REMINDER SCHEDULER", "Scheduling reminder:\nlocalId=" + reminderId + "\nserverId=-1\ntime=" + triggerTime + "\nsuccess=true");
+                    AlarmUtils.scheduleReminder(this, reminderId, reminderText, triggerTime);
 
                     editTextReminder.setText("");
                     loadReminders();
 
                     // Sync to backend
                     SyncManager.getInstance(TimedRemindersActivity.this).uploadReminder(
-                            newReminder.getId(),
+                            reminderId,
                             reminderText,
                             triggerTime,
                             false,

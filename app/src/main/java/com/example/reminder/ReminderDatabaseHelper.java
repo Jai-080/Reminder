@@ -85,7 +85,7 @@ public class ReminderDatabaseHelper extends SQLiteOpenHelper {
     // Reminders Logic
     // ------------------------
 
-    public void addReminder(String text, long timeMillis) {
+    public long addReminder(String text, long timeMillis) {
         SQLiteDatabase db = getWritableDatabase();
         ContentValues values = new ContentValues();
         values.put("text", text);
@@ -101,6 +101,7 @@ public class ReminderDatabaseHelper extends SQLiteOpenHelper {
             Log.d(TAG, "Added reminder ID " + result + ": " + text + " at " + timeMillis);
         }
         db.close();
+        return result;
     }
 
     public void deleteReminder(int id) {
