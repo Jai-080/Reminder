@@ -17,6 +17,13 @@ public class AlarmUtils {
     private static final String CHANNEL_NAME = "Reminders";
     private static final String CHANNEL_DESC = "Shows notifications for reminders and payments";
 
+    // Namespace separation to prevent collision between reminder and monthly payment notification IDs
+    public static final int PAYMENT_NOTIFICATION_OFFSET = 100000;
+
+    public static int getPaymentNotificationId(int paymentId) {
+        return PAYMENT_NOTIFICATION_OFFSET + paymentId;
+    }
+
     // ✅ Ensure channel is created
     private static void createNotificationChannel(Context context) {
         NotificationChannel channel = new NotificationChannel(
@@ -221,7 +228,7 @@ public class AlarmUtils {
         deleteIntent.putExtra("payment_name", paymentName);
         PendingIntent deletePendingIntent = PendingIntent.getBroadcast(
                 context,
-                paymentId,
+                getPaymentNotificationId(paymentId),
                 deleteIntent,
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
         );
@@ -250,14 +257,16 @@ public class AlarmUtils {
                 .build();
 
         if (manager != null) {
-            manager.notify(paymentId, notification);
+            manager.notify(getPaymentNotificationId(paymentId), notification);
         }
     }
 
-    // ✅ Cancel permanent notification (monthly payment or any notification)
+    // ✅ Cancel payment notification (uses payment namespace to prevent cancelling timed reminders)
     public static void cancelNotification(Context context, int notificationId) {
         NotificationManager manager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
         if (manager != null) {
+            manager.cancel(getPaymentNotificationId(notificationId));
+            // Also cancel legacy un-offsetted ID for backward compatibility
             manager.cancel(notificationId);
         }
     }

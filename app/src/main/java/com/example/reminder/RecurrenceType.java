@@ -6,5 +6,6 @@ public enum RecurrenceType {
     BI_MONTHLY,
     QUARTERLY,
     HALF_YEARLY,
-    YEARLY
+    YEARLY,
+    CUSTOM_DAYS
 }

@@ -12,7 +12,9 @@ import java.util.ArrayList;
 public class PaymentDatabaseHelper extends SQLiteOpenHelper {
 
     private static final String DB_NAME = "payments.db";
-    private static final int DB_VERSION = 6;
+    private static final int DB_VERSION = 8;
+    private static final String COL_ORIGINAL_DUE_DAY = "original_due_day";
+    private static final String COL_CUSTOM_INTERVAL_DAYS = "custom_interval_days";
     private static final String TAG = "PaymentDB";
 
     private static final String TABLE_NAME = "monthly_payments";
@@ -49,7 +51,9 @@ public class PaymentDatabaseHelper extends SQLiteOpenHelper {
                         "last_completed_month INTEGER, " +
                         "last_completed_year INTEGER, " +
                         "completed_at INTEGER, " +
-                        COL_LAST_PAID_AT + " INTEGER)"
+                        COL_LAST_PAID_AT + " INTEGER, " +
+                        COL_ORIGINAL_DUE_DAY + " INTEGER, " +
+                        COL_CUSTOM_INTERVAL_DAYS + " INTEGER)"
         );
     }
 
@@ -96,6 +100,22 @@ public class PaymentDatabaseHelper extends SQLiteOpenHelper {
         if (oldVersion < 6) {
             try { db.execSQL("ALTER TABLE " + TABLE_NAME + " ADD COLUMN " + COL_LAST_PAID_AT + " INTEGER;"); } catch (Exception ignored) {}
         }
+        if (oldVersion < 7) {
+            try {
+                db.execSQL("ALTER TABLE " + TABLE_NAME + " ADD COLUMN " + COL_ORIGINAL_DUE_DAY + " INTEGER;");
+                Log.d(TAG, "Upgraded DB to version 7: added original_due_day column.");
+            } catch (Exception e) {
+                Log.w(TAG, "Column original_due_day may already exist: " + e.getMessage());
+            }
+        }
+        if (oldVersion < 8) {
+            try {
+                db.execSQL("ALTER TABLE " + TABLE_NAME + " ADD COLUMN " + COL_CUSTOM_INTERVAL_DAYS + " INTEGER;");
+                Log.d(TAG, "Upgraded DB to version 8: added custom_interval_days column.");
+            } catch (Exception e) {
+                Log.w(TAG, "Column custom_interval_days may already exist: " + e.getMessage());
+            }
+        }
     }
 
     public int insertPayment(String name, long dueDate, boolean isCompleted) {
@@ -111,6 +131,14 @@ public class PaymentDatabaseHelper extends SQLiteOpenHelper {
     }
 
     public int insertPayment(String name, long dueDate, boolean isCompleted, Double amount, RecurrenceType recurrence, String notificationOffsets) {
+        return insertPayment(name, dueDate, isCompleted, amount, recurrence, notificationOffsets, 0, 28);
+    }
+
+    public int insertPayment(String name, long dueDate, boolean isCompleted, Double amount, RecurrenceType recurrence, String notificationOffsets, int originalDueDay) {
+        return insertPayment(name, dueDate, isCompleted, amount, recurrence, notificationOffsets, originalDueDay, 28);
+    }
+
+    public int insertPayment(String name, long dueDate, boolean isCompleted, Double amount, RecurrenceType recurrence, String notificationOffsets, int originalDueDay, int customIntervalDays) {
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues values = new ContentValues();
         values.put(COL_NAME, name);
@@ -127,11 +155,24 @@ public class PaymentDatabaseHelper extends SQLiteOpenHelper {
         values.put(COL_SYNC_STATUS, "PENDING");
         values.putNull(COL_LAST_PAID_AT);
 
+        int resolvedDueDay = originalDueDay;
+        if (resolvedDueDay <= 0 && dueDate > 0) {
+            java.util.Calendar cal = java.util.Calendar.getInstance();
+            cal.setTimeInMillis(dueDate);
+            resolvedDueDay = cal.get(java.util.Calendar.DAY_OF_MONTH);
+        }
+        values.put(COL_ORIGINAL_DUE_DAY, resolvedDueDay);
+
+        if (recurrence == RecurrenceType.CUSTOM_DAYS) {
+            values.put(COL_CUSTOM_INTERVAL_DAYS, customIntervalDays > 0 ? customIntervalDays : 28);
+        } else {
+            values.putNull(COL_CUSTOM_INTERVAL_DAYS);
+        }
+
         long id = db.insert(TABLE_NAME, null, values);
         db.close();
         return (int) id;
     }
-
 
     public ArrayList<MonthlyPayment> getAllPayments() {
         ArrayList<MonthlyPayment> list = new ArrayList<>();
@@ -179,8 +220,27 @@ public class PaymentDatabaseHelper extends SQLiteOpenHelper {
             if (lastPaidAtIdx != -1 && !cursor.isNull(lastPaidAtIdx)) {
                 lastPaidAt = cursor.getLong(lastPaidAtIdx);
             }
+            int origDay = 0;
+            int origDayIdx = cursor.getColumnIndex(COL_ORIGINAL_DUE_DAY);
+            if (origDayIdx != -1 && !cursor.isNull(origDayIdx)) {
+                origDay = cursor.getInt(origDayIdx);
+            }
+            if (origDay <= 0 && dueDate > 0) {
+                java.util.Calendar cal = java.util.Calendar.getInstance();
+                cal.setTimeInMillis(dueDate);
+                origDay = cal.get(java.util.Calendar.DAY_OF_MONTH);
+            }
 
-            MonthlyPayment payment = new MonthlyPayment(id, serverId, name, completed, dueDate, syncStatus, amount, recurrence, notificationOffsets);
+            int customInterval = 28;
+            int intervalIdx = cursor.getColumnIndex(COL_CUSTOM_INTERVAL_DAYS);
+            if (intervalIdx != -1 && !cursor.isNull(intervalIdx)) {
+                customInterval = cursor.getInt(intervalIdx);
+            }
+            if (customInterval <= 0) {
+                customInterval = 28;
+            }
+
+            MonthlyPayment payment = new MonthlyPayment(id, serverId, name, completed, dueDate, syncStatus, amount, recurrence, notificationOffsets, origDay, customInterval);
             payment.setLastPaidAt(lastPaidAt);
             list.add(payment);
         }
@@ -245,8 +305,27 @@ public class PaymentDatabaseHelper extends SQLiteOpenHelper {
             if (lastPaidAtIdx != -1 && !cursor.isNull(lastPaidAtIdx)) {
                 lastPaidAt = cursor.getLong(lastPaidAtIdx);
             }
+            int origDay = 0;
+            int origDayIdx = cursor.getColumnIndex(COL_ORIGINAL_DUE_DAY);
+            if (origDayIdx != -1 && !cursor.isNull(origDayIdx)) {
+                origDay = cursor.getInt(origDayIdx);
+            }
+            if (origDay <= 0 && dueDate > 0) {
+                java.util.Calendar cal = java.util.Calendar.getInstance();
+                cal.setTimeInMillis(dueDate);
+                origDay = cal.get(java.util.Calendar.DAY_OF_MONTH);
+            }
 
-            MonthlyPayment payment = new MonthlyPayment(id, serverId, name, completed, dueDate, syncStatus, amount, recurrence, notificationOffsets);
+            int customInterval = 28;
+            int intervalIdx = cursor.getColumnIndex(COL_CUSTOM_INTERVAL_DAYS);
+            if (intervalIdx != -1 && !cursor.isNull(intervalIdx)) {
+                customInterval = cursor.getInt(intervalIdx);
+            }
+            if (customInterval <= 0) {
+                customInterval = 28;
+            }
+
+            MonthlyPayment payment = new MonthlyPayment(id, serverId, name, completed, dueDate, syncStatus, amount, recurrence, notificationOffsets, origDay, customInterval);
             payment.setLastPaidAt(lastPaidAt);
             list.add(payment);
         }
@@ -262,6 +341,9 @@ public class PaymentDatabaseHelper extends SQLiteOpenHelper {
         values.put(COL_COMPLETED, isCompleted ? 1 : 0);
         values.put(COL_UPDATED_AT, System.currentTimeMillis());
         values.put(COL_SYNC_STATUS, "PENDING");
+        if (isCompleted) {
+            values.put(COL_LAST_PAID_AT, System.currentTimeMillis());
+        }
         db.update(TABLE_NAME, values, COL_ID + " = ?", new String[]{String.valueOf(id)});
         db.close();
     }
@@ -285,6 +367,12 @@ public class PaymentDatabaseHelper extends SQLiteOpenHelper {
             values.put(COL_LAST_PAID_AT, payment.getLastPaidAt());
         } else {
             values.putNull(COL_LAST_PAID_AT);
+        }
+        values.put(COL_ORIGINAL_DUE_DAY, payment.getOriginalDueDay());
+        if (payment.getRecurrence() == RecurrenceType.CUSTOM_DAYS) {
+            values.put(COL_CUSTOM_INTERVAL_DAYS, payment.getCustomIntervalDays() > 0 ? payment.getCustomIntervalDays() : 28);
+        } else {
+            values.putNull(COL_CUSTOM_INTERVAL_DAYS);
         }
         db.update(TABLE_NAME, values, COL_ID + " = ?", new String[]{String.valueOf(payment.getId())});
         db.close();
@@ -335,9 +423,29 @@ public class PaymentDatabaseHelper extends SQLiteOpenHelper {
         }
 
         long localId = -1;
-        Cursor cursor = db.query(TABLE_NAME, new String[]{"id"}, "server_id = ?", new String[]{String.valueOf(serverId)}, null, null, null);
+        int origDay = 0;
+        int customInterval = 28;
+        Cursor cursor = db.query(TABLE_NAME, new String[]{"id", COL_ORIGINAL_DUE_DAY, COL_CUSTOM_INTERVAL_DAYS}, "server_id = ?", new String[]{String.valueOf(serverId)}, null, null, null);
         if (cursor.moveToFirst()) {
             localId = cursor.getLong(cursor.getColumnIndexOrThrow("id"));
+            int origIdx = cursor.getColumnIndex(COL_ORIGINAL_DUE_DAY);
+            if (origIdx != -1 && !cursor.isNull(origIdx)) {
+                origDay = cursor.getInt(origIdx);
+            }
+            int intervalIdx = cursor.getColumnIndex(COL_CUSTOM_INTERVAL_DAYS);
+            if (intervalIdx != -1 && !cursor.isNull(intervalIdx)) {
+                customInterval = cursor.getInt(intervalIdx);
+            }
+        }
+        if (origDay <= 0 && dueDate > 0) {
+            java.util.Calendar cal = java.util.Calendar.getInstance();
+            cal.setTimeInMillis(dueDate);
+            origDay = cal.get(java.util.Calendar.DAY_OF_MONTH);
+        }
+        values.put(COL_ORIGINAL_DUE_DAY, origDay);
+        values.put(COL_CUSTOM_INTERVAL_DAYS, customInterval);
+
+        if (localId != -1) {
             db.update(TABLE_NAME, values, "id = ?", new String[]{String.valueOf(localId)});
         } else {
             localId = db.insert(TABLE_NAME, null, values);

@@ -498,6 +498,13 @@ public class SyncManager {
 
     public void uploadPayment(MonthlyPayment payment, SyncCallback<Long> callback) {
         int localId = payment.getId();
+        if (payment.getRecurrence() == com.example.reminder.RecurrenceType.CUSTOM_DAYS) {
+            Log.w(TAG, "Skipping server upload for payment '" + payment.getName() + "': RecurrenceType.CUSTOM_DAYS is not supported by the backend contract. Stored locally.");
+            paymentDb.updateSyncStatus(localId, null, "LOCAL_ONLY");
+            if (callback != null) callback.onSuccess(null);
+            return;
+        }
+
         if (!uploadingPayments.add(localId)) {
             Log.d(TAG, "Payment " + localId + " upload in progress. Skipping.");
             if (callback != null) callback.onError("Upload already in progress.");
