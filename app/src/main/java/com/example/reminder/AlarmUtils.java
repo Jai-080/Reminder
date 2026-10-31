@@ -332,7 +332,7 @@ public class AlarmUtils {
             android.util.Log.d("AlarmUtils", "restorePendingReminders: checking " + pendingReminders.size() + " pending reminders");
 
             for (Reminder r : pendingReminders) {
-                long triggerTime = r.getSnoozedUntil() > 0 ? r.getSnoozedUntil() : r.getTime();
+                long triggerTime = r.getEffectiveTime();
                 if (triggerTime > now) {
                     android.util.Log.d("AlarmUtils", "Restoring alarm for reminder localId=" + r.getId() + " at " + triggerTime);
                     scheduleReminder(context, r.getId(), r.getText(), triggerTime);

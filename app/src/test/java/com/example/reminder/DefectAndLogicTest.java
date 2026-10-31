@@ -697,4 +697,280 @@ public class DefectAndLogicTest {
         MonthlyPayment pDef = new MonthlyPayment(11, "Water", false, 1700000000L);
         assertEquals(28, pDef.getCustomIntervalDays());
     }
+
+    // =========================================================================
+    // RECURRENCE TYPE BACKEND COMPATIBILITY TESTS
+    // =========================================================================
+
+    @Test
+    public void testRecurrenceType_backendCompatibilityFlags() {
+        // Supported by backend: ONE_TIME, MONTHLY, QUARTERLY, YEARLY
+        assertTrue("ONE_TIME must be supported by backend", RecurrenceType.ONE_TIME.isSupportedByBackend());
+        assertFalse("ONE_TIME must not be local-only", RecurrenceType.ONE_TIME.isLocalOnly());
+
+        assertTrue("MONTHLY must be supported by backend", RecurrenceType.MONTHLY.isSupportedByBackend());
+        assertFalse("MONTHLY must not be local-only", RecurrenceType.MONTHLY.isLocalOnly());
+
+        assertTrue("QUARTERLY must be supported by backend", RecurrenceType.QUARTERLY.isSupportedByBackend());
+        assertFalse("QUARTERLY must not be local-only", RecurrenceType.QUARTERLY.isLocalOnly());
+
+        assertTrue("YEARLY must be supported by backend", RecurrenceType.YEARLY.isSupportedByBackend());
+        assertFalse("YEARLY must not be local-only", RecurrenceType.YEARLY.isLocalOnly());
+
+        // Unsupported by backend: BI_MONTHLY, HALF_YEARLY, CUSTOM_DAYS
+        assertFalse("BI_MONTHLY must not be supported by backend", RecurrenceType.BI_MONTHLY.isSupportedByBackend());
+        assertTrue("BI_MONTHLY must be local-only", RecurrenceType.BI_MONTHLY.isLocalOnly());
+
+        assertFalse("HALF_YEARLY must not be supported by backend", RecurrenceType.HALF_YEARLY.isSupportedByBackend());
+        assertTrue("HALF_YEARLY must be local-only", RecurrenceType.HALF_YEARLY.isLocalOnly());
+
+        assertFalse("CUSTOM_DAYS must not be supported by backend", RecurrenceType.CUSTOM_DAYS.isSupportedByBackend());
+        assertTrue("CUSTOM_DAYS must be local-only", RecurrenceType.CUSTOM_DAYS.isLocalOnly());
+    }
+
+    @Test
+    public void testLocalOnlyRecurrence_preservationAndUploadFilter() {
+        // Local-only recurrence types must not be uploaded to server
+        RecurrenceType[] localOnlyTypes = {RecurrenceType.BI_MONTHLY, RecurrenceType.HALF_YEARLY, RecurrenceType.CUSTOM_DAYS};
+        for (RecurrenceType type : localOnlyTypes) {
+            assertTrue("Recurrence " + type + " must be marked local-only", type.isLocalOnly());
+            MonthlyPayment payment = new MonthlyPayment(1, null, "Test " + type, false, 1700000000L, "LOCAL_ONLY", 100.0, type, "0", 15, 28);
+            assertEquals("LOCAL_ONLY", payment.getSyncStatus());
+            assertNull("Local-only payment must not have serverId", payment.getServerId());
+        }
+
+        // Supported types must have isLocalOnly == false
+        RecurrenceType[] supportedTypes = {RecurrenceType.ONE_TIME, RecurrenceType.MONTHLY, RecurrenceType.QUARTERLY, RecurrenceType.YEARLY};
+        for (RecurrenceType type : supportedTypes) {
+            assertFalse("Recurrence " + type + " must not be marked local-only", type.isLocalOnly());
+        }
+    }
+
+    // =========================================================================
+    // SNOOZE CONSISTENCY & EFFECTIVE TIME REGRESSION TESTS
+    // =========================================================================
+
+    @Test
+    public void testSnoozePreservesOriginalTime_andStoresNewSnoozedTime() {
+        long originalTime = 1700000000000L;
+        long snoozedTime = 1700001800000L; // +30 minutes
+        long updatedAt = 1700000050000L;
+
+        // Reminder initial state
+        Reminder reminder = new Reminder(1, 101L, "Tax Filing", originalTime, false, 0L, "SYNCED");
+        assertEquals(originalTime, reminder.getTime());
+        assertEquals(0L, reminder.getSnoozedUntil());
+        assertEquals(originalTime, reminder.getEffectiveTime());
+
+        // Snooze operation via buildSnoozeUpdateValues helper
+        java.util.Map<String, Object> updateValues = ReminderDatabaseHelper.buildSnoozeUpdateValues(snoozedTime, updatedAt);
+
+        // 1. Database snooze values MUST NOT overwrite 'time'
+        assertFalse("Database update values must NOT contain 'time' key", updateValues.containsKey("time"));
+
+        // 2. Database snooze values MUST set 'snoozed_time'
+        assertEquals(Long.valueOf(snoozedTime), updateValues.get("snoozed_time"));
+        assertEquals(Integer.valueOf(0), updateValues.get("is_expired"));
+        assertEquals("PENDING", updateValues.get("sync_status"));
+        assertEquals(Long.valueOf(updatedAt), updateValues.get("updated_at"));
+
+        // 3. Model reflects snoozedUntil while time remains originalTime
+        reminder.setSnoozedUntil(snoozedTime);
+        reminder.setExpired(false);
+        assertEquals("Original time must remain preserved", originalTime, reminder.getTime());
+        assertEquals("SnoozedUntil must reflect the snooze target", snoozedTime, reminder.getSnoozedUntil());
+        assertEquals("Effective time must now be snoozedUntil", snoozedTime, reminder.getEffectiveTime());
+    }
+
+    @Test
+    public void testServerPulledReminder_unchangedOriginalTimeChangedSnooze_triggersRescheduling() {
+        long originalTime = 1700000000000L;
+        long localSnooze = 0L;
+        long serverSnooze = 1700003600000L; // Snoozed on Windows by +60 min
+        long now = 1700000010000L;
+
+        // Both server and local have identical reminderTime
+        long serverReminderTime = originalTime;
+        long localReminderTime = originalTime;
+
+        // Evaluate update scheduling
+        com.example.reminder.sync.SyncManager.SchedulingDecision decision =
+                com.example.reminder.sync.SyncManager.evaluateUpdateScheduling(
+                        serverReminderTime,
+                        serverSnooze,
+                        false, // not expired
+                        localReminderTime,
+                        localSnooze,
+                        false,
+                        now
+                );
+
+        assertTrue("Prior local alarm must be cancelled when effective time changes", decision.cancelExisting);
+        assertTrue("Server snooze must trigger scheduling", decision.shouldSchedule);
+        assertEquals("Scheduled time must be effective server snooze time", serverSnooze, decision.scheduleTime);
+    }
+
+    @Test
+    public void testEffectiveServerTimeUsedForAlarmScheduling() {
+        long originalTime = 1700000000000L;
+        long snoozedTime = 1700001800000L;
+        long now = 1700000005000L;
+
+        // When snoozedTime is positive, effective time is snoozedTime
+        com.example.reminder.sync.SyncManager.SchedulingDecision decision =
+                com.example.reminder.sync.SyncManager.evaluateUpdateScheduling(
+                        originalTime,
+                        snoozedTime,
+                        false,
+                        originalTime,
+                        0L,
+                        false,
+                        now
+                );
+        assertEquals(snoozedTime, decision.scheduleTime);
+    }
+
+    @Test
+    public void testNewServerReminderWithSnoozedTime_usesSnoozedTime() {
+        long originalTime = 1700000000000L;
+        long snoozedTime = 1700002400000L;
+        long now = 1700000001000L;
+
+        com.example.reminder.sync.SyncManager.SchedulingDecision decision =
+                com.example.reminder.sync.SyncManager.evaluateNewInsertScheduling(
+                        originalTime,
+                        snoozedTime,
+                        false,
+                        now
+                );
+
+        assertFalse("New insert has no prior alarm to cancel", decision.cancelExisting);
+        assertTrue("New insert in future must be scheduled", decision.shouldSchedule);
+        assertEquals("New insert with snooze must be scheduled at snoozedTime", snoozedTime, decision.scheduleTime);
+    }
+
+    @Test
+    public void testNormalReminderWithoutSnoozedTime_schedulesNormally() {
+        long originalTime = 1700005000000L;
+        long now = 1700000000000L;
+
+        // Update path without snooze (snoozedTime <= 0)
+        com.example.reminder.sync.SyncManager.SchedulingDecision updateDecision =
+                com.example.reminder.sync.SyncManager.evaluateUpdateScheduling(
+                        originalTime,
+                        0L,
+                        false,
+                        1700001000000L, // old local time
+                        0L,
+                        false,
+                        now
+                );
+        assertTrue("Must reschedule when normal reminder time changed", updateDecision.shouldSchedule);
+        assertEquals("Must schedule at original reminder time", originalTime, updateDecision.scheduleTime);
+
+        // New insert path without snooze
+        com.example.reminder.sync.SyncManager.SchedulingDecision insertDecision =
+                com.example.reminder.sync.SyncManager.evaluateNewInsertScheduling(
+                        originalTime,
+                        0L,
+                        false,
+                        now
+                );
+        assertTrue("Must schedule new reminder in future", insertDecision.shouldSchedule);
+        assertEquals("Must schedule at original reminder time", originalTime, insertDecision.scheduleTime);
+    }
+
+    @Test
+    public void testExpiredReminders_doNotSchedule() {
+        long originalTime = 1700000000000L;
+        long snoozedTime = 1700001800000L;
+        long now = 1700000005000L;
+
+        // 1. Server marked expired on update
+        com.example.reminder.sync.SyncManager.SchedulingDecision updateExpired =
+                com.example.reminder.sync.SyncManager.evaluateUpdateScheduling(
+                        originalTime,
+                        snoozedTime,
+                        true, // expired!
+                        originalTime,
+                        0L,
+                        false,
+                        now
+                );
+        assertTrue("Must cancel existing alarm when server expired", updateExpired.cancelExisting);
+        assertFalse("Expired reminder must NOT be scheduled", updateExpired.shouldSchedule);
+
+        // 2. Server marked expired on new insert
+        com.example.reminder.sync.SyncManager.SchedulingDecision insertExpired =
+                com.example.reminder.sync.SyncManager.evaluateNewInsertScheduling(
+                        originalTime,
+                        snoozedTime,
+                        true, // expired!
+                        now
+                );
+        assertFalse("Expired new reminder must NOT be scheduled", insertExpired.shouldSchedule);
+
+        // 3. Past reminder without snooze
+        com.example.reminder.sync.SyncManager.SchedulingDecision pastReminder =
+                com.example.reminder.sync.SyncManager.evaluateNewInsertScheduling(
+                        now - 50000L,
+                        0L,
+                        false,
+                        now
+                );
+        assertFalse("Past reminder must NOT be scheduled", pastReminder.shouldSchedule);
+    }
+
+    @Test
+    public void testRepeatedSnoozes_replacesPriorTrigger() {
+        long originalTime = 1700000000000L;
+        long snooze1 = 1700000600000L; // +10 min
+        long snooze2 = 1700001800000L; // +30 min
+        long snooze3 = 1700003600000L; // +60 min
+        long now = 1700000000000L;
+
+        // Model tracking repeated snoozes
+        Reminder r = new Reminder(5, 505L, "Doctor Appointment", originalTime, false, 0L, "SYNCED");
+        assertEquals(originalTime, r.getEffectiveTime());
+
+        // Snooze 1
+        r.setSnoozedUntil(snooze1);
+        assertEquals("First snooze effective time", snooze1, r.getEffectiveTime());
+        assertEquals("Original time preserved after first snooze", originalTime, r.getTime());
+
+        // Snooze 2 (replaces snooze 1)
+        r.setSnoozedUntil(snooze2);
+        assertEquals("Second snooze replaces first snooze", snooze2, r.getEffectiveTime());
+        assertEquals("Original time preserved after second snooze", originalTime, r.getTime());
+
+        // Sync evaluation for repeated snooze (local had snooze1, server has snooze2)
+        com.example.reminder.sync.SyncManager.SchedulingDecision repeatDecision =
+                com.example.reminder.sync.SyncManager.evaluateUpdateScheduling(
+                        originalTime,
+                        snooze2,
+                        false,
+                        originalTime,
+                        snooze1,
+                        false,
+                        now
+                );
+        assertTrue("Repeated snooze must cancel prior alarm", repeatDecision.cancelExisting);
+        assertTrue("Repeated snooze must schedule new alarm", repeatDecision.shouldSchedule);
+        assertEquals("Scheduled time must be latest snooze", snooze2, repeatDecision.scheduleTime);
+
+        // Snooze 3 (replaces snooze 2)
+        com.example.reminder.sync.SyncManager.SchedulingDecision repeat3Decision =
+                com.example.reminder.sync.SyncManager.evaluateUpdateScheduling(
+                        originalTime,
+                        snooze3,
+                        false,
+                        originalTime,
+                        snooze2,
+                        false,
+                        now
+                );
+        assertTrue("Third snooze must cancel prior alarm", repeat3Decision.cancelExisting);
+        assertTrue("Third snooze must schedule new alarm", repeat3Decision.shouldSchedule);
+        assertEquals("Scheduled time must be latest snooze", snooze3, repeat3Decision.scheduleTime);
+    }
 }

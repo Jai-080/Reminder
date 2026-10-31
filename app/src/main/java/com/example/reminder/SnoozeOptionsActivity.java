@@ -147,7 +147,7 @@ public class SnoozeOptionsActivity extends AppCompatActivity {
             SyncManager.getInstance(getApplicationContext()).uploadReminder(
                     rescheduled.getId(),
                     rescheduled.getText(),
-                    targetTimeMillis,
+                    rescheduled.getTime(),
                     false,
                     targetTimeMillis,
                     rescheduled.getServerId(),

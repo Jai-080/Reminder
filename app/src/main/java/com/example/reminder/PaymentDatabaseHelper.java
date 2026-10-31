@@ -152,7 +152,8 @@ public class PaymentDatabaseHelper extends SQLiteOpenHelper {
         values.put(COL_RECURRENCE, recurrence != null ? recurrence.name() : RecurrenceType.MONTHLY.name());
         values.put(COL_NOTIFICATION_OFFSETS, notificationOffsets != null ? notificationOffsets : "0");
         values.put(COL_UPDATED_AT, System.currentTimeMillis());
-        values.put(COL_SYNC_STATUS, "PENDING");
+        String initialSyncStatus = (recurrence != null && recurrence.isLocalOnly()) ? "LOCAL_ONLY" : "PENDING";
+        values.put(COL_SYNC_STATUS, initialSyncStatus);
         values.putNull(COL_LAST_PAID_AT);
 
         int resolvedDueDay = originalDueDay;
@@ -340,7 +341,18 @@ public class PaymentDatabaseHelper extends SQLiteOpenHelper {
         ContentValues values = new ContentValues();
         values.put(COL_COMPLETED, isCompleted ? 1 : 0);
         values.put(COL_UPDATED_AT, System.currentTimeMillis());
-        values.put(COL_SYNC_STATUS, "PENDING");
+
+        RecurrenceType rec = RecurrenceType.MONTHLY;
+        try (Cursor c = db.query(TABLE_NAME, new String[]{COL_RECURRENCE}, COL_ID + " = ?", new String[]{String.valueOf(id)}, null, null, null)) {
+            if (c.moveToFirst()) {
+                String recStr = c.getString(c.getColumnIndexOrThrow(COL_RECURRENCE));
+                if (recStr != null) {
+                    try { rec = RecurrenceType.valueOf(recStr); } catch (Exception ignored) {}
+                }
+            }
+        }
+        String status = (rec != null && rec.isLocalOnly()) ? "LOCAL_ONLY" : "PENDING";
+        values.put(COL_SYNC_STATUS, status);
         if (isCompleted) {
             values.put(COL_LAST_PAID_AT, System.currentTimeMillis());
         }
@@ -362,7 +374,8 @@ public class PaymentDatabaseHelper extends SQLiteOpenHelper {
         values.put(COL_RECURRENCE, payment.getRecurrence() != null ? payment.getRecurrence().name() : RecurrenceType.MONTHLY.name());
         values.put(COL_NOTIFICATION_OFFSETS, payment.getNotificationOffsets() != null ? payment.getNotificationOffsets() : "0");
         values.put(COL_UPDATED_AT, System.currentTimeMillis());
-        values.put(COL_SYNC_STATUS, "PENDING");
+        String updateSyncStatus = (payment.getRecurrence() != null && payment.getRecurrence().isLocalOnly()) ? "LOCAL_ONLY" : "PENDING";
+        values.put(COL_SYNC_STATUS, updateSyncStatus);
         if (payment.getLastPaidAt() != null) {
             values.put(COL_LAST_PAID_AT, payment.getLastPaidAt());
         } else {

@@ -65,6 +65,10 @@ public class Reminder {
         return snoozedUntil;
     }
 
+    public long getEffectiveTime() {
+        return (snoozedUntil > 0) ? snoozedUntil : timeMillis;
+    }
+
     public String getSyncStatus() {
         return syncStatus;
     }

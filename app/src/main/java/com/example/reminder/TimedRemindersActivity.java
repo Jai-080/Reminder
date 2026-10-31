@@ -223,7 +223,7 @@ public class TimedRemindersActivity extends AppCompatActivity {
         long now = System.currentTimeMillis();
 
         for (Reminder r : allReminders) {
-            if (r.getTime() <= now) {
+            if (r.getEffectiveTime() <= now) {
                 if (!r.isExpired()) {
                     dbHelper.markAsExpired(r.getId());
                     r.setExpired(true);
