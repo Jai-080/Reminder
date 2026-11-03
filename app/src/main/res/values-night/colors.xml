@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Dark Theme Active Semantic Tokens -->
+    <!-- Dark Theme Active Semantic Tokens (Graphite & Lime - Clean Neutral Charcoal with Lime Accents) -->
     <color name="colorBackground">@color/gl_background_dark</color>
     <color name="colorSurface">@color/gl_surface_dark</color>
     <color name="colorSurfaceVariant">@color/gl_surface_elevated_dark</color>
@@ -9,7 +9,7 @@
     <color name="colorTextPrimary">@color/gl_text_primary_dark</color>
     <color name="colorTextSecondary">@color/gl_text_secondary_dark</color>
     <color name="colorTextMuted">@color/gl_primary_dark</color>
-    <color name="colorHint">#8E9885</color>
+    <color name="colorHint">#7A7E78</color>
     <color name="colorAccent">@color/gl_primary_dark</color>
     <color name="colorSecondary">@color/gl_secondary_dark</color>
     <color name="colorTertiary">@color/gl_tertiary_dark</color>

@@ -38,6 +38,9 @@
         <item name="android:navigationBarColor">@color/colorBackground</item>
         <item name="android:windowLightNavigationBar" tools:targetApi="o_mr1">true</item>
 
+        <!-- Disable unwanted elevation surface tint overlay -->
+        <item name="elevationOverlayEnabled">false</item>
+
         <!-- Material 3 Transitions -->
         <item name="android:windowAnimationStyle">@style/Animation.Reminder.Activity</item>
 

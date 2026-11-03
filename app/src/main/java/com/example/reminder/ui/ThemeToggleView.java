@@ -43,7 +43,7 @@ public class ThemeToggleView extends View implements ThemeManager.ThemeChangeLis
 
     // Palette Colors
     private final int lightBgColor = 0xFFFFFFFF;
-    private final int darkBgColor = 0xFF252C24;
+    private final int darkBgColor = 0xFF1C1E1C;
     private final int lightBorderColor = 0xFF191D19;
     private final int darkBorderColor = 0x00000000;
     private final int thumbColor = 0xFFFFFFFF;

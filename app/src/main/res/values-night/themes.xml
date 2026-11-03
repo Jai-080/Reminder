@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- Graphite & Lime Material 3 Dark Theme -->
+    <!-- Graphite & Lime Material 3 Dark Theme (True Dark Graphite, Zero Green Tint) -->
     <style name="Theme.Reminder" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Primary brand color (Dark) -->
+        <!-- Primary brand accent (Lime) -->
         <item name="colorPrimary">@color/gl_primary_dark</item>
         <item name="colorOnPrimary">@color/gl_graphite</item>
         <item name="colorPrimaryContainer">@color/gl_tertiary_dark</item>
         <item name="colorOnPrimaryContainer">@color/gl_text_primary_dark</item>
 
-        <!-- Secondary & Tertiary (Dark) -->
+        <!-- Secondary & Tertiary -->
         <item name="colorSecondary">@color/gl_secondary_dark</item>
         <item name="colorOnSecondary">@color/gl_graphite</item>
         <item name="colorSecondaryContainer">@color/gl_surface_elevated_dark</item>
@@ -17,7 +17,7 @@
         <item name="colorTertiary">@color/gl_tertiary_dark</item>
         <item name="colorOnTertiary">@color/white</item>
 
-        <!-- Surfaces and backgrounds (Dark) -->
+        <!-- Deep Graphite Surfaces and backgrounds (Neutral, No Murky Green Wash) -->
         <item name="android:windowBackground">@color/colorBackground</item>
         <item name="colorSurface">@color/colorSurface</item>
         <item name="colorOnSurface">@color/colorTextPrimary</item>
@@ -25,6 +25,9 @@
         <item name="colorOnSurfaceVariant">@color/colorTextSecondary</item>
         <item name="colorOutline">@color/colorSurfaceBorder</item>
         <item name="colorOutlineVariant">@color/colorDivider</item>
+
+        <!-- Disable unwanted elevation surface tint overlay -->
+        <item name="elevationOverlayEnabled">false</item>
 
         <!-- Error & Action roles (Dark) -->
         <item name="colorError">@color/colorDelete</item>
@@ -50,7 +53,7 @@
     </style>
 
     <style name="Widget.Reminder.BottomNavigation.Indicator" parent="Widget.Material3.BottomNavigationView.ActiveIndicator">
-        <item name="android:color">#35422E</item>
+        <item name="android:color">@color/gl_surface_elevated_dark</item>
         <item name="android:width">60dp</item>
         <item name="android:height">32dp</item>
     </style>

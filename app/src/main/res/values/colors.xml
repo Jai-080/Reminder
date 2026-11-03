@@ -13,17 +13,17 @@
     <color name="gl_outline">#D2DAC7</color>
     <color name="gl_outline_variant">#E2E8DC</color>
 
-    <!-- Dark Foundation Roles -->
+    <!-- Dark Foundation Roles: Pure Premium Graphite (Zero Murky Green Wash) -->
     <color name="gl_primary_dark">#B2D66C</color>
     <color name="gl_secondary_dark">#D9EBA9</color>
     <color name="gl_tertiary_dark">#83A83D</color>
-    <color name="gl_background_dark">#191D19</color>
-    <color name="gl_surface_dark">#252C24</color>
-    <color name="gl_surface_elevated_dark">#30392C</color>
-    <color name="gl_text_primary_dark">#F6F8F0</color>
-    <color name="gl_text_secondary_dark">#B8C3AD</color>
-    <color name="gl_outline_dark">#414C3C</color>
-    <color name="gl_outline_variant_dark">#313A2D</color>
+    <color name="gl_background_dark">#121312</color>
+    <color name="gl_surface_dark">#1C1E1C</color>
+    <color name="gl_surface_elevated_dark">#262926</color>
+    <color name="gl_text_primary_dark">#F4F5F2</color>
+    <color name="gl_text_secondary_dark">#9EA39B</color>
+    <color name="gl_outline_dark">#373B36</color>
+    <color name="gl_outline_variant_dark">#2A2D29</color>
 
     <!-- Light Theme Active Semantic Tokens -->
     <color name="colorBackground">@color/gl_background</color>
