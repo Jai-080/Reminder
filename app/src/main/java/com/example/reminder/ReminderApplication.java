@@ -40,8 +40,15 @@ public class ReminderApplication extends Application {
             WebSocketManager.getInstance(this).connect();
         }
 
-        // Restore due payment notifications/alarms on app launch/update
-        AlarmUtils.restoreDuePaymentNotifications(this);
+        // Restore due payment notifications and pending reminders on app launch/update
+        new Thread(() -> {
+            try {
+                AlarmUtils.restoreDuePaymentNotifications(ReminderApplication.this);
+                AlarmUtils.restorePendingReminders(ReminderApplication.this);
+            } catch (Exception e) {
+                Log.e(TAG, "Failed to restore alarms on app start", e);
+            }
+        }).start();
     }
 
     private void registerConnectivityMonitor() {

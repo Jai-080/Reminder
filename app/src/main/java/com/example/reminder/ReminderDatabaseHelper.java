@@ -85,7 +85,7 @@ public class ReminderDatabaseHelper extends SQLiteOpenHelper {
     // Reminders Logic
     // ------------------------
 
-    public void addReminder(String text, long timeMillis) {
+    public long addReminder(String text, long timeMillis) {
         SQLiteDatabase db = getWritableDatabase();
         ContentValues values = new ContentValues();
         values.put("text", text);
@@ -101,6 +101,7 @@ public class ReminderDatabaseHelper extends SQLiteOpenHelper {
             Log.d(TAG, "Added reminder ID " + result + ": " + text + " at " + timeMillis);
         }
         db.close();
+        return result;
     }
 
     public void deleteReminder(int id) {
@@ -259,14 +260,23 @@ public class ReminderDatabaseHelper extends SQLiteOpenHelper {
         return reminders;
     }
 
+    public static java.util.Map<String, Object> buildSnoozeUpdateValues(long newSnoozedTimeMillis, long updatedAtMillis) {
+        java.util.Map<String, Object> values = new java.util.HashMap<>();
+        values.put("snoozed_time", newSnoozedTimeMillis);
+        values.put("is_expired", 0);
+        values.put("updated_at", updatedAtMillis);
+        values.put("sync_status", "PENDING");
+        return values;
+    }
+
     public void snoozeReminder(int id, long newTimeMillis) {
         SQLiteDatabase db = getWritableDatabase();
         ContentValues values = new ContentValues();
-        values.put("snoozed_time", newTimeMillis);
-        values.put("time", newTimeMillis);
-        values.put("is_expired", 0); 
-        values.put("updated_at", System.currentTimeMillis());
-        values.put("sync_status", "PENDING");
+        java.util.Map<String, Object> map = buildSnoozeUpdateValues(newTimeMillis, System.currentTimeMillis());
+        values.put("snoozed_time", (Long) map.get("snoozed_time"));
+        values.put("is_expired", (Integer) map.get("is_expired"));
+        values.put("updated_at", (Long) map.get("updated_at"));
+        values.put("sync_status", (String) map.get("sync_status"));
         db.update("reminders", values, "id=?", new String[]{String.valueOf(id)});
         db.close();
     }

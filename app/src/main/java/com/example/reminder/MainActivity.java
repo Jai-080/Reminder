@@ -455,7 +455,7 @@ public class MainActivity extends AppCompatActivity {
             List<Reminder> allReminders = reminderDbHelper.getAllReminders();
             long now = System.currentTimeMillis();
             for (Reminder r : allReminders) {
-                if (r.getTime() <= now) {
+                if (r.getEffectiveTime() <= now) {
                     expiredReminders.add(r);
                 } else {
                     pendingReminders.add(r);
@@ -472,7 +472,7 @@ public class MainActivity extends AppCompatActivity {
                 for (Reminder r : pendingReminders) {
                     if (count >= 3) break;
                     TextView tv = new TextView(this);
-                    tv.setText("• " + r.getText() + " (" + timeSdf.format(new java.util.Date(r.getTime())) + ")");
+                    tv.setText("• " + r.getText() + " (" + timeSdf.format(new java.util.Date(r.getEffectiveTime())) + ")");
                     tv.setTextColor(getResources().getColor(R.color.colorTextSecondary, getTheme()));
                     tv.setTextSize(14);
                     tv.setPadding(0, 8, 0, 8);

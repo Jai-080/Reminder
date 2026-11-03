@@ -138,9 +138,15 @@ public class MonthlyPaymentAdapter extends RecyclerView.Adapter<RecyclerView.Vie
         String amountText = payment.getAmount() == null ? "Amount Unknown" : String.format(Locale.getDefault(), "₹%.2f", payment.getAmount());
         holder.paymentName.setText(payment.getName() + " (" + amountText + ")");
 
-        String recurrenceStr = payment.getRecurrence() != null ? payment.getRecurrence().name() : "MONTHLY";
-        String recurrenceDisplay = recurrenceStr.replace("_", "-");
-        recurrenceDisplay = recurrenceDisplay.substring(0, 1).toUpperCase() + recurrenceDisplay.substring(1).toLowerCase();
+        String recurrenceDisplay;
+        if (payment.getRecurrence() == RecurrenceType.CUSTOM_DAYS) {
+            int days = payment.getCustomIntervalDays();
+            recurrenceDisplay = "Every " + days + (days == 1 ? " day" : " days");
+        } else {
+            String recurrenceStr = payment.getRecurrence() != null ? payment.getRecurrence().name() : "MONTHLY";
+            recurrenceDisplay = recurrenceStr.replace("_", "-");
+            recurrenceDisplay = recurrenceDisplay.substring(0, 1).toUpperCase() + recurrenceDisplay.substring(1).toLowerCase();
+        }
 
         String formattedDate = new SimpleDateFormat("dd MMM yyyy", Locale.getDefault())
                 .format(payment.getDueDate());
@@ -205,6 +211,19 @@ public class MonthlyPaymentAdapter extends RecyclerView.Adapter<RecyclerView.Vie
             }
         }
 
+        holder.itemView.setOnClickListener(v -> {
+            int pos = holder.getAdapterPosition();
+            if (pos != RecyclerView.NO_POSITION && pos < displayItems.size()) {
+                Object item = displayItems.get(pos);
+                if (item instanceof MonthlyPayment) {
+                    MonthlyPayment p = (MonthlyPayment) item;
+                    if (context instanceof MonthlyPaymentsActivity) {
+                        ((MonthlyPaymentsActivity) context).showPaymentEditDialog(p);
+                    }
+                }
+            }
+        });
+
         holder.checkBox.setOnCheckedChangeListener((buttonView, isChecked) -> {
             int pos = holder.getAdapterPosition();
             if (pos != RecyclerView.NO_POSITION && pos < displayItems.size()) {
@@ -212,7 +231,7 @@ public class MonthlyPaymentAdapter extends RecyclerView.Adapter<RecyclerView.Vie
                 if (isChecked) {
                     if (currentPayment.getRecurrence() == RecurrenceType.ONE_TIME) {
                         currentPayment.setLastPaidAt(System.currentTimeMillis());
-                        currentPayment.setCompleted(false);
+                        currentPayment.setCompleted(true);
                         currentPayment.setSyncStatus("PENDING");
                         
                         dbHelper.updatePayment(currentPayment);
@@ -221,22 +240,19 @@ public class MonthlyPaymentAdapter extends RecyclerView.Adapter<RecyclerView.Vie
                         AlarmUtils.cancelPaymentAlarm(context, currentPayment.getId(), currentPayment.getName());
                         AlarmUtils.cancelNotification(context, currentPayment.getId());
                     } else {
-                        // Advance due date based on recurrence frequency
-                        java.util.Calendar cal = java.util.Calendar.getInstance();
-                        cal.setTimeInMillis(currentPayment.getDueDate());
-                        if (currentPayment.getRecurrence() == RecurrenceType.BI_MONTHLY) {
-                            cal.add(java.util.Calendar.MONTH, 2);
-                        } else if (currentPayment.getRecurrence() == RecurrenceType.QUARTERLY) {
-                            cal.add(java.util.Calendar.MONTH, 3);
-                        } else if (currentPayment.getRecurrence() == RecurrenceType.HALF_YEARLY) {
-                            cal.add(java.util.Calendar.MONTH, 6);
-                        } else if (currentPayment.getRecurrence() == RecurrenceType.YEARLY) {
-                            cal.add(java.util.Calendar.YEAR, 1);
-                        } else {
-                            cal.add(java.util.Calendar.MONTH, 1);
-                        }
-                        long newDueDate = cal.getTimeInMillis();
+                        // Advance due date deterministically based on recurrence frequency, custom interval, and original due day
+                        int anchorDay = currentPayment.getOriginalDueDay();
+                        int customInterval = currentPayment.getCustomIntervalDays();
+                        long newDueDate = MonthlyPayment.calculateNextDueDate(
+                                currentPayment.getDueDate(),
+                                currentPayment.getRecurrence(),
+                                anchorDay,
+                                customInterval,
+                                System.currentTimeMillis()
+                        );
 
+                        currentPayment.setOriginalDueDay(anchorDay);
+                        currentPayment.setCustomIntervalDays(customInterval);
                         currentPayment.setDueDateMillis(newDueDate);
                         currentPayment.setLastPaidAt(System.currentTimeMillis());
                         currentPayment.setCompleted(false);

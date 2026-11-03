@@ -166,7 +166,7 @@ public class SyncManager {
                         RecurrenceType rec = RecurrenceType.MONTHLY;
                         if (recStr != null) {
                             try {
-                                rec = RecurrenceType.valueOf(recStr.toUpperCase());
+                                rec = RecurrenceType.fromString(recStr);
                             } catch (IllegalArgumentException ignored) {}
                         }
                         String offsets = payment.getNotificationOffsets() != null ? payment.getNotificationOffsets() : "0";
@@ -180,13 +180,17 @@ public class SyncManager {
                                 amt,
                                 rec,
                                 offsets,
-                                payment.getLastPaidAt()
+                                payment.getLastPaidAt(),
+                                payment.getOriginalDueDay(),
+                                payment.getCustomIntervalDays()
                         );
                         Long lpa = payment.getLastPaidAt();
                         boolean isRecentlyPaid = false;
                         if (lpa != null) {
                             if (rec == RecurrenceType.ONE_TIME) {
                                 isRecentlyPaid = true;
+                            } else if (rec == RecurrenceType.CUSTOM_DAYS) {
+                                isRecentlyPaid = payment.getDueDate() > System.currentTimeMillis();
                             } else {
                                 java.util.Calendar calPaid = java.util.Calendar.getInstance();
                                 calPaid.setTimeInMillis(lpa);
@@ -277,7 +281,11 @@ public class SyncManager {
                             noteDb.updateSyncStatus(localId, resolvedServerId, "SYNCED");
                             if (callback != null) callback.onSuccess(resolvedServerId);
                         } else {
-                            noteDb.updateSyncStatus(localId, resolvedServerId, "FAILED");
+                            if (isPermanentError(response.code())) {
+                                noteDb.updateSyncStatus(localId, resolvedServerId, "FAILED_PERMANENT");
+                            } else {
+                                noteDb.updateSyncStatus(localId, resolvedServerId, "FAILED");
+                            }
                             if (callback != null) callback.onError("Server update failed: HTTP " + response.code());
                         }
                     }
@@ -300,7 +308,11 @@ public class SyncManager {
                             noteDb.updateSyncStatus(localId, newServerId, "SYNCED");
                             if (callback != null) callback.onSuccess(newServerId);
                         } else {
-                            noteDb.updateSyncStatus(localId, null, "FAILED");
+                            if (isPermanentError(response.code())) {
+                                noteDb.updateSyncStatus(localId, null, "FAILED_PERMANENT");
+                            } else {
+                                noteDb.updateSyncStatus(localId, null, "FAILED");
+                            }
                             if (callback != null) callback.onError("Server upload failed: HTTP " + response.code());
                         }
                     }
@@ -396,7 +408,11 @@ public class SyncManager {
                             reminderDb.updateSyncStatus(localId, resolvedServerId, "SYNCED");
                             if (callback != null) callback.onSuccess(resolvedServerId);
                         } else {
-                            reminderDb.updateSyncStatus(localId, resolvedServerId, "FAILED");
+                            if (isPermanentError(response.code())) {
+                                reminderDb.updateSyncStatus(localId, resolvedServerId, "FAILED_PERMANENT");
+                            } else {
+                                reminderDb.updateSyncStatus(localId, resolvedServerId, "FAILED");
+                            }
                             if (callback != null) callback.onError("Server update failed: HTTP " + response.code());
                         }
                     }
@@ -419,7 +435,11 @@ public class SyncManager {
                             reminderDb.updateSyncStatus(localId, newServerId, "SYNCED");
                             if (callback != null) callback.onSuccess(newServerId);
                         } else {
-                            reminderDb.updateSyncStatus(localId, null, "FAILED");
+                            if (isPermanentError(response.code())) {
+                                reminderDb.updateSyncStatus(localId, null, "FAILED_PERMANENT");
+                            } else {
+                                reminderDb.updateSyncStatus(localId, null, "FAILED");
+                            }
                             if (callback != null) callback.onError("Server upload failed: HTTP " + response.code());
                         }
                     }
@@ -498,6 +518,13 @@ public class SyncManager {
 
     public void uploadPayment(MonthlyPayment payment, SyncCallback<Long> callback) {
         int localId = payment.getId();
+        if (payment.getRecurrence() != null && payment.getRecurrence().isLocalOnly()) {
+            Log.w(TAG, "Skipping server upload for payment '" + payment.getName() + "': RecurrenceType." + payment.getRecurrence() + " is stored LOCAL_ONLY.");
+            paymentDb.updateSyncStatus(localId, null, "LOCAL_ONLY");
+            if (callback != null) callback.onSuccess(null);
+            return;
+        }
+
         if (!uploadingPayments.add(localId)) {
             Log.d(TAG, "Payment " + localId + " upload in progress. Skipping.");
             if (callback != null) callback.onError("Upload already in progress.");
@@ -540,6 +567,10 @@ public class SyncManager {
                     payment.getNotificationOffsets() != null ? payment.getNotificationOffsets() : "0"
             );
             request.setLastPaidAt(payment.getLastPaidAt());
+            request.setOriginalDueDay(payment.getOriginalDueDay());
+            if (payment.getRecurrence() == RecurrenceType.CUSTOM_DAYS) {
+                request.setCustomIntervalDays(payment.getCustomIntervalDays() > 0 ? payment.getCustomIntervalDays() : 28);
+            }
 
             if (resolvedServerId != null && resolvedServerId > 0) {
                 // Update (PUT)
@@ -551,7 +582,11 @@ public class SyncManager {
                             paymentDb.updateSyncStatus(localId, resolvedServerId, "SYNCED");
                             if (callback != null) callback.onSuccess(resolvedServerId);
                         } else {
-                            paymentDb.updateSyncStatus(localId, resolvedServerId, "FAILED");
+                            if (isPermanentError(response.code())) {
+                                paymentDb.updateSyncStatus(localId, resolvedServerId, "FAILED_PERMANENT");
+                            } else {
+                                paymentDb.updateSyncStatus(localId, resolvedServerId, "FAILED");
+                            }
                             if (callback != null) callback.onError("Server update failed: HTTP " + response.code());
                         }
                     }
@@ -574,7 +609,11 @@ public class SyncManager {
                             paymentDb.updateSyncStatus(localId, newServerId, "SYNCED");
                             if (callback != null) callback.onSuccess(newServerId);
                         } else {
-                            paymentDb.updateSyncStatus(localId, null, "FAILED");
+                            if (isPermanentError(response.code())) {
+                                paymentDb.updateSyncStatus(localId, null, "FAILED_PERMANENT");
+                            } else {
+                                paymentDb.updateSyncStatus(localId, null, "FAILED");
+                            }
                             if (callback != null) callback.onError("Server upload failed: HTTP " + response.code());
                         }
                     }
@@ -872,7 +911,7 @@ public class SyncManager {
                         // Push pending changes to server
                         List<QuickNote> pendingNotes = new java.util.ArrayList<>();
                         for (QuickNote local : noteDb.getAllNotes()) {
-                            if ("PENDING".equals(local.getSyncStatus())) {
+                            if (isEligibleForSync(local.getSyncStatus())) {
                                 pendingNotes.add(local);
                             }
                         }
@@ -1017,7 +1056,6 @@ public class SyncManager {
                                 if (serverMillis > localMillis) {
                                     Log.d(TAG, "LWW RESULT: SERVER_WINS");
                                     Log.d(TAG, "UPDATING reminder");
-                                    boolean reminderTimeChanged = serverReminder.getReminderTime() != localReminder.getTimeMillis();
                                     long localId = reminderDb.insertOrUpdateSyncedReminder(
                                             serverReminder.getId(),
                                             serverReminder.getText(),
@@ -1026,21 +1064,28 @@ public class SyncManager {
                                             snoozedTime,
                                             serverMillis
                                     );
-                                    // Only cancel+reschedule if the reminder TIME actually changed.
-                                    // If only other fields changed (e.g. updatedAt from a server touch),
-                                    // do NOT disrupt an already-scheduled alarm — that creates race conditions.
-                                    if (reminderTimeChanged) {
-                                        Log.d("REMINDER SCHEDULER", "Reminder time changed, cancelling and rescheduling: localId=" + localId);
+
+                                    SchedulingDecision decision = evaluateUpdateScheduling(
+                                            serverReminder.getReminderTime(),
+                                            snoozedTime,
+                                            isExpired,
+                                            localReminder.getTimeMillis(),
+                                            localReminder.getSnoozedUntil(),
+                                            localReminder.isExpired(),
+                                            System.currentTimeMillis()
+                                    );
+
+                                    if (decision.cancelExisting) {
+                                        Log.d("REMINDER SCHEDULER", "Cancelling existing alarm for localId=" + localId + ": " + decision.reason);
                                         com.example.reminder.AlarmUtils.cancelReminder(context, (int) localId);
-                                        // Guard: only schedule if at least 30 seconds remain to avoid near-fire cancellation race
-                                        if (!isExpired && serverReminder.getReminderTime() > System.currentTimeMillis() + 30000) {
-                                            Log.d("REMINDER SCHEDULER", "Scheduling reminder:\nlocalId=" + localId + "\nserverId=" + serverReminder.getId() + "\ntime=" + serverReminder.getReminderTime() + "\nsuccess=true");
-                                            com.example.reminder.AlarmUtils.scheduleReminder(context, (int) localId, serverReminder.getText(), serverReminder.getReminderTime());
-                                        } else {
-                                            Log.d("REMINDER SCHEDULER", "Skipping reschedule for localId=" + localId + ": isExpired=" + isExpired + " or fire time too near/past.");
-                                        }
+                                    }
+                                    if (decision.shouldSchedule) {
+                                        Log.d("REMINDER SCHEDULER", "Scheduling reminder:\nlocalId=" + localId + "\nserverId=" + serverReminder.getId() + "\ntime=" + decision.scheduleTime + "\nsuccess=true");
+                                        com.example.reminder.AlarmUtils.scheduleReminder(context, (int) localId, serverReminder.getText(), decision.scheduleTime);
+                                    } else if (decision.cancelExisting) {
+                                        Log.d("REMINDER SCHEDULER", "Skipping reschedule for localId=" + localId + ": " + decision.reason);
                                     } else {
-                                        Log.d("REMINDER SCHEDULER", "Reminder time unchanged for localId=" + localId + ", not disturbing existing alarm.");
+                                        Log.d("REMINDER SCHEDULER", "Reminder effective time unchanged for localId=" + localId + ", not disturbing existing alarm.");
                                     }
                                 } else {
                                     Log.d(TAG, "LWW RESULT: LOCAL_WINS");
@@ -1059,10 +1104,17 @@ public class SyncManager {
                                         snoozedTime,
                                         serverMillis
                                 );
-                                // Fresh insert: always schedule if in the future (no cancel risk)
-                                if (!isExpired && serverReminder.getReminderTime() > System.currentTimeMillis()) {
-                                    Log.d("REMINDER SCHEDULER", "Scheduling reminder (new):\nlocalId=" + localId + "\nserverId=" + serverReminder.getId() + "\ntime=" + serverReminder.getReminderTime() + "\nsuccess=true");
-                                    com.example.reminder.AlarmUtils.scheduleReminder(context, (int) localId, serverReminder.getText(), serverReminder.getReminderTime());
+                                SchedulingDecision decision = evaluateNewInsertScheduling(
+                                        serverReminder.getReminderTime(),
+                                        snoozedTime,
+                                        isExpired,
+                                        System.currentTimeMillis()
+                                );
+                                if (decision.shouldSchedule) {
+                                    Log.d("REMINDER SCHEDULER", "Scheduling reminder (new):\nlocalId=" + localId + "\nserverId=" + serverReminder.getId() + "\ntime=" + decision.scheduleTime + "\nsuccess=true");
+                                    com.example.reminder.AlarmUtils.scheduleReminder(context, (int) localId, serverReminder.getText(), decision.scheduleTime);
+                                } else {
+                                    Log.d("REMINDER SCHEDULER", "Skipping schedule for new localId=" + localId + ": " + decision.reason);
                                 }
                             }
                         }
@@ -1070,7 +1122,7 @@ public class SyncManager {
                         // Push pending changes to server
                         List<Reminder> pendingReminders = new java.util.ArrayList<>();
                         for (Reminder local : reminderDb.getAllReminders()) {
-                            if ("PENDING".equals(local.getSyncStatus())) {
+                            if (isEligibleForSync(local.getSyncStatus())) {
                                 pendingReminders.add(local);
                             }
                         }
@@ -1224,7 +1276,7 @@ public class SyncManager {
                                     RecurrenceType rec = RecurrenceType.MONTHLY;
                                     if (recStr != null) {
                                         try {
-                                            rec = RecurrenceType.valueOf(recStr.toUpperCase());
+                                            rec = RecurrenceType.fromString(recStr);
                                         } catch (IllegalArgumentException ignored) {}
                                     }
                                     String offsets = serverPayment.getNotificationOffsets() != null ? serverPayment.getNotificationOffsets() : "0";
@@ -1238,7 +1290,9 @@ public class SyncManager {
                                             amt,
                                             rec,
                                             offsets,
-                                            serverPayment.getLastPaidAt()
+                                            serverPayment.getLastPaidAt(),
+                                            serverPayment.getOriginalDueDay(),
+                                            serverPayment.getCustomIntervalDays()
                                     );
                                     Log.d("PAYMENT SCHEDULER", "Cancelling previous payment alarm: localId=" + localId);
                                     AlarmUtils.cancelPaymentAlarm(context, (int) localId, serverPayment.getName());
@@ -1248,6 +1302,8 @@ public class SyncManager {
                                     if (lpa != null) {
                                         if (rec == RecurrenceType.ONE_TIME) {
                                             isRecentlyPaid = true;
+                                        } else if (rec == RecurrenceType.CUSTOM_DAYS) {
+                                            isRecentlyPaid = serverPayment.getDueDate() > System.currentTimeMillis();
                                         } else {
                                             java.util.Calendar calPaid = java.util.Calendar.getInstance();
                                             calPaid.setTimeInMillis(lpa);
@@ -1283,7 +1339,7 @@ public class SyncManager {
                                 RecurrenceType rec = RecurrenceType.MONTHLY;
                                 if (recStr != null) {
                                     try {
-                                        rec = RecurrenceType.valueOf(recStr.toUpperCase());
+                                        rec = RecurrenceType.fromString(recStr);
                                     } catch (IllegalArgumentException ignored) {}
                                 }
                                 String offsets = serverPayment.getNotificationOffsets() != null ? serverPayment.getNotificationOffsets() : "0";
@@ -1297,7 +1353,9 @@ public class SyncManager {
                                         amt,
                                         rec,
                                         offsets,
-                                        serverPayment.getLastPaidAt()
+                                        serverPayment.getLastPaidAt(),
+                                        serverPayment.getOriginalDueDay(),
+                                        serverPayment.getCustomIntervalDays()
                                 );
                                 
                                 Long lpa = serverPayment.getLastPaidAt();
@@ -1305,6 +1363,8 @@ public class SyncManager {
                                 if (lpa != null) {
                                     if (rec == RecurrenceType.ONE_TIME) {
                                         isRecentlyPaid = true;
+                                    } else if (rec == RecurrenceType.CUSTOM_DAYS) {
+                                        isRecentlyPaid = serverPayment.getDueDate() > System.currentTimeMillis();
                                     } else {
                                         java.util.Calendar calPaid = java.util.Calendar.getInstance();
                                         calPaid.setTimeInMillis(lpa);
@@ -1333,7 +1393,17 @@ public class SyncManager {
                         // Push pending changes to server
                         List<MonthlyPayment> pendingPayments = new java.util.ArrayList<>();
                         for (MonthlyPayment local : paymentDb.getAllPayments()) {
-                            if ("PENDING".equals(local.getSyncStatus())) {
+                            if (local.getRecurrence() != null && local.getRecurrence().isLocalOnly()) {
+                                if (!"LOCAL_ONLY".equals(local.getSyncStatus())) {
+                                    paymentDb.updateSyncStatus(local.getId(), null, "LOCAL_ONLY");
+                                }
+                                continue;
+                            } else if ("LOCAL_ONLY".equals(local.getSyncStatus())) {
+                                paymentDb.updateSyncStatus(local.getId(), null, "PENDING");
+                                pendingPayments.add(local);
+                                continue;
+                            }
+                            if (isEligibleForSync(local.getSyncStatus())) {
                                 pendingPayments.add(local);
                             }
                         }
@@ -1373,5 +1443,68 @@ public class SyncManager {
                 uploadPendingPayments(pending, index + 1, onFinished);
             }
         });
+    }
+    // =========================================================================
+    // REMINDER SCHEDULING EVALUATION HELPERS
+    // =========================================================================
+
+    public static class SchedulingDecision {
+        public final boolean cancelExisting;
+        public final boolean shouldSchedule;
+        public final long scheduleTime;
+        public final String reason;
+
+        public SchedulingDecision(boolean cancelExisting, boolean shouldSchedule, long scheduleTime, String reason) {
+            this.cancelExisting = cancelExisting;
+            this.shouldSchedule = shouldSchedule;
+            this.scheduleTime = scheduleTime;
+            this.reason = reason;
+        }
+    }
+
+    public static SchedulingDecision evaluateUpdateScheduling(
+            long serverReminderTime,
+            long serverSnoozedTime,
+            boolean isServerExpired,
+            long localReminderTime,
+            long localSnoozedTime,
+            boolean isLocalExpired,
+            long nowMillis) {
+        long serverEffectiveTime = (serverSnoozedTime > 0) ? serverSnoozedTime : serverReminderTime;
+        long localEffectiveTime = (localSnoozedTime > 0) ? localSnoozedTime : localReminderTime;
+
+        boolean effectiveTimeChanged = serverEffectiveTime != localEffectiveTime;
+        boolean newlyExpired = isServerExpired && !isLocalExpired;
+
+        if (effectiveTimeChanged || newlyExpired) {
+            if (!isServerExpired && serverEffectiveTime > nowMillis + 30000) {
+                return new SchedulingDecision(true, true, serverEffectiveTime, "Effective time changed, rescheduled");
+            } else {
+                return new SchedulingDecision(true, false, -1L, "Cancelled: expired or within 30s guard");
+            }
+        } else {
+            return new SchedulingDecision(false, false, -1L, "Effective time unchanged");
+        }
+    }
+
+    public static SchedulingDecision evaluateNewInsertScheduling(
+            long serverReminderTime,
+            long serverSnoozedTime,
+            boolean isServerExpired,
+            long nowMillis) {
+        long serverEffectiveTime = (serverSnoozedTime > 0) ? serverSnoozedTime : serverReminderTime;
+        if (!isServerExpired && serverEffectiveTime > nowMillis) {
+            return new SchedulingDecision(false, true, serverEffectiveTime, "New reminder scheduled");
+        } else {
+            return new SchedulingDecision(false, false, -1L, "Skipped: expired or past");
+        }
+    }
+
+    public static boolean isPermanentError(int code) {
+        return (code >= 400 && code < 500 && code != 401 && code != 408 && code != 429);
+    }
+
+    public static boolean isEligibleForSync(String syncStatus) {
+        return "PENDING".equals(syncStatus) || "FAILED".equals(syncStatus);
     }
 }

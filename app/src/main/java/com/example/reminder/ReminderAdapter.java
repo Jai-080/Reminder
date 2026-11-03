@@ -58,17 +58,17 @@ public class ReminderAdapter extends RecyclerView.Adapter<ReminderAdapter.ViewHo
 
         holder.reminderText.setText(reminder.getText());
 
-        String formattedTime = DateFormat.getDateTimeInstance().format(reminder.getTime());
+        String formattedTime = DateFormat.getDateTimeInstance().format(reminder.getEffectiveTime());
         holder.reminderTime.setText(formattedTime);
 
         // ✅ expiredIcon is now a TextView badge
-        boolean isExpired = reminder.getTime() <= System.currentTimeMillis();
+        boolean isExpired = reminder.isExpired() || (reminder.getEffectiveTime() <= System.currentTimeMillis());
         holder.expiredIcon.setVisibility(isExpired ? View.VISIBLE : View.GONE);
 
         holder.rescheduleButton.setVisibility(View.VISIBLE);
         holder.rescheduleButton.setOnClickListener(v -> {
             final java.util.Calendar calendar = java.util.Calendar.getInstance();
-            calendar.setTimeInMillis(reminder.getTime());
+            calendar.setTimeInMillis(reminder.getEffectiveTime());
 
             new android.app.DatePickerDialog(context, (view, year, month, dayOfMonth) -> {
                 calendar.set(java.util.Calendar.YEAR, year);
@@ -104,7 +104,7 @@ public class ReminderAdapter extends RecyclerView.Adapter<ReminderAdapter.ViewHo
                     SyncManager.getInstance(context).uploadReminder(
                             reminder.getId(),
                             reminder.getText(),
-                            triggerTime,
+                            reminder.getTime(),
                             false,
                             triggerTime,
                             reminder.getServerId(),

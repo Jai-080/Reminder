@@ -17,6 +17,13 @@ public class AlarmUtils {
     private static final String CHANNEL_NAME = "Reminders";
     private static final String CHANNEL_DESC = "Shows notifications for reminders and payments";
 
+    // Namespace separation to prevent collision between reminder and monthly payment notification IDs
+    public static final int PAYMENT_NOTIFICATION_OFFSET = 100000;
+
+    public static int getPaymentNotificationId(int paymentId) {
+        return PAYMENT_NOTIFICATION_OFFSET + paymentId;
+    }
+
     // ✅ Ensure channel is created
     private static void createNotificationChannel(Context context) {
         NotificationChannel channel = new NotificationChannel(
@@ -84,8 +91,24 @@ public class AlarmUtils {
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
         );
 
-        android.util.Log.d("AlarmUtils", "Alarm scheduled: payment id=" + paymentId + ", scheduled trigger time=" + dueDateMillis);
-        alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, dueDateMillis, pendingIntent);
+        // Check exact alarm permissions across Android versions
+        try {
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+                if (alarmManager.canScheduleExactAlarms()) {
+                    android.util.Log.d("AlarmUtils", "Alarm scheduled (exact): payment id=" + paymentId + ", scheduled trigger time=" + dueDateMillis);
+                    alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, dueDateMillis, pendingIntent);
+                } else {
+                    android.util.Log.w("AlarmUtils", "Cannot schedule exact alarms for payment (permission unavailable). Falling back to inexact setAndAllowWhileIdle: payment id=" + paymentId);
+                    alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, dueDateMillis, pendingIntent);
+                }
+            } else {
+                android.util.Log.d("AlarmUtils", "Alarm scheduled (exact pre-Android 12): payment id=" + paymentId + ", scheduled trigger time=" + dueDateMillis);
+                alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, dueDateMillis, pendingIntent);
+            }
+        } catch (SecurityException se) {
+            android.util.Log.e("AlarmUtils", "SecurityException scheduling payment alarm, falling back to inexact setAndAllowWhileIdle: " + se.getMessage());
+            alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, dueDateMillis, pendingIntent);
+        }
     }
 
     // ✅ Centralized method to cancel monthly payment alarm using Paymentalarmreceiver
@@ -153,8 +176,22 @@ public class AlarmUtils {
             android.util.Log.d("AlarmUtils", "scheduleAlarm: request code=" + id + ", triggerTime=" + triggerAtMillis + ", PendingIntent flags=" + (PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE));
             android.util.Log.d("AlarmUtils", "Alarm scheduled: reminder id=" + id + ", scheduled trigger time=" + triggerAtMillis);
             
-            // Standardize to unconditionally call setExactAndAllowWhileIdle to match the payment flow
-            alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAtMillis, pendingIntent);
+            // Check exact alarm permissions across Android versions
+            try {
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+                    if (alarmManager.canScheduleExactAlarms()) {
+                        alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAtMillis, pendingIntent);
+                    } else {
+                        android.util.Log.w("AlarmUtils", "Cannot schedule exact alarms, falling back to setAndAllowWhileIdle");
+                        alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAtMillis, pendingIntent);
+                    }
+                } else {
+                    alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAtMillis, pendingIntent);
+                }
+            } catch (SecurityException se) {
+                android.util.Log.e("AlarmUtils", "SecurityException scheduling alarm, falling back to setAndAllowWhileIdle: " + se.getMessage());
+                alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAtMillis, pendingIntent);
+            }
         }
     }
 
@@ -191,7 +228,7 @@ public class AlarmUtils {
         deleteIntent.putExtra("payment_name", paymentName);
         PendingIntent deletePendingIntent = PendingIntent.getBroadcast(
                 context,
-                paymentId,
+                getPaymentNotificationId(paymentId),
                 deleteIntent,
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
         );
@@ -220,14 +257,16 @@ public class AlarmUtils {
                 .build();
 
         if (manager != null) {
-            manager.notify(paymentId, notification);
+            manager.notify(getPaymentNotificationId(paymentId), notification);
         }
     }
 
-    // ✅ Cancel permanent notification (monthly payment or any notification)
+    // ✅ Cancel payment notification (uses payment namespace to prevent cancelling timed reminders)
     public static void cancelNotification(Context context, int notificationId) {
         NotificationManager manager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
         if (manager != null) {
+            manager.cancel(getPaymentNotificationId(notificationId));
+            // Also cancel legacy un-offsetted ID for backward compatibility
             manager.cancel(notificationId);
         }
     }
@@ -274,6 +313,41 @@ public class AlarmUtils {
             }
         } catch (Exception e) {
             android.util.Log.e("AlarmUtils", "Failed to restore due payment notifications", e);
+        }
+    }
+
+    private static final java.util.concurrent.atomic.AtomicBoolean isReminderRestoring = new java.util.concurrent.atomic.AtomicBoolean(false);
+
+    // Restore pending timed reminders after device reboot or app launch
+    public static void restorePendingReminders(Context context) {
+        if (!isReminderRestoring.compareAndSet(false, true)) {
+            android.util.Log.d("AlarmUtils", "restorePendingReminders: restoration already in progress, skipping duplicate call.");
+            return;
+        }
+
+        try {
+            ReminderDatabaseHelper dbHelper = new ReminderDatabaseHelper(context);
+            java.util.ArrayList<Reminder> pendingReminders = dbHelper.getPendingReminders();
+            long now = System.currentTimeMillis();
+            android.util.Log.d("AlarmUtils", "restorePendingReminders: checking " + pendingReminders.size() + " pending reminders");
+
+            for (Reminder r : pendingReminders) {
+                long triggerTime = r.getEffectiveTime();
+                if (triggerTime > now) {
+                    android.util.Log.d("AlarmUtils", "Restoring alarm for reminder localId=" + r.getId() + " at " + triggerTime);
+                    scheduleReminder(context, r.getId(), r.getText(), triggerTime);
+                } else {
+                    android.util.Log.d("AlarmUtils", "Reminder localId=" + r.getId() + " expired while device was offline, marking as expired");
+                    dbHelper.markAsExpired(r.getId());
+                    Intent updateIntent = new Intent("com.example.reminder.REMINDER_EXPIRED");
+                    updateIntent.putExtra("reminder_id", r.getId());
+                    context.sendBroadcast(updateIntent);
+                }
+            }
+        } catch (Exception e) {
+            android.util.Log.e("AlarmUtils", "Failed to restore pending reminders", e);
+        } finally {
+            isReminderRestoring.set(false);
         }
     }
 }
