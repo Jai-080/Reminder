@@ -1,20 +1,72 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- Dark mode overrides -->
+    <!-- Graphite & Lime Material 3 Dark Theme (True Dark Graphite, Zero Green Tint) -->
     <style name="Theme.Reminder" parent="Theme.Material3.DayNight.NoActionBar">
-        <item name="colorPrimary">@color/accent_purple</item>
-        <item name="colorOnPrimary">@color/white</item>
-        <item name="colorSecondary">@color/accent_purple</item>
-        <item name="colorOnSecondary">@color/white</item>
+        <!-- Primary brand accent (Lime) -->
+        <item name="colorPrimary">@color/gl_primary_dark</item>
+        <item name="colorOnPrimary">@color/gl_graphite</item>
+        <item name="colorPrimaryContainer">@color/gl_tertiary_dark</item>
+        <item name="colorOnPrimaryContainer">@color/gl_text_primary_dark</item>
+
+        <!-- Secondary & Tertiary -->
+        <item name="colorSecondary">@color/gl_secondary_dark</item>
+        <item name="colorOnSecondary">@color/gl_graphite</item>
+        <item name="colorSecondaryContainer">@color/gl_surface_elevated_dark</item>
+        <item name="colorOnSecondaryContainer">@color/gl_text_primary_dark</item>
+        <item name="colorTertiary">@color/gl_tertiary_dark</item>
+        <item name="colorOnTertiary">@color/white</item>
+
+        <!-- Deep Graphite Surfaces and backgrounds (Neutral, No Murky Green Wash) -->
+        <item name="android:windowBackground">@color/colorBackground</item>
+        <item name="colorSurface">@color/colorSurface</item>
+        <item name="colorOnSurface">@color/colorTextPrimary</item>
+        <item name="colorSurfaceVariant">@color/colorSurfaceVariant</item>
+        <item name="colorOnSurfaceVariant">@color/colorTextSecondary</item>
+        <item name="colorOutline">@color/colorSurfaceBorder</item>
+        <item name="colorOutlineVariant">@color/colorDivider</item>
+
+        <!-- Disable unwanted elevation surface tint overlay -->
+        <item name="elevationOverlayEnabled">false</item>
+
+        <!-- Error & Action roles (Dark) -->
+        <item name="colorError">@color/colorDelete</item>
+        <item name="colorOnError">#690005</item>
+        <item name="colorErrorContainer">@color/colorDeleteContainer</item>
+        <item name="colorOnErrorContainer">@color/colorOnDeleteContainer</item>
+
+        <!-- System Bars -->
         <item name="android:statusBarColor">@color/colorBackground</item>
         <item name="android:windowLightStatusBar" tools:targetApi="m">false</item>
-        <item name="android:timePickerMode">spinner</item>
+        <item name="android:navigationBarColor">@color/colorBackground</item>
+        <item name="android:windowLightNavigationBar" tools:targetApi="o_mr1">false</item>
 
-        <!-- Dark theme surface colors -->
-        <item name="android:windowBackground">@color/dark_background</item>
-        <item name="colorSurface">@color/dark_surface</item>
-        <item name="colorOnSurface">@color/dark_text_primary</item>
+        <!-- Material 3 Transitions -->
+        <item name="android:windowAnimationStyle">@style/Animation.Reminder.Activity</item>
+
+        <!-- Material 3 Component default styles -->
+        <item name="materialCardViewStyle">@style/Widget.Reminder.CardView</item>
+        <item name="materialButtonStyle">@style/Widget.Reminder.Button.Primary</item>
+        <item name="textInputStyle">@style/Widget.Reminder.TextInputLayout</item>
+        <item name="bottomNavigationStyle">@style/Widget.Reminder.BottomNavigation</item>
+        <item name="materialAlertDialogTheme">@style/ThemeOverlay.Reminder.MaterialAlertDialog</item>
+    </style>
+
+    <style name="Widget.Reminder.BottomNavigation.Indicator" parent="Widget.Material3.BottomNavigationView.ActiveIndicator">
+        <item name="android:color">@color/gl_surface_elevated_dark</item>
+        <item name="android:width">60dp</item>
+        <item name="android:height">32dp</item>
+    </style>
+
+    <style name="TimePickerTheme" parent="ThemeOverlay.Material3.MaterialTimePicker">
+        <item name="colorPrimary">@color/gl_primary_dark</item>
+        <item name="colorOnPrimary">@color/gl_graphite</item>
+        <item name="colorSurface">@color/colorSurface</item>
+        <item name="colorOnSurface">@color/colorTextPrimary</item>
+    </style>
+
+    <style name="TimePickerButtonStyle" parent="Widget.Material3.Button.TextButton.Dialog">
+        <item name="android:textColor">@color/gl_primary_dark</item>
     </style>
 
 </resources>

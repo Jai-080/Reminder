@@ -1,18 +1,31 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="colorBackground">@color/dark_background</color>
-    <color name="colorTextPrimary">@color/dark_text_primary</color>
-    <color name="colorTextSecondary">@color/dark_text_secondary</color>
-    <color name="colorTextMuted">@color/dark_text_muted</color>
-    <color name="colorDivider">@color/dark_divider</color>
-    <color name="colorHint">#75717F</color>
-    <color name="colorSurface">@color/dark_surface</color>
-    <color name="colorSurfaceBorder">@color/dark_surface_border</color>
-    <color name="colorSurfaceVariant">@color/dark_surface_variant</color>
-    <color name="colorAccent">@color/dark_primary</color>
-    <color name="colorReschedule">@color/dark_reschedule</color>
-    <color name="colorButtonGradientStart">@color/colorAccent</color>
-    <color name="colorButtonGradientEnd">@color/colorAccent</color>
-    <color name="colorInputBackground">@color/dark_input_bg</color>
-    <color name="colorInputBorder">@color/dark_input_border</color>
+    <!-- Dark Theme Active Semantic Tokens (Graphite & Lime - Clean Neutral Charcoal with Lime Accents) -->
+    <color name="colorBackground">@color/gl_background_dark</color>
+    <color name="colorSurface">@color/gl_surface_dark</color>
+    <color name="colorSurfaceVariant">@color/gl_surface_elevated_dark</color>
+    <color name="colorSurfaceBorder">@color/gl_outline_dark</color>
+    <color name="colorDivider">@color/gl_outline_variant_dark</color>
+    <color name="colorTextPrimary">@color/gl_text_primary_dark</color>
+    <color name="colorTextSecondary">@color/gl_text_secondary_dark</color>
+    <color name="colorTextMuted">@color/gl_primary_dark</color>
+    <color name="colorHint">#7A7E78</color>
+    <color name="colorAccent">@color/gl_primary_dark</color>
+    <color name="colorSecondary">@color/gl_secondary_dark</color>
+    <color name="colorTertiary">@color/gl_tertiary_dark</color>
+
+    <!-- Semantic Alerts & Actions (Dark) -->
+    <color name="colorDelete">#FFB4AB</color>
+    <color name="colorDeleteContainer">#93000A</color>
+    <color name="colorOnDeleteContainer">#FFDAD6</color>
+    <color name="colorExpired">#FFB59D</color>
+    <color name="colorExpiredContainer">#802B00</color>
+    <color name="colorReschedule">@color/gl_primary_dark</color>
+    <color name="colorSuccess">#9CD67D</color>
+    <color name="colorSuccessContainer">#1F5107</color>
+
+    <color name="colorButtonGradientStart">@color/gl_primary_dark</color>
+    <color name="colorButtonGradientEnd">@color/gl_primary_dark</color>
+    <color name="colorInputBackground">@color/gl_surface_dark</color>
+    <color name="colorInputBorder">@color/gl_outline_dark</color>
 </resources>

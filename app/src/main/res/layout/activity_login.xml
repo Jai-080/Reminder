@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:fillViewport="true"
@@ -12,76 +13,116 @@
         android:padding="24dp"
         android:gravity="center">
 
+        <!-- Lime Brand Icon -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="64dp"
+            android:layout_height="64dp"
+            style="?attr/materialCardViewFilledStyle"
+            app:cardCornerRadius="20dp"
+            app:cardBackgroundColor="@color/gl_tertiary"
+            app:cardElevation="0dp"
+            app:strokeWidth="0dp"
+            android:layout_marginBottom="16dp">
+
+            <ImageView
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:layout_gravity="center"
+                android:src="@drawable/ic_ms_check_circle"
+                app:tint="@color/gl_graphite"
+                android:contentDescription="Brand logo" />
+        </com.google.android.material.card.MaterialCardView>
+
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Reminder App"
+            android:text="Reminder"
             android:textSize="28sp"
             android:textColor="?android:attr/textColorPrimary"
             android:textStyle="bold"
-            android:layout_marginBottom="8dp" />
+            android:layout_marginBottom="6dp" />
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Sign in to synchronize reminders"
+            android:text="Sign in to sync your productivity suite"
             android:textSize="14sp"
-            android:textColor="@color/colorTextMuted"
+            android:textColor="?android:attr/textColorSecondary"
             android:layout_marginBottom="32dp" />
 
-        <EditText
-            android:id="@+id/emailInput"
+        <com.google.android.material.card.MaterialCardView
+            style="@style/Widget.Reminder.CardView"
             android:layout_width="match_parent"
-            android:layout_height="48dp"
-            android:hint="Email"
-            android:inputType="textEmailAddress"
-            android:background="@drawable/rounded_edittext"
-            android:paddingHorizontal="16dp"
-            android:textColor="?android:attr/textColorPrimary"
-            android:textColorHint="@color/colorHint"
-            android:layout_marginBottom="16dp" />
+            android:layout_height="wrap_content"
+            app:cardCornerRadius="20dp"
+            android:layout_marginBottom="24dp">
 
-        <EditText
-            android:id="@+id/passwordInput"
-            android:layout_width="match_parent"
-            android:layout_height="48dp"
-            android:hint="Password"
-            android:inputType="textPassword"
-            android:background="@drawable/rounded_edittext"
-            android:paddingHorizontal="16dp"
-            android:textColor="?android:attr/textColorPrimary"
-            android:textColorHint="@color/colorHint"
-            android:layout_marginBottom="16dp" />
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="20dp">
 
-        <Button
-            android:id="@+id/btnLogin"
-            android:layout_width="match_parent"
-            android:layout_height="48dp"
-            android:text="Login"
-            android:background="@drawable/rounded_primary_button"
-            android:textColor="@android:color/white"
-            android:textStyle="bold"
-            android:layout_marginBottom="16dp" />
+                <EditText
+                    android:id="@+id/emailInput"
+                    android:layout_width="match_parent"
+                    android:layout_height="50dp"
+                    android:hint="Email"
+                    android:inputType="textEmailAddress"
+                    android:background="@drawable/rounded_edittext"
+                    android:paddingHorizontal="16dp"
+                    android:textColor="?android:attr/textColorPrimary"
+                    android:textColorHint="@color/colorHint"
+                    android:textSize="14sp"
+                    android:layout_marginBottom="14dp"
+                    android:autofillHints="emailAddress" />
+
+                <EditText
+                    android:id="@+id/passwordInput"
+                    android:layout_width="match_parent"
+                    android:layout_height="50dp"
+                    android:hint="Password"
+                    android:inputType="textPassword"
+                    android:background="@drawable/rounded_edittext"
+                    android:paddingHorizontal="16dp"
+                    android:textColor="?android:attr/textColorPrimary"
+                    android:textColorHint="@color/colorHint"
+                    android:textSize="14sp"
+                    android:layout_marginBottom="20dp"
+                    android:autofillHints="password" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnLogin"
+                    style="@style/Widget.Reminder.Button.Primary"
+                    android:layout_width="match_parent"
+                    android:layout_height="50dp"
+                    android:text="Sign In"
+                    android:textSize="15sp"
+                    android:textStyle="bold" />
+
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
 
         <TextView
             android:id="@+id/btnGoToRegister"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Don't have an account? Register"
-            android:textColor="@color/accent_purple"
+            android:text="Don't have an account? Create one"
+            android:textColor="@color/gl_primary"
             android:textSize="14sp"
             android:textStyle="bold"
-            android:padding="8dp"
-            android:layout_marginBottom="24dp"
+            android:padding="12dp"
             android:clickable="true"
-            android:focusable="true" />
+            android:focusable="true"
+            android:background="?android:attr/selectableItemBackground" />
 
         <ProgressBar
             android:id="@+id/progressBar"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:visibility="gone"
-            android:layout_marginTop="8dp"/>
+            android:layout_marginTop="12dp"
+            android:indeterminateTint="@color/gl_primary" />
 
     </LinearLayout>
 </ScrollView>

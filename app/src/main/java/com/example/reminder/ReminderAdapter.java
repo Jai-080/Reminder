@@ -12,6 +12,7 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 import java.text.DateFormat;
 import java.util.ArrayList;
@@ -137,30 +138,48 @@ public class ReminderAdapter extends RecyclerView.Adapter<ReminderAdapter.ViewHo
         });
 
         holder.deleteButton.setOnClickListener(v -> {
-            if (!isExpiredList) {
-                AlarmUtils.cancelReminder(context, reminder.getId());
-            }
+            new MaterialAlertDialogBuilder(context)
+                    .setTitle("Delete Reminder")
+                    .setMessage("Are you sure you want to delete this reminder?")
+                    .setPositiveButton("Delete", (dialog, which) -> {
+                        int currentPos = holder.getAdapterPosition();
+                        if (currentPos == RecyclerView.NO_POSITION || currentPos >= reminders.size()) {
+                            currentPos = position;
+                            if (currentPos >= reminders.size()) {
+                                return;
+                            }
+                        }
 
-            // Sync deletion to server
-            SyncManager.getInstance(context).deleteReminder(reminder.getId(), reminder.getServerId(), new SyncManager.SyncCallback<Void>() {
-                @Override
-                public void onSuccess(Void result) {
-                    android.util.Log.d("ReminderAdapter", "Reminder deletion synced to server");
-                }
+                        Reminder toDelete = reminders.get(currentPos);
+                        if (!isExpiredList) {
+                            AlarmUtils.cancelReminder(context, toDelete.getId());
+                        }
 
-                @Override
-                public void onError(String error) {
-                    android.util.Log.e("ReminderAdapter", "Failed to sync reminder deletion: " + error);
-                }
-            });
+                        // Sync deletion to server
+                        SyncManager.getInstance(context).deleteReminder(toDelete.getId(), toDelete.getServerId(), new SyncManager.SyncCallback<Void>() {
+                            @Override
+                            public void onSuccess(Void result) {
+                                android.util.Log.d("ReminderAdapter", "Reminder deletion synced to server");
+                            }
 
-            reminders.remove(position);
-            notifyItemRemoved(position);
-            notifyItemRangeChanged(position, reminders.size());
+                            @Override
+                            public void onError(String error) {
+                                android.util.Log.e("ReminderAdapter", "Failed to sync reminder deletion: " + error);
+                            }
+                        });
 
-            if (deleteListener != null) {
-                deleteListener.onReminderDeleted();
-            }
+                        reminders.remove(currentPos);
+                        notifyItemRemoved(currentPos);
+                        notifyItemRangeChanged(currentPos, reminders.size());
+
+                        Toast.makeText(context, "Reminder deleted", Toast.LENGTH_SHORT).show();
+
+                        if (deleteListener != null) {
+                            deleteListener.onReminderDeleted();
+                        }
+                    })
+                    .setNegativeButton("Cancel", null)
+                    .show();
         });
     }
 

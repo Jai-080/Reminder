@@ -17,28 +17,24 @@
             android:layout_height="wrap_content"
             android:text="Payment Name"
             android:textSize="14sp"
-            android:textColor="@color/colorTextPrimary"
+            android:textColor="?android:attr/textColorPrimary"
             android:textStyle="bold"
             android:layout_marginBottom="8dp" />
 
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/dialogPaymentNameLayout"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            style="@style/Widget.Reminder.TextInputLayout"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="20dp"
-            app:boxCornerRadiusTopStart="12dp"
-            app:boxCornerRadiusTopEnd="12dp"
-            app:boxCornerRadiusBottomStart="12dp"
-            app:boxCornerRadiusBottomEnd="12dp"
-            app:boxStrokeColor="@color/accent_purple">
+            android:layout_marginBottom="16dp">
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/dialogPaymentNameInput"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint="e.g. Netflix"
-                android:inputType="text"
+                android:hint="e.g. Netflix, Rent, Internet"
+                android:textColor="?android:attr/textColorPrimary"
+                android:inputType="textCapWords"
                 android:maxLines="1" />
         </com.google.android.material.textfield.TextInputLayout>
 
@@ -47,27 +43,23 @@
             android:layout_height="wrap_content"
             android:text="Amount (Optional)"
             android:textSize="14sp"
-            android:textColor="@color/colorTextPrimary"
+            android:textColor="?android:attr/textColorPrimary"
             android:textStyle="bold"
             android:layout_marginBottom="8dp" />
 
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/dialogPaymentAmountLayout"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            style="@style/Widget.Reminder.TextInputLayout"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="20dp"
-            app:boxCornerRadiusTopStart="12dp"
-            app:boxCornerRadiusTopEnd="12dp"
-            app:boxCornerRadiusBottomStart="12dp"
-            app:boxCornerRadiusBottomEnd="12dp"
-            app:boxStrokeColor="@color/accent_purple">
+            android:layout_marginBottom="16dp">
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/dialogPaymentAmountInput"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:hint="e.g. 649"
+                android:textColor="?android:attr/textColorPrimary"
                 android:inputType="numberDecimal"
                 android:maxLines="1" />
         </com.google.android.material.textfield.TextInputLayout>
@@ -77,28 +69,27 @@
             android:layout_height="wrap_content"
             android:text="Due Date"
             android:textSize="14sp"
-            android:textColor="@color/colorTextPrimary"
+            android:textColor="?android:attr/textColorPrimary"
             android:textStyle="bold"
             android:layout_marginBottom="8dp" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/dialogDateButton"
-            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+            style="@style/Widget.Reminder.Button.Outlined"
             android:layout_width="match_parent"
             android:layout_height="50dp"
             android:text="Select Date"
             android:textSize="14sp"
-            android:layout_marginBottom="20dp"
-            app:strokeColor="@color/accent_purple"
-            app:cornerRadius="12dp"
-            android:textColor="@color/colorTextPrimary"/>
+            app:icon="@drawable/ic_ms_calendar"
+            app:iconTint="@color/gl_primary"
+            android:layout_marginBottom="16dp" />
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Recurrence"
             android:textSize="14sp"
-            android:textColor="@color/colorTextPrimary"
+            android:textColor="?android:attr/textColorPrimary"
             android:textStyle="bold"
             android:layout_marginBottom="8dp" />
 
@@ -106,7 +97,7 @@
             android:id="@+id/dialogRecurrenceSpinner"
             android:layout_width="match_parent"
             android:layout_height="48dp"
-            android:layout_marginBottom="20dp"
+            android:layout_marginBottom="16dp"
             android:background="@drawable/rounded_edittext"
             android:spinnerMode="dropdown" />
 
@@ -116,28 +107,23 @@
             android:layout_height="wrap_content"
             android:orientation="vertical"
             android:visibility="gone"
-            android:layout_marginBottom="20dp">
+            android:layout_marginBottom="16dp">
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Repeat every (days)"
                 android:textSize="14sp"
-                android:textColor="@color/colorTextPrimary"
+                android:textColor="?android:attr/textColorPrimary"
                 android:textStyle="bold"
                 android:layout_marginBottom="8dp" />
 
             <com.google.android.material.textfield.TextInputLayout
                 android:id="@+id/dialogCustomDaysLayout"
-                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                style="@style/Widget.Reminder.TextInputLayout"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                app:boxCornerRadiusTopStart="12dp"
-                app:boxCornerRadiusTopEnd="12dp"
-                app:boxCornerRadiusBottomStart="12dp"
-                app:boxCornerRadiusBottomEnd="12dp"
-                app:suffixText="days"
-                app:boxStrokeColor="@color/accent_purple">
+                app:suffixText="days">
 
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/dialogCustomDaysInput"
@@ -145,6 +131,7 @@
                     android:layout_height="wrap_content"
                     android:hint="e.g. 28"
                     android:text="28"
+                    android:textColor="?android:attr/textColorPrimary"
                     android:inputType="number"
                     android:maxLines="1" />
             </com.google.android.material.textfield.TextInputLayout>

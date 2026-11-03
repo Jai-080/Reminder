@@ -29,6 +29,7 @@ public class ReminderApplication extends Application {
     @Override
     public void onCreate() {
         super.onCreate();
+        com.example.reminder.utils.ThemeManager.init(this);
         registerConnectivityMonitor();
 
         // Phase 13: Startup Sync and schedule Periodic Sync
