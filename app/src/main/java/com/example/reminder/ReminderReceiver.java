@@ -38,7 +38,7 @@ public class ReminderReceiver extends BroadcastReceiver {
             }
 
             if (isPayment) {
-                // ✅ Monthly payment notification (permanent)
+                // Monthly payment notification (permanent)
                 AlarmUtils.showMonthlyPaymentNotification(context, reminderId, title);
             } else {
                 // 1️⃣ Update reminder status to expired
@@ -51,16 +51,42 @@ public class ReminderReceiver extends BroadcastReceiver {
                 updateIntent.putExtra("reminder_id", reminderId);
                 context.sendBroadcast(updateIntent);
 
-                // 3️⃣ Intent to open snooze activity
-                Intent snoozeIntent = new Intent(context, SnoozeOptionsActivity.class);
-                snoozeIntent.putExtra("reminder_id", reminderId);
-                snoozeIntent.putExtra("reminder_text", title);
-                snoozeIntent.putExtra("reminder_time", time);
+                // 3️⃣ In-notification reschedule options: broadcast to SnoozeReceiver (no app opening!)
+                Intent showOptionsIntent = new Intent(context, SnoozeReceiver.class);
+                showOptionsIntent.setAction(SnoozeReceiver.ACTION_SHOW_OPTIONS);
+                showOptionsIntent.putExtra(SnoozeReceiver.EXTRA_REMINDER_ID, reminderId);
+                showOptionsIntent.putExtra(SnoozeReceiver.EXTRA_REMINDER_TEXT, title);
 
-                PendingIntent snoozePendingIntent = PendingIntent.getActivity(
+                PendingIntent snoozePendingIntent = PendingIntent.getBroadcast(
                         context,
                         reminderId,
-                        snoozeIntent,
+                        showOptionsIntent,
+                        PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+                );
+
+                // Quick 10m snooze option directly on the first notification
+                Intent quick10Intent = new Intent(context, SnoozeReceiver.class);
+                quick10Intent.setAction(SnoozeReceiver.ACTION_RESCHEDULE);
+                quick10Intent.putExtra(SnoozeReceiver.EXTRA_REMINDER_ID, reminderId);
+                quick10Intent.putExtra(SnoozeReceiver.EXTRA_REMINDER_TEXT, title);
+                quick10Intent.putExtra(SnoozeReceiver.EXTRA_MINUTES, 10);
+
+                PendingIntent quick10PendingIntent = PendingIntent.getBroadcast(
+                        context,
+                        reminderId + 20000,
+                        quick10Intent,
+                        PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+                );
+
+                // Dismiss action directly in notification
+                Intent dismissIntent = new Intent(context, SnoozeReceiver.class);
+                dismissIntent.setAction(SnoozeReceiver.ACTION_DISMISS);
+                dismissIntent.putExtra(SnoozeReceiver.EXTRA_REMINDER_ID, reminderId);
+
+                PendingIntent dismissPendingIntent = PendingIntent.getBroadcast(
+                        context,
+                        reminderId + 30000,
+                        dismissIntent,
                         PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
                 );
 
@@ -91,7 +117,10 @@ public class ReminderReceiver extends BroadcastReceiver {
                         .setContentIntent(activityPendingIntent)
                         .setAutoCancel(true)
                         .setPriority(NotificationCompat.PRIORITY_HIGH)
-                        .addAction(android.R.drawable.ic_menu_recent_history, "Reschedule", snoozePendingIntent);
+                        .addAction(android.R.drawable.ic_menu_recent_history, "Reschedule", snoozePendingIntent)
+                        .addAction(0, "+10m", quick10PendingIntent)
+                        .addAction(0, "Dismiss", dismissPendingIntent);
+
                 android.util.Log.d("ReminderReceiver", "Notification built for reminder id=" + reminderId);
 
                 // 7️⃣ Show notification

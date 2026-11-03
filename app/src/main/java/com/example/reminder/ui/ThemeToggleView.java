@@ -9,7 +9,6 @@ import android.graphics.Paint;
 import android.graphics.RectF;
 import android.text.TextPaint;
 import android.util.AttributeSet;
-import android.util.TypedValue;
 import android.view.View;
 import android.view.animation.Interpolator;
 import androidx.annotation.Nullable;
@@ -19,8 +18,8 @@ import com.example.reminder.utils.ThemeManager;
 
 /**
  * Custom compact horizontal pill-shaped sliding theme toggle.
- * Light mode: White pill, thin outline, white circular thumb on LEFT, ☀️ on RIGHT.
- * Dark mode: Dark graphite pill (#252C24), white circular thumb on RIGHT, 🌙 on LEFT.
+ * Light mode: White pill, thin outline, white circular thumb on LEFT with crisp outline & shadow, ☀️ on RIGHT.
+ * Dark mode: Dark graphite pill (#1C1E1C), white circular thumb on RIGHT, 🌙 on LEFT.
  */
 public class ThemeToggleView extends View implements ThemeManager.ThemeChangeListener {
 
@@ -42,12 +41,12 @@ public class ThemeToggleView extends View implements ThemeManager.ThemeChangeLis
     private long lastClickTime = 0;
 
     // Palette Colors
-    private final int lightBgColor = 0xFFFFFFFF;
-    private final int darkBgColor = 0xFF1C1E1C;
+    private final int lightBgColor = 0xFFF2F5EA; // Subtle surface container contrast
+    private final int darkBgColor = 0xFF1C1E1C;  // Neutral charcoal graphite for dark mode
     private final int lightBorderColor = 0xFF191D19;
     private final int darkBorderColor = 0x00000000;
     private final int thumbColor = 0xFFFFFFFF;
-    private final int thumbShadowColor = 0x22000000;
+    private final int thumbShadowColor = 0x38000000; // Crisp drop shadow for depth
 
     private float density;
 
@@ -90,7 +89,7 @@ public class ThemeToggleView extends View implements ThemeManager.ThemeChangeLis
 
         setOnClickListener(v -> {
             long now = System.currentTimeMillis();
-            if (now - lastClickTime < 350) return;
+            if (now - lastClickTime < 700) return;
             lastClickTime = now;
 
             animateToState(!ThemeManager.isDarkActive(getContext()), true);
@@ -120,7 +119,15 @@ public class ThemeToggleView extends View implements ThemeManager.ThemeChangeLis
 
     public void syncState(boolean animate) {
         boolean isDark = ThemeManager.isDarkActive(getContext());
-        animateToState(isDark, false);
+        if (animate) {
+            animateToState(isDark, false);
+        } else {
+            if (animator != null && animator.isRunning()) {
+                animator.cancel();
+            }
+            progress = isDark ? 1f : 0f;
+            invalidate();
+        }
     }
 
     private void animateToState(boolean targetDark, boolean triggerThemeChange) {
@@ -130,7 +137,7 @@ public class ThemeToggleView extends View implements ThemeManager.ThemeChangeLis
         }
 
         animator = ValueAnimator.ofFloat(progress, target);
-        animator.setDuration(260);
+        animator.setDuration(320); // Smooth 320ms thumb translation
         animator.setInterpolator(interpolator);
         animator.addUpdateListener(animation -> {
             progress = (float) animation.getAnimatedValue();
@@ -217,9 +224,14 @@ public class ThemeToggleView extends View implements ThemeManager.ThemeChangeLis
         }
 
         // 5. Draw Circular Thumb
-        // Draw subtle shadow
-        canvas.drawCircle(thumbX, centerY + (0.8f * density), thumbRadius, thumbShadowPaint);
-        // Draw thumb circle
+        // Draw drop shadow
+        canvas.drawCircle(thumbX, centerY + (1.2f * density), thumbRadius + (0.4f * density), thumbShadowPaint);
+        // Draw thumb fill
         canvas.drawCircle(thumbX, centerY, thumbRadius, thumbPaint);
+        // Draw thumb outline in light mode (matching pill outline, cleanly visible in light mode, fades out in dark mode)
+        if (Color.alpha(currentBorder) > 0) {
+            borderPaint.setColor(currentBorder);
+            canvas.drawCircle(thumbX, centerY, thumbRadius, borderPaint);
+        }
     }
 }
