@@ -1,7 +1,6 @@
 package com.example.reminder;
 
 import android.app.AlarmManager;
-import android.app.DatePickerDialog;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
@@ -60,28 +59,18 @@ public class SnoozeOptionsActivity extends AppCompatActivity {
         btn30Min.setOnClickListener(v -> rescheduleReminder(30));
         btn1Hour.setOnClickListener(v -> rescheduleReminder(60));
         btnCustom.setOnClickListener(v -> showCustomRescheduleDialog());
-
-        // If launched directly from the notification's "Custom Date & Time" button
-        if (intent.getBooleanExtra("auto_open_picker", false)) {
-            NotificationManager nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-            if (nm != null) {
-                nm.cancel(reminderId);
-            }
-            showCustomRescheduleDialog();
-        }
     }
 
     private void rescheduleReminder(int minutes) {
         long targetTimeMillis = Calendar.getInstance().getTimeInMillis() + minutes * 60 * 1000L;
-        performReschedule(targetTimeMillis, "Rescheduled for " + (minutes >= 60 ? (minutes / 60) + " hr" : minutes + " min"));
+        performReschedule(targetTimeMillis, "Rescheduled for " + minutes + " min");
     }
 
     private void showCustomRescheduleDialog() {
         Calendar now = Calendar.getInstance();
         final Calendar selectedDateTime = Calendar.getInstance();
-        boolean fromNotification = getIntent().getBooleanExtra("auto_open_picker", false);
 
-        DatePickerDialog datePickerDialog = new DatePickerDialog(this, (view, year, month, dayOfMonth) -> {
+        new android.app.DatePickerDialog(this, (view, year, month, dayOfMonth) -> {
             selectedDateTime.set(Calendar.YEAR, year);
             selectedDateTime.set(Calendar.MONTH, month);
             selectedDateTime.set(Calendar.DAY_OF_MONTH, dayOfMonth);
@@ -89,7 +78,7 @@ public class SnoozeOptionsActivity extends AppCompatActivity {
             int hour = now.get(Calendar.HOUR_OF_DAY);
             int minute = now.get(Calendar.MINUTE);
 
-            CustomTimePickerDialog timePickerDialog = new CustomTimePickerDialog(this, R.style.TimePickerTheme, (timeView, h, m) -> {
+            new CustomTimePickerDialog(this, R.style.TimePickerTheme, (timeView, h, m) -> {
                 selectedDateTime.set(Calendar.HOUR_OF_DAY, h);
                 selectedDateTime.set(Calendar.MINUTE, m);
                 selectedDateTime.set(Calendar.SECOND, 0);
@@ -98,26 +87,13 @@ public class SnoozeOptionsActivity extends AppCompatActivity {
                 long triggerTime = selectedDateTime.getTimeInMillis();
                 if (triggerTime <= System.currentTimeMillis()) {
                     Toast.makeText(this, "Please choose a future time", Toast.LENGTH_SHORT).show();
-                    if (fromNotification) {
-                        finish();
-                    }
                     return;
                 }
 
                 performReschedule(triggerTime, "Rescheduled successfully");
-            }, hour, minute, true);
+            }, hour, minute, true).show();
 
-            if (fromNotification) {
-                timePickerDialog.setOnCancelListener(dialog -> finish());
-            }
-            timePickerDialog.show();
-
-        }, now.get(Calendar.YEAR), now.get(Calendar.MONTH), now.get(Calendar.DAY_OF_MONTH));
-
-        if (fromNotification) {
-            datePickerDialog.setOnCancelListener(dialog -> finish());
-        }
-        datePickerDialog.show();
+        }, now.get(Calendar.YEAR), now.get(Calendar.MONTH), now.get(Calendar.DAY_OF_MONTH)).show();
     }
 
     private void performReschedule(long targetTimeMillis, String successMessage) {

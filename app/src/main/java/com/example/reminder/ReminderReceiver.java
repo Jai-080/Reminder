@@ -6,7 +6,6 @@ import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-import android.widget.RemoteViews;
 
 import androidx.core.app.NotificationCompat;
 
@@ -39,7 +38,7 @@ public class ReminderReceiver extends BroadcastReceiver {
             }
 
             if (isPayment) {
-                // Monthly payment notification (permanent)
+                // ✅ Monthly payment notification (permanent)
                 AlarmUtils.showMonthlyPaymentNotification(context, reminderId, title);
             } else {
                 // 1️⃣ Update reminder status to expired
@@ -52,28 +51,16 @@ public class ReminderReceiver extends BroadcastReceiver {
                 updateIntent.putExtra("reminder_id", reminderId);
                 context.sendBroadcast(updateIntent);
 
-                // 3️⃣ In-notification reschedule options: broadcast to SnoozeReceiver (no app opening!)
-                Intent showOptionsIntent = new Intent(context, SnoozeReceiver.class);
-                showOptionsIntent.setAction(SnoozeReceiver.ACTION_SHOW_OPTIONS);
-                showOptionsIntent.putExtra(SnoozeReceiver.EXTRA_REMINDER_ID, reminderId);
-                showOptionsIntent.putExtra(SnoozeReceiver.EXTRA_REMINDER_TEXT, title);
+                // 3️⃣ Intent to open snooze activity
+                Intent snoozeIntent = new Intent(context, SnoozeOptionsActivity.class);
+                snoozeIntent.putExtra("reminder_id", reminderId);
+                snoozeIntent.putExtra("reminder_text", title);
+                snoozeIntent.putExtra("reminder_time", time);
 
-                PendingIntent snoozePendingIntent = PendingIntent.getBroadcast(
+                PendingIntent snoozePendingIntent = PendingIntent.getActivity(
                         context,
                         reminderId,
-                        showOptionsIntent,
-                        PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
-                );
-
-                // Dismiss action directly in notification
-                Intent dismissIntent = new Intent(context, SnoozeReceiver.class);
-                dismissIntent.setAction(SnoozeReceiver.ACTION_DISMISS);
-                dismissIntent.putExtra(SnoozeReceiver.EXTRA_REMINDER_ID, reminderId);
-
-                PendingIntent dismissPendingIntent = PendingIntent.getBroadcast(
-                        context,
-                        reminderId + 30000,
-                        dismissIntent,
+                        snoozeIntent,
                         PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
                 );
 
@@ -97,22 +84,14 @@ public class ReminderReceiver extends BroadcastReceiver {
                 );
                 notificationManager.createNotificationChannel(channel);
 
-                // Pre-build the big box expanded layout so swiping down or pressing Reschedule reveals all options
-                RemoteViews expandedView = SnoozeReceiver.buildExpandedRemoteViews(context, reminderId, title);
-
                 NotificationCompat.Builder builder = new NotificationCompat.Builder(context, channelId)
                         .setSmallIcon(android.R.drawable.ic_popup_reminder)
                         .setContentTitle("Reminder: " + title)
-                        .setContentText(time != null ? "Scheduled for " + time : "Reminder due")
+                        .setContentText(time != null ? "Scheduled for " + time : "")
                         .setContentIntent(activityPendingIntent)
                         .setAutoCancel(true)
                         .setPriority(NotificationCompat.PRIORITY_HIGH)
-                        .setOnlyAlertOnce(true)
-                        .setStyle(new NotificationCompat.DecoratedCustomViewStyle())
-                        .setCustomBigContentView(expandedView)
-                        .addAction(android.R.drawable.ic_menu_recent_history, "Reschedule", snoozePendingIntent)
-                        .addAction(0, "Dismiss", dismissPendingIntent);
-
+                        .addAction(android.R.drawable.ic_menu_recent_history, "Reschedule", snoozePendingIntent);
                 android.util.Log.d("ReminderReceiver", "Notification built for reminder id=" + reminderId);
 
                 // 7️⃣ Show notification
