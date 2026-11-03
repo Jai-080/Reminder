@@ -285,6 +285,8 @@ public class MainActivity extends AppCompatActivity {
         itemTouchHelper.attachToRecyclerView(quickNotesRecycler);
 
         addNoteButton.setOnClickListener(v -> {
+            addNoteButton.setEnabled(false);
+            addNoteButton.postDelayed(() -> addNoteButton.setEnabled(true), 400);
             String noteText = quickNoteInput.getText().toString().trim();
             if (!TextUtils.isEmpty(noteText)) {
                 long id = noteDbHelper.addNote(noteText);

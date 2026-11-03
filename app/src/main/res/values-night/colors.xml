@@ -11,8 +11,8 @@
     <color name="colorSurfaceVariant">@color/dark_surface_variant</color>
     <color name="colorAccent">@color/dark_primary</color>
     <color name="colorReschedule">@color/dark_reschedule</color>
-    <color name="colorButtonGradientStart">@color/dark_button_gradient_start</color>
-    <color name="colorButtonGradientEnd">@color/dark_button_gradient_end</color>
+    <color name="colorButtonGradientStart">@color/colorAccent</color>
+    <color name="colorButtonGradientEnd">@color/colorAccent</color>
     <color name="colorInputBackground">@color/dark_input_bg</color>
     <color name="colorInputBorder">@color/dark_input_border</color>
 </resources>

@@ -13,6 +13,8 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
+import android.view.WindowManager;
+import android.widget.ScrollView;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -127,6 +129,7 @@ public class MonthlyPaymentsActivity extends AppCompatActivity {
         final View customDaysContainer = dialogView.findViewById(R.id.dialogCustomDaysContainer);
         final com.google.android.material.textfield.TextInputEditText customDaysInput = dialogView.findViewById(R.id.dialogCustomDaysInput);
         
+        final ScrollView dialogScrollView = dialogView.findViewById(R.id.dialogPaymentScrollView);
         final android.widget.Spinner recurrenceSpinner = dialogView.findViewById(R.id.dialogRecurrenceSpinner);
         android.widget.ArrayAdapter<String> spinnerAdapter = new android.widget.ArrayAdapter<>(
                 this,
@@ -143,6 +146,15 @@ public class MonthlyPaymentsActivity extends AppCompatActivity {
             public void onItemSelected(android.widget.AdapterView<?> parent, View view, int position, long id) {
                 if (position == 6) {
                     customDaysContainer.setVisibility(View.VISIBLE);
+                    if (dialogScrollView != null) {
+                        dialogScrollView.post(() -> {
+                            dialogScrollView.fullScroll(View.FOCUS_DOWN);
+                            customDaysInput.requestFocus();
+                            if (customDaysInput.getText() != null) {
+                                customDaysInput.setSelection(customDaysInput.getText().length());
+                            }
+                        });
+                    }
                 } else {
                     customDaysContainer.setVisibility(View.GONE);
                 }
@@ -182,12 +194,20 @@ public class MonthlyPaymentsActivity extends AppCompatActivity {
         builder.setNegativeButton("Cancel", null);
 
         androidx.appcompat.app.AlertDialog dialog = builder.create();
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
+        }
         dialog.show();
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
+        }
 
         dialog.getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
+            v.setEnabled(false);
             String name = nameInput.getText().toString().trim();
             if (name.isEmpty()) {
                 Toast.makeText(this, "Please enter a payment name", Toast.LENGTH_SHORT).show();
+                v.setEnabled(true);
                 return;
             }
 
@@ -198,6 +218,7 @@ public class MonthlyPaymentsActivity extends AppCompatActivity {
                     amount = Double.parseDouble(amountStr);
                 } catch (NumberFormatException e) {
                     Toast.makeText(this, "Invalid amount", Toast.LENGTH_SHORT).show();
+                    v.setEnabled(true);
                     return;
                 }
             }
@@ -223,16 +244,19 @@ public class MonthlyPaymentsActivity extends AppCompatActivity {
                 String customStr = customDaysInput.getText() != null ? customDaysInput.getText().toString().trim() : "";
                 if (customStr.isEmpty()) {
                     Toast.makeText(this, "Please enter recurrence interval in days", Toast.LENGTH_SHORT).show();
+                    v.setEnabled(true);
                     return;
                 }
                 try {
                     customIntervalDays = Integer.parseInt(customStr);
                     if (customIntervalDays < 1 || customIntervalDays > 365) {
                         Toast.makeText(this, "Interval must be between 1 and 365 days", Toast.LENGTH_SHORT).show();
+                        v.setEnabled(true);
                         return;
                     }
                 } catch (NumberFormatException e) {
                     Toast.makeText(this, "Interval must be a whole number between 1 and 365", Toast.LENGTH_SHORT).show();
+                    v.setEnabled(true);
                     return;
                 }
             }
@@ -353,11 +377,21 @@ public class MonthlyPaymentsActivity extends AppCompatActivity {
         recurrenceSpinner.setSelection(selectionPos);
         customDaysContainer.setVisibility(selectionPos == 6 ? View.VISIBLE : View.GONE);
 
+        final ScrollView dialogScrollView = dialogView.findViewById(R.id.dialogPaymentScrollView);
         recurrenceSpinner.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(android.widget.AdapterView<?> parent, View view, int position, long id) {
                 if (position == 6) {
                     customDaysContainer.setVisibility(View.VISIBLE);
+                    if (dialogScrollView != null) {
+                        dialogScrollView.post(() -> {
+                            dialogScrollView.fullScroll(View.FOCUS_DOWN);
+                            customDaysInput.requestFocus();
+                            if (customDaysInput.getText() != null) {
+                                customDaysInput.setSelection(customDaysInput.getText().length());
+                            }
+                        });
+                    }
                 } else {
                     customDaysContainer.setVisibility(View.GONE);
                 }
@@ -393,12 +427,20 @@ public class MonthlyPaymentsActivity extends AppCompatActivity {
         builder.setNegativeButton("Cancel", null);
 
         androidx.appcompat.app.AlertDialog dialog = builder.create();
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
+        }
         dialog.show();
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
+        }
 
         dialog.getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
+            v.setEnabled(false);
             String name = nameInput.getText().toString().trim();
             if (name.isEmpty()) {
                 Toast.makeText(this, "Please enter a payment name", Toast.LENGTH_SHORT).show();
+                v.setEnabled(true);
                 return;
             }
 
@@ -409,6 +451,7 @@ public class MonthlyPaymentsActivity extends AppCompatActivity {
                     amount = Double.parseDouble(amountStr);
                 } catch (NumberFormatException e) {
                     Toast.makeText(this, "Invalid amount", Toast.LENGTH_SHORT).show();
+                    v.setEnabled(true);
                     return;
                 }
             }
@@ -434,16 +477,19 @@ public class MonthlyPaymentsActivity extends AppCompatActivity {
                 String customStr = customDaysInput.getText() != null ? customDaysInput.getText().toString().trim() : "";
                 if (customStr.isEmpty()) {
                     Toast.makeText(this, "Please enter recurrence interval in days", Toast.LENGTH_SHORT).show();
+                    v.setEnabled(true);
                     return;
                 }
                 try {
                     customIntervalDays = Integer.parseInt(customStr);
                     if (customIntervalDays < 1 || customIntervalDays > 365) {
                         Toast.makeText(this, "Interval must be between 1 and 365 days", Toast.LENGTH_SHORT).show();
+                        v.setEnabled(true);
                         return;
                     }
                 } catch (NumberFormatException e) {
                     Toast.makeText(this, "Interval must be a whole number between 1 and 365", Toast.LENGTH_SHORT).show();
+                    v.setEnabled(true);
                     return;
                 }
             }

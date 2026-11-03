@@ -109,6 +109,8 @@ public class TimedRemindersActivity extends AppCompatActivity {
         });
 
         btnSetReminderFull.setOnClickListener(v -> {
+            v.setEnabled(false);
+            v.postDelayed(() -> v.setEnabled(true), 500);
             hideKeyboard();
             String reminderText = editTextReminder.getText().toString().trim();
 

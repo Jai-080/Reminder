@@ -16,7 +16,7 @@
         android:orientation="horizontal"
         android:gravity="center_vertical"
         android:paddingHorizontal="14dp"
-        android:paddingVertical="12dp">
+        android:paddingVertical="6dp">
 
         <!-- Text block -->
         <LinearLayout
@@ -49,38 +49,38 @@
             android:layout_height="wrap_content"
             android:text="Expired"
             android:textColor="#FFFFFF"
-            android:textSize="10sp"
+            android:textSize="12sp"
             android:textStyle="bold"
             android:background="@drawable/rounded_secondary_button"
             android:paddingHorizontal="8dp"
             android:paddingVertical="3dp"
-            android:layout_marginEnd="10dp"
+            android:layout_marginEnd="6dp"
             android:visibility="visible"
             app:backgroundTint="@color/colorExpired" />
 
         <!-- Reschedule button -->
         <ImageView
             android:id="@+id/rescheduleButton"
-            android:layout_width="32dp"
-            android:layout_height="32dp"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
             android:background="?attr/selectableItemBackgroundBorderless"
-            android:padding="4dp"
+            android:padding="12dp"
             android:contentDescription="Reschedule Reminder"
             android:src="@android:drawable/ic_menu_my_calendar"
             android:scaleType="centerInside"
             app:tint="@color/colorReschedule"
             android:clickable="true"
             android:focusable="true"
-            android:layout_marginEnd="8dp"
+            android:layout_marginEnd="4dp"
             android:visibility="gone"/>
 
         <!-- Delete button -->
         <ImageView
             android:id="@+id/deleteButton"
-            android:layout_width="32dp"
-            android:layout_height="32dp"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
             android:background="?attr/selectableItemBackgroundBorderless"
-            android:padding="4dp"
+            android:padding="12dp"
             android:contentDescription="Delete Reminder"
             android:src="@android:drawable/ic_menu_delete"
             android:scaleType="centerInside"
