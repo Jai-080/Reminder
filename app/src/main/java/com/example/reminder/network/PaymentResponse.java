@@ -11,6 +11,8 @@ public class PaymentResponse {
     private String createdAt;
     private String updatedAt;
     private Long lastPaidAt;
+    private Integer originalDueDay;
+    private Integer customIntervalDays;
 
     public Long getId() { return id; }
     public String getName() { return name; }
@@ -23,4 +25,8 @@ public class PaymentResponse {
     public String getUpdatedAt() { return updatedAt; }
     public Long getLastPaidAt() { return lastPaidAt; }
     public void setLastPaidAt(Long lastPaidAt) { this.lastPaidAt = lastPaidAt; }
+    public Integer getOriginalDueDay() { return originalDueDay; }
+    public void setOriginalDueDay(Integer originalDueDay) { this.originalDueDay = originalDueDay; }
+    public Integer getCustomIntervalDays() { return customIntervalDays; }
+    public void setCustomIntervalDays(Integer customIntervalDays) { this.customIntervalDays = customIntervalDays; }
 }

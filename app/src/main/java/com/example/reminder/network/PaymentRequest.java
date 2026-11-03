@@ -9,6 +9,8 @@ public class PaymentRequest {
     private String recurrence;
     private String notificationOffsets;
     private Long lastPaidAt;
+    private Integer originalDueDay;
+    private Integer customIntervalDays;
 
     public PaymentRequest(String name, Long dueDate, Boolean completed) {
         this.name = name;
@@ -68,4 +70,8 @@ public class PaymentRequest {
     public String getNotificationOffsets() { return notificationOffsets; }
     public Long getLastPaidAt() { return lastPaidAt; }
     public void setLastPaidAt(Long lastPaidAt) { this.lastPaidAt = lastPaidAt; }
+    public Integer getOriginalDueDay() { return originalDueDay; }
+    public void setOriginalDueDay(Integer originalDueDay) { this.originalDueDay = originalDueDay; }
+    public Integer getCustomIntervalDays() { return customIntervalDays; }
+    public void setCustomIntervalDays(Integer customIntervalDays) { this.customIntervalDays = customIntervalDays; }
 }

@@ -1,6 +1,8 @@
 *.iml
 .gradle
 /local.properties
+/keystore.properties
+keystore.properties
 .idea/
 .DS_Store
 /build
@@ -8,6 +10,8 @@
 .externalNativeBuild
 .cxx
 local.properties
+/keystore.properties
+keystore.properties
 
 # QA & Phase Reports and Reviews
 /ANDROID_COMPREHENSIVE_TESTING_REPORT.md

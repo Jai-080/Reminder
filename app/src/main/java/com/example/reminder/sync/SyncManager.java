@@ -166,7 +166,7 @@ public class SyncManager {
                         RecurrenceType rec = RecurrenceType.MONTHLY;
                         if (recStr != null) {
                             try {
-                                rec = RecurrenceType.valueOf(recStr.toUpperCase());
+                                rec = RecurrenceType.fromString(recStr);
                             } catch (IllegalArgumentException ignored) {}
                         }
                         String offsets = payment.getNotificationOffsets() != null ? payment.getNotificationOffsets() : "0";
@@ -180,13 +180,17 @@ public class SyncManager {
                                 amt,
                                 rec,
                                 offsets,
-                                payment.getLastPaidAt()
+                                payment.getLastPaidAt(),
+                                payment.getOriginalDueDay(),
+                                payment.getCustomIntervalDays()
                         );
                         Long lpa = payment.getLastPaidAt();
                         boolean isRecentlyPaid = false;
                         if (lpa != null) {
                             if (rec == RecurrenceType.ONE_TIME) {
                                 isRecentlyPaid = true;
+                            } else if (rec == RecurrenceType.CUSTOM_DAYS) {
+                                isRecentlyPaid = payment.getDueDate() > System.currentTimeMillis();
                             } else {
                                 java.util.Calendar calPaid = java.util.Calendar.getInstance();
                                 calPaid.setTimeInMillis(lpa);
@@ -277,7 +281,11 @@ public class SyncManager {
                             noteDb.updateSyncStatus(localId, resolvedServerId, "SYNCED");
                             if (callback != null) callback.onSuccess(resolvedServerId);
                         } else {
-                            noteDb.updateSyncStatus(localId, resolvedServerId, "FAILED");
+                            if (isPermanentError(response.code())) {
+                                noteDb.updateSyncStatus(localId, resolvedServerId, "FAILED_PERMANENT");
+                            } else {
+                                noteDb.updateSyncStatus(localId, resolvedServerId, "FAILED");
+                            }
                             if (callback != null) callback.onError("Server update failed: HTTP " + response.code());
                         }
                     }
@@ -300,7 +308,11 @@ public class SyncManager {
                             noteDb.updateSyncStatus(localId, newServerId, "SYNCED");
                             if (callback != null) callback.onSuccess(newServerId);
                         } else {
-                            noteDb.updateSyncStatus(localId, null, "FAILED");
+                            if (isPermanentError(response.code())) {
+                                noteDb.updateSyncStatus(localId, null, "FAILED_PERMANENT");
+                            } else {
+                                noteDb.updateSyncStatus(localId, null, "FAILED");
+                            }
                             if (callback != null) callback.onError("Server upload failed: HTTP " + response.code());
                         }
                     }
@@ -396,7 +408,11 @@ public class SyncManager {
                             reminderDb.updateSyncStatus(localId, resolvedServerId, "SYNCED");
                             if (callback != null) callback.onSuccess(resolvedServerId);
                         } else {
-                            reminderDb.updateSyncStatus(localId, resolvedServerId, "FAILED");
+                            if (isPermanentError(response.code())) {
+                                reminderDb.updateSyncStatus(localId, resolvedServerId, "FAILED_PERMANENT");
+                            } else {
+                                reminderDb.updateSyncStatus(localId, resolvedServerId, "FAILED");
+                            }
                             if (callback != null) callback.onError("Server update failed: HTTP " + response.code());
                         }
                     }
@@ -419,7 +435,11 @@ public class SyncManager {
                             reminderDb.updateSyncStatus(localId, newServerId, "SYNCED");
                             if (callback != null) callback.onSuccess(newServerId);
                         } else {
-                            reminderDb.updateSyncStatus(localId, null, "FAILED");
+                            if (isPermanentError(response.code())) {
+                                reminderDb.updateSyncStatus(localId, null, "FAILED_PERMANENT");
+                            } else {
+                                reminderDb.updateSyncStatus(localId, null, "FAILED");
+                            }
                             if (callback != null) callback.onError("Server upload failed: HTTP " + response.code());
                         }
                     }
@@ -498,7 +518,7 @@ public class SyncManager {
 
     public void uploadPayment(MonthlyPayment payment, SyncCallback<Long> callback) {
         int localId = payment.getId();
-        if ((payment.getRecurrence() != null && payment.getRecurrence().isLocalOnly()) || "LOCAL_ONLY".equals(payment.getSyncStatus())) {
+        if (payment.getRecurrence() != null && payment.getRecurrence().isLocalOnly()) {
             Log.w(TAG, "Skipping server upload for payment '" + payment.getName() + "': RecurrenceType." + payment.getRecurrence() + " is stored LOCAL_ONLY.");
             paymentDb.updateSyncStatus(localId, null, "LOCAL_ONLY");
             if (callback != null) callback.onSuccess(null);
@@ -547,6 +567,10 @@ public class SyncManager {
                     payment.getNotificationOffsets() != null ? payment.getNotificationOffsets() : "0"
             );
             request.setLastPaidAt(payment.getLastPaidAt());
+            request.setOriginalDueDay(payment.getOriginalDueDay());
+            if (payment.getRecurrence() == RecurrenceType.CUSTOM_DAYS) {
+                request.setCustomIntervalDays(payment.getCustomIntervalDays() > 0 ? payment.getCustomIntervalDays() : 28);
+            }
 
             if (resolvedServerId != null && resolvedServerId > 0) {
                 // Update (PUT)
@@ -558,7 +582,11 @@ public class SyncManager {
                             paymentDb.updateSyncStatus(localId, resolvedServerId, "SYNCED");
                             if (callback != null) callback.onSuccess(resolvedServerId);
                         } else {
-                            paymentDb.updateSyncStatus(localId, resolvedServerId, "FAILED");
+                            if (isPermanentError(response.code())) {
+                                paymentDb.updateSyncStatus(localId, resolvedServerId, "FAILED_PERMANENT");
+                            } else {
+                                paymentDb.updateSyncStatus(localId, resolvedServerId, "FAILED");
+                            }
                             if (callback != null) callback.onError("Server update failed: HTTP " + response.code());
                         }
                     }
@@ -581,7 +609,11 @@ public class SyncManager {
                             paymentDb.updateSyncStatus(localId, newServerId, "SYNCED");
                             if (callback != null) callback.onSuccess(newServerId);
                         } else {
-                            paymentDb.updateSyncStatus(localId, null, "FAILED");
+                            if (isPermanentError(response.code())) {
+                                paymentDb.updateSyncStatus(localId, null, "FAILED_PERMANENT");
+                            } else {
+                                paymentDb.updateSyncStatus(localId, null, "FAILED");
+                            }
                             if (callback != null) callback.onError("Server upload failed: HTTP " + response.code());
                         }
                     }
@@ -879,7 +911,7 @@ public class SyncManager {
                         // Push pending changes to server
                         List<QuickNote> pendingNotes = new java.util.ArrayList<>();
                         for (QuickNote local : noteDb.getAllNotes()) {
-                            if ("PENDING".equals(local.getSyncStatus())) {
+                            if (isEligibleForSync(local.getSyncStatus())) {
                                 pendingNotes.add(local);
                             }
                         }
@@ -1090,7 +1122,7 @@ public class SyncManager {
                         // Push pending changes to server
                         List<Reminder> pendingReminders = new java.util.ArrayList<>();
                         for (Reminder local : reminderDb.getAllReminders()) {
-                            if ("PENDING".equals(local.getSyncStatus())) {
+                            if (isEligibleForSync(local.getSyncStatus())) {
                                 pendingReminders.add(local);
                             }
                         }
@@ -1244,7 +1276,7 @@ public class SyncManager {
                                     RecurrenceType rec = RecurrenceType.MONTHLY;
                                     if (recStr != null) {
                                         try {
-                                            rec = RecurrenceType.valueOf(recStr.toUpperCase());
+                                            rec = RecurrenceType.fromString(recStr);
                                         } catch (IllegalArgumentException ignored) {}
                                     }
                                     String offsets = serverPayment.getNotificationOffsets() != null ? serverPayment.getNotificationOffsets() : "0";
@@ -1258,7 +1290,9 @@ public class SyncManager {
                                             amt,
                                             rec,
                                             offsets,
-                                            serverPayment.getLastPaidAt()
+                                            serverPayment.getLastPaidAt(),
+                                            serverPayment.getOriginalDueDay(),
+                                            serverPayment.getCustomIntervalDays()
                                     );
                                     Log.d("PAYMENT SCHEDULER", "Cancelling previous payment alarm: localId=" + localId);
                                     AlarmUtils.cancelPaymentAlarm(context, (int) localId, serverPayment.getName());
@@ -1268,6 +1302,8 @@ public class SyncManager {
                                     if (lpa != null) {
                                         if (rec == RecurrenceType.ONE_TIME) {
                                             isRecentlyPaid = true;
+                                        } else if (rec == RecurrenceType.CUSTOM_DAYS) {
+                                            isRecentlyPaid = serverPayment.getDueDate() > System.currentTimeMillis();
                                         } else {
                                             java.util.Calendar calPaid = java.util.Calendar.getInstance();
                                             calPaid.setTimeInMillis(lpa);
@@ -1303,7 +1339,7 @@ public class SyncManager {
                                 RecurrenceType rec = RecurrenceType.MONTHLY;
                                 if (recStr != null) {
                                     try {
-                                        rec = RecurrenceType.valueOf(recStr.toUpperCase());
+                                        rec = RecurrenceType.fromString(recStr);
                                     } catch (IllegalArgumentException ignored) {}
                                 }
                                 String offsets = serverPayment.getNotificationOffsets() != null ? serverPayment.getNotificationOffsets() : "0";
@@ -1317,7 +1353,9 @@ public class SyncManager {
                                         amt,
                                         rec,
                                         offsets,
-                                        serverPayment.getLastPaidAt()
+                                        serverPayment.getLastPaidAt(),
+                                        serverPayment.getOriginalDueDay(),
+                                        serverPayment.getCustomIntervalDays()
                                 );
                                 
                                 Long lpa = serverPayment.getLastPaidAt();
@@ -1325,6 +1363,8 @@ public class SyncManager {
                                 if (lpa != null) {
                                     if (rec == RecurrenceType.ONE_TIME) {
                                         isRecentlyPaid = true;
+                                    } else if (rec == RecurrenceType.CUSTOM_DAYS) {
+                                        isRecentlyPaid = serverPayment.getDueDate() > System.currentTimeMillis();
                                     } else {
                                         java.util.Calendar calPaid = java.util.Calendar.getInstance();
                                         calPaid.setTimeInMillis(lpa);
@@ -1358,8 +1398,12 @@ public class SyncManager {
                                     paymentDb.updateSyncStatus(local.getId(), null, "LOCAL_ONLY");
                                 }
                                 continue;
+                            } else if ("LOCAL_ONLY".equals(local.getSyncStatus())) {
+                                paymentDb.updateSyncStatus(local.getId(), null, "PENDING");
+                                pendingPayments.add(local);
+                                continue;
                             }
-                            if ("PENDING".equals(local.getSyncStatus())) {
+                            if (isEligibleForSync(local.getSyncStatus())) {
                                 pendingPayments.add(local);
                             }
                         }
@@ -1454,5 +1498,13 @@ public class SyncManager {
         } else {
             return new SchedulingDecision(false, false, -1L, "Skipped: expired or past");
         }
+    }
+
+    public static boolean isPermanentError(int code) {
+        return (code >= 400 && code < 500 && code != 401 && code != 408 && code != 429);
+    }
+
+    public static boolean isEligibleForSync(String syncStatus) {
+        return "PENDING".equals(syncStatus) || "FAILED".equals(syncStatus);
     }
 }

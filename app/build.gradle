@@ -16,11 +16,40 @@ android {
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    signingConfigs {
+        release {
+            def keystorePropertiesFile = rootProject.file("keystore.properties")
+            if (!keystorePropertiesFile.exists()) {
+                keystorePropertiesFile = file("../keystore.properties")
+            }
+            if (!keystorePropertiesFile.exists()) {
+                keystorePropertiesFile = file("keystore.properties")
+            }
+
+            def keystoreProperties = new Properties()
+            if (keystorePropertiesFile.exists()) {
+                keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+            }
+
+            def storeFilePath = keystoreProperties['storeFile'] ?: System.getenv('RELEASE_STORE_FILE')
+            def storePasswordVal = keystoreProperties['storePassword'] ?: System.getenv('RELEASE_STORE_PASSWORD')
+            def keyAliasVal = keystoreProperties['keyAlias'] ?: System.getenv('RELEASE_KEY_ALIAS')
+            def keyPasswordVal = keystoreProperties['keyPassword'] ?: System.getenv('RELEASE_KEY_PASSWORD') ?: storePasswordVal
+
+            if (storeFilePath && file(storeFilePath).exists() && storePasswordVal && keyAliasVal && keyPasswordVal) {
+                storeFile file(storeFilePath)
+                storePassword storePasswordVal
+                keyAlias keyAliasVal
+                keyPassword keyPasswordVal
+            }
+        }
+    }
 
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.release
         }
     }
 

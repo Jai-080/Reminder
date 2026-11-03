@@ -178,9 +178,6 @@ public class MonthlyPayment {
     }
 
     public int getCustomIntervalDays() {
-        if (customIntervalDays <= 0) {
-            return 28;
-        }
         return customIntervalDays;
     }
 
@@ -209,7 +206,7 @@ public class MonthlyPayment {
     }
 
     public static long calculateNextDueDate(long currentDueDateMillis, RecurrenceType recurrence, int originalDueDay, int customIntervalDays, long referenceTimeMillis) {
-        if (recurrence == null || recurrence == RecurrenceType.ONE_TIME) {
+        if (recurrence == null || recurrence == RecurrenceType.ONE_TIME || recurrence == RecurrenceType.UNKNOWN) {
             return currentDueDateMillis;
         }
 

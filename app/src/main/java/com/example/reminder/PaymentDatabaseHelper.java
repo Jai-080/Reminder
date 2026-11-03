@@ -165,7 +165,10 @@ public class PaymentDatabaseHelper extends SQLiteOpenHelper {
         values.put(COL_ORIGINAL_DUE_DAY, resolvedDueDay);
 
         if (recurrence == RecurrenceType.CUSTOM_DAYS) {
-            values.put(COL_CUSTOM_INTERVAL_DAYS, customIntervalDays > 0 ? customIntervalDays : 28);
+            if (customIntervalDays < 1 || customIntervalDays > 365) {
+                throw new IllegalArgumentException("Custom recurrence interval must be between 1 and 365 days.");
+            }
+            values.put(COL_CUSTOM_INTERVAL_DAYS, customIntervalDays);
         } else {
             values.putNull(COL_CUSTOM_INTERVAL_DAYS);
         }
@@ -383,7 +386,11 @@ public class PaymentDatabaseHelper extends SQLiteOpenHelper {
         }
         values.put(COL_ORIGINAL_DUE_DAY, payment.getOriginalDueDay());
         if (payment.getRecurrence() == RecurrenceType.CUSTOM_DAYS) {
-            values.put(COL_CUSTOM_INTERVAL_DAYS, payment.getCustomIntervalDays() > 0 ? payment.getCustomIntervalDays() : 28);
+            int interval = payment.getCustomIntervalDays();
+            if (interval < 1 || interval > 365) {
+                throw new IllegalArgumentException("Custom recurrence interval must be between 1 and 365 days.");
+            }
+            values.put(COL_CUSTOM_INTERVAL_DAYS, interval);
         } else {
             values.putNull(COL_CUSTOM_INTERVAL_DAYS);
         }
@@ -414,6 +421,10 @@ public class PaymentDatabaseHelper extends SQLiteOpenHelper {
     }
 
     public long insertOrUpdateSyncedPayment(long serverId, String name, long dueDate, boolean completed, long updatedAt, Double amount, RecurrenceType recurrence, String notificationOffsets, Long lastPaidAt) {
+        return insertOrUpdateSyncedPayment(serverId, name, dueDate, completed, updatedAt, amount, recurrence, notificationOffsets, lastPaidAt, null, null);
+    }
+
+    public long insertOrUpdateSyncedPayment(long serverId, String name, long dueDate, boolean completed, long updatedAt, Double amount, RecurrenceType recurrence, String notificationOffsets, Long lastPaidAt, Integer originalDueDay, Integer customIntervalDays) {
         SQLiteDatabase db = getWritableDatabase();
         ContentValues values = new ContentValues();
         values.put("server_id", serverId);
@@ -436,24 +447,31 @@ public class PaymentDatabaseHelper extends SQLiteOpenHelper {
         }
 
         long localId = -1;
-        int origDay = 0;
-        int customInterval = 28;
+        int origDay = originalDueDay != null ? originalDueDay : 0;
+        int customInterval = customIntervalDays != null ? customIntervalDays : 0;
         Cursor cursor = db.query(TABLE_NAME, new String[]{"id", COL_ORIGINAL_DUE_DAY, COL_CUSTOM_INTERVAL_DAYS}, "server_id = ?", new String[]{String.valueOf(serverId)}, null, null, null);
         if (cursor.moveToFirst()) {
             localId = cursor.getLong(cursor.getColumnIndexOrThrow("id"));
-            int origIdx = cursor.getColumnIndex(COL_ORIGINAL_DUE_DAY);
-            if (origIdx != -1 && !cursor.isNull(origIdx)) {
-                origDay = cursor.getInt(origIdx);
+            if (origDay <= 0) {
+                int origIdx = cursor.getColumnIndex(COL_ORIGINAL_DUE_DAY);
+                if (origIdx != -1 && !cursor.isNull(origIdx)) {
+                    origDay = cursor.getInt(origIdx);
+                }
             }
-            int intervalIdx = cursor.getColumnIndex(COL_CUSTOM_INTERVAL_DAYS);
-            if (intervalIdx != -1 && !cursor.isNull(intervalIdx)) {
-                customInterval = cursor.getInt(intervalIdx);
+            if (customInterval <= 0) {
+                int intervalIdx = cursor.getColumnIndex(COL_CUSTOM_INTERVAL_DAYS);
+                if (intervalIdx != -1 && !cursor.isNull(intervalIdx)) {
+                    customInterval = cursor.getInt(intervalIdx);
+                }
             }
         }
         if (origDay <= 0 && dueDate > 0) {
             java.util.Calendar cal = java.util.Calendar.getInstance();
             cal.setTimeInMillis(dueDate);
             origDay = cal.get(java.util.Calendar.DAY_OF_MONTH);
+        }
+        if (customInterval <= 0) {
+            customInterval = 28;
         }
         values.put(COL_ORIGINAL_DUE_DAY, origDay);
         values.put(COL_CUSTOM_INTERVAL_DAYS, customInterval);

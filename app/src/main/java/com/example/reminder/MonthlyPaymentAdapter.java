@@ -231,7 +231,7 @@ public class MonthlyPaymentAdapter extends RecyclerView.Adapter<RecyclerView.Vie
                 if (isChecked) {
                     if (currentPayment.getRecurrence() == RecurrenceType.ONE_TIME) {
                         currentPayment.setLastPaidAt(System.currentTimeMillis());
-                        currentPayment.setCompleted(false);
+                        currentPayment.setCompleted(true);
                         currentPayment.setSyncStatus("PENDING");
                         
                         dbHelper.updatePayment(currentPayment);
