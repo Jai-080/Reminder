@@ -16,6 +16,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
 import java.text.SimpleDateFormat;
@@ -111,11 +112,7 @@ public class MonthlyPaymentAdapter extends RecyclerView.Adapter<RecyclerView.Vie
             tv.setTextSize(14f);
             tv.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
             tv.setLetterSpacing(0.08f);
-            try {
-                tv.setTextColor(context.getColor(R.color.colorTextMuted));
-            } catch (Exception e) {
-                tv.setTextColor(0xFF888888);
-            }
+            tv.setTextColor(ContextCompat.getColor(context, R.color.colorTextMuted));
             return new HeaderViewHolder(tv);
         } else {
             View view = LayoutInflater.from(context).inflate(R.layout.item_payment, parent, false);
@@ -170,23 +167,15 @@ public class MonthlyPaymentAdapter extends RecyclerView.Adapter<RecyclerView.Vie
             } else {
                 holder.dueDateView.setText("✓ Paid  |  Next Due: " + formattedDate + " (" + recurrenceDisplay + ")");
             }
-            holder.dueDateView.setTextColor(0xFF888888); // gray secondary text
-            holder.paymentName.setTextColor(0xFF888888);
+            holder.dueDateView.setTextColor(ContextCompat.getColor(context, R.color.colorTextMuted));
+            holder.paymentName.setTextColor(ContextCompat.getColor(context, R.color.colorTextMuted));
         } else if (isDueLater) {
             holder.checkBox.setVisibility(View.GONE);
             holder.checkBox.setChecked(false);
             holder.checkBox.setEnabled(false);
             holder.dueDateView.setText("Due Date: " + formattedDate + " (" + recurrenceDisplay + ")");
-            try {
-                holder.dueDateView.setTextColor(context.getColor(R.color.colorTextSecondary));
-            } catch (Exception e) {
-                holder.dueDateView.setTextColor(0xFF666666);
-            }
-            try {
-                holder.paymentName.setTextColor(context.getColor(R.color.colorTextPrimary));
-            } catch (Exception e) {
-                holder.paymentName.setTextColor(0xFF000000);
-            }
+            holder.dueDateView.setTextColor(ContextCompat.getColor(context, R.color.colorTextSecondary));
+            holder.paymentName.setTextColor(ContextCompat.getColor(context, R.color.colorTextPrimary));
         } else { // isUpcoming
             holder.checkBox.setVisibility(View.VISIBLE);
             holder.checkBox.setChecked(false);
@@ -195,20 +184,12 @@ public class MonthlyPaymentAdapter extends RecyclerView.Adapter<RecyclerView.Vie
             long now = System.currentTimeMillis();
             if (payment.getDueDate() < now) {
                 holder.dueDateView.setText("Due Date: " + formattedDate + " (" + recurrenceDisplay + ") [Overdue]");
-                holder.dueDateView.setTextColor(0xFFFF3333); // red text for overdue
+                holder.dueDateView.setTextColor(ContextCompat.getColor(context, R.color.colorExpired));
             } else {
                 holder.dueDateView.setText("Due Date: " + formattedDate + " (" + recurrenceDisplay + ")");
-                try {
-                    holder.dueDateView.setTextColor(context.getColor(R.color.colorTextSecondary));
-                } catch (Exception e) {
-                    holder.dueDateView.setTextColor(0xFF666666);
-                }
+                holder.dueDateView.setTextColor(ContextCompat.getColor(context, R.color.colorTextSecondary));
             }
-            try {
-                holder.paymentName.setTextColor(context.getColor(R.color.colorTextPrimary));
-            } catch (Exception e) {
-                holder.paymentName.setTextColor(0xFF000000);
-            }
+            holder.paymentName.setTextColor(ContextCompat.getColor(context, R.color.colorTextPrimary));
         }
 
         holder.itemView.setOnClickListener(v -> {

@@ -185,9 +185,11 @@ public class MonthlyPaymentsActivity extends AppCompatActivity {
         dialog.show();
 
         dialog.getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
+            v.setEnabled(false);
             String name = nameInput.getText().toString().trim();
             if (name.isEmpty()) {
                 Toast.makeText(this, "Please enter a payment name", Toast.LENGTH_SHORT).show();
+                v.setEnabled(true);
                 return;
             }
 
@@ -198,6 +200,7 @@ public class MonthlyPaymentsActivity extends AppCompatActivity {
                     amount = Double.parseDouble(amountStr);
                 } catch (NumberFormatException e) {
                     Toast.makeText(this, "Invalid amount", Toast.LENGTH_SHORT).show();
+                    v.setEnabled(true);
                     return;
                 }
             }
@@ -223,16 +226,19 @@ public class MonthlyPaymentsActivity extends AppCompatActivity {
                 String customStr = customDaysInput.getText() != null ? customDaysInput.getText().toString().trim() : "";
                 if (customStr.isEmpty()) {
                     Toast.makeText(this, "Please enter recurrence interval in days", Toast.LENGTH_SHORT).show();
+                    v.setEnabled(true);
                     return;
                 }
                 try {
                     customIntervalDays = Integer.parseInt(customStr);
                     if (customIntervalDays < 1 || customIntervalDays > 365) {
                         Toast.makeText(this, "Interval must be between 1 and 365 days", Toast.LENGTH_SHORT).show();
+                        v.setEnabled(true);
                         return;
                     }
                 } catch (NumberFormatException e) {
                     Toast.makeText(this, "Interval must be a whole number between 1 and 365", Toast.LENGTH_SHORT).show();
+                    v.setEnabled(true);
                     return;
                 }
             }
@@ -396,9 +402,11 @@ public class MonthlyPaymentsActivity extends AppCompatActivity {
         dialog.show();
 
         dialog.getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
+            v.setEnabled(false);
             String name = nameInput.getText().toString().trim();
             if (name.isEmpty()) {
                 Toast.makeText(this, "Please enter a payment name", Toast.LENGTH_SHORT).show();
+                v.setEnabled(true);
                 return;
             }
 
@@ -409,6 +417,7 @@ public class MonthlyPaymentsActivity extends AppCompatActivity {
                     amount = Double.parseDouble(amountStr);
                 } catch (NumberFormatException e) {
                     Toast.makeText(this, "Invalid amount", Toast.LENGTH_SHORT).show();
+                    v.setEnabled(true);
                     return;
                 }
             }
@@ -434,16 +443,19 @@ public class MonthlyPaymentsActivity extends AppCompatActivity {
                 String customStr = customDaysInput.getText() != null ? customDaysInput.getText().toString().trim() : "";
                 if (customStr.isEmpty()) {
                     Toast.makeText(this, "Please enter recurrence interval in days", Toast.LENGTH_SHORT).show();
+                    v.setEnabled(true);
                     return;
                 }
                 try {
                     customIntervalDays = Integer.parseInt(customStr);
                     if (customIntervalDays < 1 || customIntervalDays > 365) {
                         Toast.makeText(this, "Interval must be between 1 and 365 days", Toast.LENGTH_SHORT).show();
+                        v.setEnabled(true);
                         return;
                     }
                 } catch (NumberFormatException e) {
                     Toast.makeText(this, "Interval must be a whole number between 1 and 365", Toast.LENGTH_SHORT).show();
+                    v.setEnabled(true);
                     return;
                 }
             }

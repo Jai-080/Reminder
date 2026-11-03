@@ -23,14 +23,27 @@
         tools:ignore="DataExtractionRules">
 
         <!-- Authentication Activities -->
-        <activity android:name=".auth.LoginActivity" android:exported="false" />
-        <activity android:name=".auth.RegisterActivity" android:exported="false" />
+        <activity
+            android:name=".auth.LoginActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+        <activity
+            android:name=".auth.RegisterActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
 
         <!-- Activities -->
-        <activity android:name=".ExpiredRemindersActivity" />
-        <activity android:name=".MonthlyPaymentsActivity" />
-        <activity android:name=".TimedRemindersActivity" />
-        <activity android:name=".SnoozeOptionsActivity" />
+        <activity
+            android:name=".ExpiredRemindersActivity"
+            android:windowSoftInputMode="adjustResize" />
+        <activity
+            android:name=".MonthlyPaymentsActivity"
+            android:windowSoftInputMode="adjustResize" />
+        <activity
+            android:name=".TimedRemindersActivity"
+            android:windowSoftInputMode="adjustResize" />
+        <activity
+            android:name=".SnoozeOptionsActivity" />
 
         <activity
             android:name="com.example.reminder.MainActivity"

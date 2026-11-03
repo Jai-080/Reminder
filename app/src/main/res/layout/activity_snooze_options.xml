@@ -92,7 +92,7 @@
                         android:layout_height="wrap_content"
                         android:text="REMINDER DETAILS"
                         android:textColor="@color/colorTextMuted"
-                        android:textSize="11sp"
+                        android:textSize="12sp"
                         android:textStyle="bold"
                         android:letterSpacing="0.05"
                         android:layout_marginBottom="8dp" />
@@ -113,7 +113,7 @@
                 android:layout_height="wrap_content"
                 android:text="RESCHEDULE OPTIONS"
                 android:textColor="@color/colorTextMuted"
-                android:textSize="11sp"
+                android:textSize="12sp"
                 android:textStyle="bold"
                 android:letterSpacing="0.08"
                 android:layout_marginBottom="12dp" />
@@ -122,7 +122,9 @@
             <LinearLayout
                 android:id="@+id/btn_snooze_10_min"
                 android:layout_width="match_parent"
-                android:layout_height="60dp"
+                android:layout_height="wrap_content"
+                android:minHeight="56dp"
+                android:paddingVertical="12dp"
                 android:orientation="horizontal"
                 android:gravity="center_vertical"
                 android:background="@drawable/rounded_item_background"
@@ -152,7 +154,9 @@
             <LinearLayout
                 android:id="@+id/btn_snooze_20_min"
                 android:layout_width="match_parent"
-                android:layout_height="60dp"
+                android:layout_height="wrap_content"
+                android:minHeight="56dp"
+                android:paddingVertical="12dp"
                 android:orientation="horizontal"
                 android:gravity="center_vertical"
                 android:background="@drawable/rounded_item_background"
@@ -182,7 +186,9 @@
             <LinearLayout
                 android:id="@+id/btn_snooze_30_min"
                 android:layout_width="match_parent"
-                android:layout_height="60dp"
+                android:layout_height="wrap_content"
+                android:minHeight="56dp"
+                android:paddingVertical="12dp"
                 android:orientation="horizontal"
                 android:gravity="center_vertical"
                 android:background="@drawable/rounded_item_background"
@@ -212,7 +218,9 @@
             <LinearLayout
                 android:id="@+id/btn_snooze_1_hour"
                 android:layout_width="match_parent"
-                android:layout_height="60dp"
+                android:layout_height="wrap_content"
+                android:minHeight="56dp"
+                android:paddingVertical="12dp"
                 android:orientation="horizontal"
                 android:gravity="center_vertical"
                 android:background="@drawable/rounded_item_background"
@@ -242,7 +250,9 @@
             <LinearLayout
                 android:id="@+id/btn_reschedule_custom"
                 android:layout_width="match_parent"
-                android:layout_height="60dp"
+                android:layout_height="wrap_content"
+                android:minHeight="56dp"
+                android:paddingVertical="12dp"
                 android:orientation="horizontal"
                 android:gravity="center_vertical"
                 android:background="@drawable/rounded_item_background"

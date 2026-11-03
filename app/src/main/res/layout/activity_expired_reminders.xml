@@ -59,7 +59,7 @@
         android:layout_height="wrap_content"
         android:text="PAST REMINDERS"
         android:textColor="@color/colorTextMuted"
-        android:textSize="11sp"
+        android:textSize="12sp"
         android:textStyle="bold"
         android:letterSpacing="0.08"
         android:paddingHorizontal="20dp"

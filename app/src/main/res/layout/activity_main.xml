@@ -146,7 +146,7 @@
                             android:layout_height="wrap_content"
                             android:text="NOTES"
                             android:textColor="@color/colorTextMuted"
-                            android:textSize="10sp"
+                            android:textSize="12sp"
                             android:textStyle="bold"
                             android:letterSpacing="0.05" />
 
@@ -166,7 +166,7 @@
                             android:layout_height="wrap_content"
                             android:text="0 active"
                             android:textColor="@color/colorTextSecondary"
-                            android:textSize="10sp"
+                            android:textSize="12sp"
                             android:layout_marginTop="2dp"
                             android:ellipsize="end"
                             android:maxLines="1" />
@@ -199,7 +199,7 @@
                             android:layout_height="wrap_content"
                             android:text="ALARM"
                             android:textColor="@color/colorTextMuted"
-                            android:textSize="10sp"
+                            android:textSize="12sp"
                             android:textStyle="bold"
                             android:letterSpacing="0.05" />
 
@@ -219,7 +219,7 @@
                             android:layout_height="wrap_content"
                             android:text="0 pending"
                             android:textColor="@color/colorTextSecondary"
-                            android:textSize="10sp"
+                            android:textSize="12sp"
                             android:layout_marginTop="2dp"
                             android:ellipsize="end"
                             android:maxLines="1" />
@@ -260,7 +260,7 @@
                             android:layout_height="wrap_content"
                             android:text="BILLS &amp; PAYMENTS"
                             android:textColor="@color/colorTextMuted"
-                            android:textSize="10sp"
+                            android:textSize="12sp"
                             android:textStyle="bold"
                             android:letterSpacing="0.05" />
 
@@ -280,7 +280,7 @@
                             android:layout_height="wrap_content"
                             android:text="0 overdue | 0 due"
                             android:textColor="@color/colorTextSecondary"
-                            android:textSize="10sp"
+                            android:textSize="12sp"
                             android:layout_marginTop="2dp" />
                     </LinearLayout>
 
@@ -303,7 +303,7 @@
                             android:layout_height="wrap_content"
                             android:text="NEXT UPCOMING"
                             android:textColor="@color/colorTextMuted"
-                            android:textSize="10sp"
+                            android:textSize="12sp"
                             android:textStyle="bold"
                             android:letterSpacing="0.05" />
 
@@ -351,7 +351,7 @@
                             android:layout_centerVertical="true"
                             android:text="QUICK NOTES CHECKLIST"
                             android:textColor="@color/colorTextMuted"
-                            android:textSize="11sp"
+                            android:textSize="12sp"
                             android:textStyle="bold"
                             android:letterSpacing="0.05" />
 
@@ -440,7 +440,7 @@
                         android:layout_height="wrap_content"
                         android:text="UPCOMING AGENDA"
                         android:textColor="@color/colorTextMuted"
-                        android:textSize="11sp"
+                        android:textSize="12sp"
                         android:textStyle="bold"
                         android:letterSpacing="0.05"
                         android:layout_marginBottom="16dp" />

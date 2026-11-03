@@ -14,8 +14,8 @@
     <color name="colorExpired">#C65A28</color>
     <color name="colorDelete">#C4684D</color>
     <color name="colorReschedule">@color/light_reschedule</color>
-    <color name="colorButtonGradientStart">@color/light_button_gradient_start</color>
-    <color name="colorButtonGradientEnd">@color/light_button_gradient_end</color>
+    <color name="colorButtonGradientStart">@color/colorAccent</color>
+    <color name="colorButtonGradientEnd">@color/colorAccent</color>
     <color name="colorInputBackground">@color/light_input_bg</color>
     <color name="colorInputBorder">@color/light_input_border</color>
 
@@ -50,8 +50,8 @@
     <color name="dark_text_muted">#9D8EFF</color>
     <color name="dark_primary">#8B7DFF</color>
     <color name="dark_reschedule">#9D8EFF</color>
-    <color name="dark_button_gradient_start">#7E72F5</color>
-    <color name="dark_button_gradient_end">#9B86FF</color>
+    <color name="dark_button_gradient_start">#8B7DFF</color>
+    <color name="dark_button_gradient_end">#8B7DFF</color>
     <color name="dark_input_bg">#1F1F1F</color>
     <color name="dark_input_border">#343240</color>
 
