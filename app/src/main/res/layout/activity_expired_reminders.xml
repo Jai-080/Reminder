@@ -1,100 +1,94 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/colorBackground">
+    android:background="?android:attr/windowBackground">
 
-    <!-- Header -->
-    <RelativeLayout
-        android:id="@+id/header"
-        android:layout_width="0dp"
+    <!-- Top App Bar -->
+    <com.google.android.material.appbar.AppBarLayout
+        android:id="@+id/appBarLayout"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:background="?android:attr/windowBackground"
+        app:elevation="0dp">
+
+        <LinearLayout
+            android:id="@+id/header"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingHorizontal="16dp">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnBack"
+                style="@style/Widget.Material3.Button.IconButton"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                app:icon="@drawable/ic_ms_arrow_back"
+                app:iconTint="?android:attr/textColorPrimary"
+                android:contentDescription="Back" />
+
+            <TextView
+                android:id="@+id/textViewTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Expired Reminders"
+                android:textColor="?android:attr/textColorPrimary"
+                android:textSize="20sp"
+                android:fontFamily="sans-serif-medium"
+                android:layout_marginStart="8dp" />
+        </LinearLayout>
+
+        <View
+            android:id="@+id/headerDivider"
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@color/colorDivider" />
+    </com.google.android.material.appbar.AppBarLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
         android:paddingHorizontal="20dp"
-        android:paddingTop="24dp"
-        android:paddingBottom="16dp"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
+        android:paddingTop="16dp"
+        app:layout_behavior="@string/appbar_scrolling_view_behavior">
 
-        <ImageView
-            android:id="@+id/btnBack"
-            android:layout_width="36dp"
-            android:layout_height="36dp"
-            android:src="@drawable/abc_ic_ab_back_material"
-            android:padding="6dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:layout_alignParentStart="true"
-            android:layout_centerVertical="true"
-            app:tint="?android:attr/textColorPrimary"
-            android:contentDescription="Back" />
-
+        <!-- Section label -->
         <TextView
-            android:id="@+id/textViewTitle"
+            android:id="@+id/sectionLabel"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_toEndOf="@id/btnBack"
-            android:layout_marginStart="12dp"
-            android:layout_centerVertical="true"
-            android:text="Expired reminders"
-            android:textColor="@color/colorTextPrimary"
-            android:textSize="22sp"
-            android:textStyle="bold" />
-    </RelativeLayout>
+            android:text="PAST REMINDERS"
+            android:textColor="@color/gl_primary"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            android:letterSpacing="0.08"
+            android:layout_marginStart="4dp"
+            android:layout_marginBottom="12dp" />
 
-    <!-- Divider -->
-    <View
-        android:id="@+id/headerDivider"
-        android:layout_width="0dp"
-        android:layout_height="0.5dp"
-        android:background="@color/colorDivider"
-        app:layout_constraintTop_toBottomOf="@id/header"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+        <!-- Empty State -->
+        <TextView
+            android:id="@+id/txtNoExpiredReminders"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="No expired reminders"
+            android:textColor="?android:attr/textColorSecondary"
+            android:textSize="13sp"
+            android:gravity="center"
+            android:paddingVertical="32dp"
+            android:visibility="gone" />
 
-    <!-- Section label -->
-    <TextView
-        android:id="@+id/sectionLabel"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:text="PAST REMINDERS"
-        android:textColor="@color/colorTextMuted"
-        android:textSize="12sp"
-        android:textStyle="bold"
-        android:letterSpacing="0.08"
-        android:paddingHorizontal="20dp"
-        android:paddingTop="20dp"
-        android:paddingBottom="10dp"
-        app:layout_constraintTop_toBottomOf="@id/headerDivider"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+        <!-- Expired list -->
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/recyclerViewExpired"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:clipToPadding="false"
+            android:paddingBottom="24dp" />
+    </LinearLayout>
 
-    <!-- Empty State -->
-    <TextView
-        android:id="@+id/txtNoExpiredReminders"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:text="No expired reminders"
-        android:textColor="@color/colorTextSecondary"
-        android:textSize="13sp"
-        android:paddingHorizontal="20dp"
-        android:paddingVertical="12dp"
-        android:visibility="gone"
-        app:layout_constraintTop_toBottomOf="@id/sectionLabel"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
-
-    <!-- Expired list -->
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/recyclerViewExpired"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        android:paddingHorizontal="20dp"
-        android:paddingBottom="24dp"
-        android:clipToPadding="false"
-        app:layout_constraintTop_toBottomOf="@id/sectionLabel"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
-
-</androidx.constraintlayout.widget.ConstraintLayout>
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

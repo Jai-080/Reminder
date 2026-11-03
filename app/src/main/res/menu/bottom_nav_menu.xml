@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/nav_home"
+        android:title="Home"
+        android:icon="@drawable/ic_ms_home" />
+    <item
+        android:id="@+id/nav_notes"
+        android:title="Notes"
+        android:icon="@drawable/ic_ms_notes" />
+    <item
+        android:id="@+id/nav_reminders"
+        android:title="Reminders"
+        android:icon="@drawable/ic_ms_notifications" />
+    <item
+        android:id="@+id/nav_payments"
+        android:title="Payments"
+        android:icon="@drawable/ic_ms_payments" />
+</menu>
+

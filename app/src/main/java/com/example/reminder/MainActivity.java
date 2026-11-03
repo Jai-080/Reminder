@@ -189,6 +189,38 @@ public class MainActivity extends AppCompatActivity {
         txtNextPaymentDetail = findViewById(R.id.txtNextPaymentDetail);
 
 
+                View btnSettings = findViewById(R.id.btnSettings);
+        if (btnSettings != null) {
+            btnSettings.setOnClickListener(v -> startActivity(new Intent(MainActivity.this, SettingsActivity.class)));
+        }
+
+        com.google.android.material.navigation.NavigationBarView bottomNav = findViewById(R.id.bottomNavigation);
+        if (bottomNav != null) {
+            bottomNav.setSelectedItemId(R.id.nav_home);
+            bottomNav.setOnItemSelectedListener(item -> {
+                int itemId = item.getItemId();
+                if (itemId == R.id.nav_home) {
+                    androidx.core.widget.NestedScrollView scroller = findViewById(R.id.scrollView);
+                    if (scroller != null) scroller.smoothScrollTo(0, 0);
+                    return true;
+                } else if (itemId == R.id.nav_notes) {
+                    View notesCard = findViewById(R.id.notesSectionCard);
+                    androidx.core.widget.NestedScrollView scroller = findViewById(R.id.scrollView);
+                    if (notesCard != null && scroller != null) {
+                        scroller.smoothScrollTo(0, notesCard.getTop());
+                    }
+                    return true;
+                } else if (itemId == R.id.nav_reminders) {
+                    startActivity(new Intent(MainActivity.this, TimedRemindersActivity.class));
+                    return false;
+                } else if (itemId == R.id.nav_payments) {
+                    startActivity(new Intent(MainActivity.this, MonthlyPaymentsActivity.class));
+                    return false;
+                }
+                return false;
+            });
+        }
+
         setupQuickNotes();
 
         syncCompletedReceiver = new BroadcastReceiver() {
@@ -382,6 +414,10 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
+        com.google.android.material.navigation.NavigationBarView bNav = findViewById(R.id.bottomNavigation);
+        if (bNav != null) {
+            bNav.setSelectedItemId(R.id.nav_home);
+        }
         TokenManager tokenManager = TokenManager.getInstance(this);
         if (tokenManager.isLoggedIn()) {
             // Reload local list first in case details changed offline or on another screen

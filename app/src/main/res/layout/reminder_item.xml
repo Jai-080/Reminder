@@ -5,10 +5,10 @@
     android:layout_height="wrap_content"
     android:layout_marginBottom="8dp"
     app:cardElevation="0dp"
-    app:cardCornerRadius="12dp"
+    app:cardCornerRadius="14dp"
     app:strokeWidth="1dp"
-    app:strokeColor="@color/colorDivider"
-    app:cardBackgroundColor="@color/colorBackground">
+    app:strokeColor="@color/colorSurfaceBorder"
+    app:cardBackgroundColor="@color/colorSurfaceVariant">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -16,7 +16,7 @@
         android:orientation="horizontal"
         android:gravity="center_vertical"
         android:paddingHorizontal="14dp"
-        android:paddingVertical="6dp">
+        android:paddingVertical="10dp">
 
         <!-- Text block -->
         <LinearLayout
@@ -30,7 +30,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:textColor="?android:attr/textColorPrimary"
-                android:textSize="14sp"
+                android:textSize="15sp"
                 android:textStyle="bold" />
 
             <TextView
@@ -39,7 +39,7 @@
                 android:layout_height="wrap_content"
                 android:textColor="?android:attr/textColorSecondary"
                 android:textSize="12sp"
-                android:layout_marginTop="4dp" />
+                android:layout_marginTop="3dp" />
         </LinearLayout>
 
         <!-- Expired badge -->
@@ -48,15 +48,15 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Expired"
-            android:textColor="#FFFFFF"
-            android:textSize="12sp"
+            android:textColor="@color/colorExpired"
+            android:textSize="11sp"
             android:textStyle="bold"
-            android:background="@drawable/rounded_secondary_button"
+            android:background="@drawable/rounded_edittext"
+            android:backgroundTint="@color/colorExpiredContainer"
             android:paddingHorizontal="8dp"
-            android:paddingVertical="3dp"
+            android:paddingVertical="4dp"
             android:layout_marginEnd="6dp"
-            android:visibility="visible"
-            app:backgroundTint="@color/colorExpired" />
+            android:visibility="visible" />
 
         <!-- Reschedule button -->
         <ImageView
@@ -66,13 +66,13 @@
             android:background="?attr/selectableItemBackgroundBorderless"
             android:padding="12dp"
             android:contentDescription="Reschedule Reminder"
-            android:src="@android:drawable/ic_menu_my_calendar"
+            android:src="@drawable/ic_ms_calendar"
             android:scaleType="centerInside"
-            app:tint="@color/colorReschedule"
+            app:tint="@color/gl_primary"
             android:clickable="true"
             android:focusable="true"
-            android:layout_marginEnd="4dp"
-            android:visibility="gone"/>
+            android:layout_marginEnd="2dp"
+            android:visibility="gone" />
 
         <!-- Delete button -->
         <ImageView
@@ -82,11 +82,11 @@
             android:background="?attr/selectableItemBackgroundBorderless"
             android:padding="12dp"
             android:contentDescription="Delete Reminder"
-            android:src="@android:drawable/ic_menu_delete"
+            android:src="@drawable/ic_ms_delete"
             android:scaleType="centerInside"
             app:tint="@color/colorDelete"
             android:clickable="true"
-            android:focusable="true"/>
+            android:focusable="true" />
 
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>

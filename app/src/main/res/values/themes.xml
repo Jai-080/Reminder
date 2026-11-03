@@ -1,33 +1,153 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- Main app theme - follows system light/dark automatically -->
+    <!-- Graphite & Lime Material 3 Theme -->
     <style name="Theme.Reminder" parent="Theme.Material3.DayNight.NoActionBar">
-        <item name="colorPrimary">@color/accent_purple</item>
+        <!-- Primary brand color -->
+        <item name="colorPrimary">@color/gl_primary</item>
         <item name="colorOnPrimary">@color/white</item>
-        <item name="colorSecondary">@color/accent_purple</item>
-        <item name="colorOnSecondary">@color/white</item>
+        <item name="colorPrimaryContainer">@color/gl_tertiary</item>
+        <item name="colorOnPrimaryContainer">#1B2609</item>
+
+        <!-- Secondary & Tertiary -->
+        <item name="colorSecondary">@color/gl_secondary</item>
+        <item name="colorOnSecondary">@color/gl_graphite</item>
+        <item name="colorSecondaryContainer">@color/gl_surface_elevated</item>
+        <item name="colorOnSecondaryContainer">@color/gl_graphite</item>
+        <item name="colorTertiary">@color/gl_tertiary</item>
+        <item name="colorOnTertiary">@color/gl_graphite</item>
+
+        <!-- Surfaces and backgrounds -->
+        <item name="android:windowBackground">@color/colorBackground</item>
+        <item name="colorSurface">@color/colorSurface</item>
+        <item name="colorOnSurface">@color/colorTextPrimary</item>
+        <item name="colorSurfaceVariant">@color/colorSurfaceVariant</item>
+        <item name="colorOnSurfaceVariant">@color/colorTextSecondary</item>
+        <item name="colorOutline">@color/colorSurfaceBorder</item>
+        <item name="colorOutlineVariant">@color/colorDivider</item>
+
+        <!-- Error & Action roles -->
+        <item name="colorError">@color/colorDelete</item>
+        <item name="colorOnError">@color/white</item>
+        <item name="colorErrorContainer">@color/colorDeleteContainer</item>
+        <item name="colorOnErrorContainer">@color/colorOnDeleteContainer</item>
+
+        <!-- System Bars (Edge-to-edge ready) -->
         <item name="android:statusBarColor">@color/colorBackground</item>
         <item name="android:windowLightStatusBar" tools:targetApi="m">true</item>
-        <item name="android:timePickerMode">spinner</item>
+        <item name="android:navigationBarColor">@color/colorBackground</item>
+        <item name="android:windowLightNavigationBar" tools:targetApi="o_mr1">true</item>
 
-        <!-- Light theme surface colors -->
-        <item name="android:windowBackground">@color/light_background</item>
-        <item name="colorSurface">@color/light_surface</item>
-        <item name="colorOnSurface">@color/light_text_primary</item>
+        <!-- Material 3 Transitions -->
+        <item name="android:windowAnimationStyle">@style/Animation.Reminder.Activity</item>
+
+        <!-- Material 3 Component default styles -->
+        <item name="materialCardViewStyle">@style/Widget.Reminder.CardView</item>
+        <item name="materialButtonStyle">@style/Widget.Reminder.Button.Primary</item>
+        <item name="textInputStyle">@style/Widget.Reminder.TextInputLayout</item>
+        <item name="bottomNavigationStyle">@style/Widget.Reminder.BottomNavigation</item>
+        <item name="materialAlertDialogTheme">@style/ThemeOverlay.Reminder.MaterialAlertDialog</item>
     </style>
 
-    <!-- TimePicker styles -->
-    <style name="TimePickerTheme" parent="Theme.MaterialComponents.Light.Dialog">
-        <item name="android:timePickerMode">spinner</item>
-        <item name="colorPrimary">@color/accent_purple</item>
-        <item name="colorAccent">@color/accent_purple</item>
-        <item name="android:buttonBarPositiveButtonStyle">@style/TimePickerButtonStyle</item>
-        <item name="android:buttonBarNegativeButtonStyle">@style/TimePickerButtonStyle</item>
+    <!-- Material Transitions Animation Style -->
+    <style name="Animation.Reminder.Activity" parent="@android:style/Animation.Activity">
+        <item name="android:activityOpenEnterAnimation">@anim/slide_in_right</item>
+        <item name="android:activityOpenExitAnimation">@anim/slide_out_left</item>
+        <item name="android:activityCloseEnterAnimation">@anim/slide_in_left</item>
+        <item name="android:activityCloseExitAnimation">@anim/slide_out_right</item>
     </style>
 
-    <style name="TimePickerButtonStyle" parent="Widget.MaterialComponents.Button.TextButton.Dialog">
-        <item name="android:textColor">@color/accent_purple</item>
+    <!-- Material 3 Card style -->
+    <style name="Widget.Reminder.CardView" parent="Widget.Material3.CardView.Filled">
+        <item name="cardBackgroundColor">@color/colorSurface</item>
+        <item name="strokeColor">@color/colorDivider</item>
+        <item name="strokeWidth">@dimen/card_stroke_width</item>
+        <item name="cardElevation">@dimen/card_elevation</item>
+        <item name="shapeAppearanceOverlay">@style/ShapeAppearance.Reminder.Card</item>
+    </style>
+
+    <style name="ShapeAppearance.Reminder.Card" parent="ShapeAppearance.Material3.Corner.Medium">
+        <item name="cornerSize">16dp</item>
+    </style>
+
+    <style name="ShapeAppearance.Reminder.Card.Large" parent="ShapeAppearance.Material3.Corner.Large">
+        <item name="cornerSize">24dp</item>
+    </style>
+
+    <!-- Material 3 Buttons -->
+    <style name="Widget.Reminder.Button.Primary" parent="Widget.Material3.Button">
+        <item name="backgroundTint">@color/gl_primary</item>
+        <item name="android:textColor">@color/white</item>
+        <item name="cornerRadius">20dp</item>
+        <item name="android:minHeight">@dimen/touch_target_min</item>
+        <item name="rippleColor">#33FFFFFF</item>
+    </style>
+
+    <style name="Widget.Reminder.Button.Tonal" parent="Widget.Material3.Button.TonalButton">
+        <item name="backgroundTint">@color/colorSurfaceVariant</item>
+        <item name="android:textColor">@color/colorTextPrimary</item>
+        <item name="cornerRadius">20dp</item>
+        <item name="android:minHeight">@dimen/touch_target_min</item>
+        <item name="rippleColor">@color/colorDivider</item>
+    </style>
+
+    <style name="Widget.Reminder.Button.Outlined" parent="Widget.Material3.Button.OutlinedButton">
+        <item name="strokeColor">@color/colorSurfaceBorder</item>
+        <item name="strokeWidth">1dp</item>
+        <item name="android:textColor">@color/gl_primary</item>
+        <item name="cornerRadius">20dp</item>
+        <item name="android:minHeight">@dimen/touch_target_min</item>
+    </style>
+
+    <style name="Widget.Reminder.Button.Text" parent="Widget.Material3.Button.TextButton">
+        <item name="android:textColor">@color/gl_primary</item>
+        <item name="android:minHeight">@dimen/touch_target_min</item>
+    </style>
+
+    <!-- Material 3 Text Inputs -->
+    <style name="Widget.Reminder.TextInputLayout" parent="Widget.Material3.TextInputLayout.OutlinedBox">
+        <item name="boxStrokeColor">@color/gl_primary</item>
+        <item name="boxCornerRadiusTopStart">12dp</item>
+        <item name="boxCornerRadiusTopEnd">12dp</item>
+        <item name="boxCornerRadiusBottomStart">12dp</item>
+        <item name="boxCornerRadiusBottomEnd">12dp</item>
+        <item name="hintTextColor">@color/gl_primary</item>
+        <item name="boxStrokeWidth">1dp</item>
+        <item name="boxStrokeWidthFocused">2dp</item>
+    </style>
+
+    <!-- Material 3 Navigation Bar / Bottom Navigation -->
+    <style name="Widget.Reminder.BottomNavigation" parent="Widget.Material3.BottomNavigationView">
+        <item name="backgroundTint">@color/colorSurface</item>
+        <item name="itemIconTint">@color/nav_item_icon_tint</item>
+        <item name="itemTextColor">@color/nav_item_text_tint</item>
+        <item name="itemActiveIndicatorStyle">@style/Widget.Reminder.BottomNavigation.Indicator</item>
+        <item name="elevation">3dp</item>
+    </style>
+
+    <style name="Widget.Reminder.BottomNavigation.Indicator" parent="Widget.Material3.BottomNavigationView.ActiveIndicator">
+        <item name="android:color">@color/gl_tertiary</item>
+        <item name="android:width">60dp</item>
+        <item name="android:height">32dp</item>
+    </style>
+
+    <!-- Dialogs -->
+    <style name="ThemeOverlay.Reminder.MaterialAlertDialog" parent="ThemeOverlay.Material3.MaterialAlertDialog">
+        <item name="shapeAppearanceOverlay">@style/ShapeAppearance.Reminder.Card</item>
+        <item name="colorSurface">@color/colorSurface</item>
+        <item name="colorPrimary">@color/gl_primary</item>
+    </style>
+
+    <!-- TimePicker & DatePicker Dialogs -->
+    <style name="TimePickerTheme" parent="ThemeOverlay.Material3.MaterialTimePicker">
+        <item name="colorPrimary">@color/gl_primary</item>
+        <item name="colorOnPrimary">@color/white</item>
+        <item name="colorSurface">@color/colorSurface</item>
+        <item name="colorOnSurface">@color/colorTextPrimary</item>
+    </style>
+
+    <style name="TimePickerButtonStyle" parent="Widget.Material3.Button.TextButton.Dialog">
+        <item name="android:textColor">@color/gl_primary</item>
     </style>
 
 </resources>
