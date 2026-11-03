@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:background="@drawable/bg_notification_snooze_box">
+
+    <!-- Header Row: Category Badge + Dismiss Button -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginBottom="6dp">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="RESCHEDULE REMINDER"
+            android:textColor="@color/colorAccent"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            android:letterSpacing="0.06" />
+
+        <TextView
+            android:id="@+id/btn_notif_dismiss"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="✕ Dismiss"
+            android:textColor="@color/colorTextSecondary"
+            android:textSize="12sp"
+            android:paddingHorizontal="6dp"
+            android:paddingVertical="4dp" />
+    </LinearLayout>
+
+    <!-- Reminder Title -->
+    <TextView
+        android:id="@+id/notif_reminder_title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Reminder title"
+        android:textColor="@color/colorTextPrimary"
+        android:textSize="15sp"
+        android:textStyle="bold"
+        android:maxLines="2"
+        android:ellipsize="end"
+        android:layout_marginBottom="6dp" />
+
+    <!-- Subtitle instruction -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Choose snooze duration:"
+        android:textColor="@color/colorTextSecondary"
+        android:textSize="13sp"
+        android:layout_marginBottom="12dp" />
+
+    <!-- Row 1: 10 Min & 20 Min -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginBottom="8dp">
+
+        <TextView
+            android:id="@+id/btn_notif_10_min"
+            android:layout_width="0dp"
+            android:layout_height="38dp"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:text="10 Minutes"
+            android:textColor="@color/colorTextPrimary"
+            android:textSize="13sp"
+            android:textStyle="bold"
+            android:background="@drawable/bg_notif_button_pill"
+            android:layout_marginEnd="5dp" />
+
+        <TextView
+            android:id="@+id/btn_notif_20_min"
+            android:layout_width="0dp"
+            android:layout_height="38dp"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:text="20 Minutes"
+            android:textColor="@color/colorTextPrimary"
+            android:textSize="13sp"
+            android:textStyle="bold"
+            android:background="@drawable/bg_notif_button_pill"
+            android:layout_marginStart="5dp" />
+    </LinearLayout>
+
+    <!-- Row 2: 30 Min & 1 Hour -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginBottom="10dp">
+
+        <TextView
+            android:id="@+id/btn_notif_30_min"
+            android:layout_width="0dp"
+            android:layout_height="38dp"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:text="30 Minutes"
+            android:textColor="@color/colorTextPrimary"
+            android:textSize="13sp"
+            android:textStyle="bold"
+            android:background="@drawable/bg_notif_button_pill"
+            android:layout_marginEnd="5dp" />
+
+        <TextView
+            android:id="@+id/btn_notif_1_hour"
+            android:layout_width="0dp"
+            android:layout_height="38dp"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:text="1 Hour"
+            android:textColor="@color/colorTextPrimary"
+            android:textSize="13sp"
+            android:textStyle="bold"
+            android:background="@drawable/bg_notif_button_pill"
+            android:layout_marginStart="5dp" />
+    </LinearLayout>
+
+    <!-- Row 3: Custom Date & Time -->
+    <TextView
+        android:id="@+id/btn_notif_custom"
+        android:layout_width="match_parent"
+        android:layout_height="40dp"
+        android:gravity="center"
+        android:text="Choose Custom Date &amp; Time..."
+        android:textColor="#191D19"
+        android:textSize="13sp"
+        android:textStyle="bold"
+        android:background="@drawable/bg_notif_button_primary" />
+
+</LinearLayout>
+

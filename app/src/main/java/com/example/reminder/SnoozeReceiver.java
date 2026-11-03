@@ -7,14 +7,13 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Build;
-import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
+import android.widget.RemoteViews;
 import android.widget.Toast;
 
 import androidx.core.app.NotificationCompat;
-import androidx.core.app.RemoteInput;
 
 import com.example.reminder.sync.SyncManager;
 
@@ -29,7 +28,8 @@ public class SnoozeReceiver extends BroadcastReceiver {
     public static final String EXTRA_REMINDER_ID = "reminder_id";
     public static final String EXTRA_REMINDER_TEXT = "reminder_text";
     public static final String EXTRA_MINUTES = "minutes";
-    public static final String KEY_TEXT_REPLY = "key_custom_snooze_minutes";
+
+    public static final String CHANNEL_SILENT_ID = "reminder_silent_channel";
 
     private static final String TAG = "SnoozeReceiver";
 
@@ -55,28 +55,7 @@ public class SnoozeReceiver extends BroadcastReceiver {
         if (ACTION_SHOW_OPTIONS.equals(action)) {
             showNotificationOptions(context, notificationManager, reminderId, reminderText);
         } else if (ACTION_RESCHEDULE.equals(action)) {
-            int minutes = intent.getIntExtra(EXTRA_MINUTES, -1);
-
-            // Check if input was submitted via RemoteInput (Custom reply in notification shade)
-            Bundle remoteInput = RemoteInput.getResultsFromIntent(intent);
-            if (remoteInput != null) {
-                CharSequence input = remoteInput.getCharSequence(KEY_TEXT_REPLY);
-                if (input != null) {
-                    try {
-                        String clean = input.toString().trim().replaceAll("[^0-9]", "");
-                        if (!clean.isEmpty()) {
-                            minutes = Integer.parseInt(clean);
-                        }
-                    } catch (Exception e) {
-                        Log.e(TAG, "Failed to parse custom minutes: " + input, e);
-                    }
-                }
-            }
-
-            if (minutes <= 0) {
-                minutes = 10;
-            }
-
+            int minutes = intent.getIntExtra(EXTRA_MINUTES, 10);
             performReschedule(context, notificationManager, reminderId, reminderText, minutes);
         } else if (ACTION_DISMISS.equals(action)) {
             if (notificationManager != null) {
@@ -85,100 +64,126 @@ public class SnoozeReceiver extends BroadcastReceiver {
         }
     }
 
+    public static RemoteViews buildExpandedRemoteViews(Context context, int reminderId, String reminderText) {
+        RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.notification_snooze_expanded);
+        views.setTextViewText(R.id.notif_reminder_title, reminderText != null ? reminderText : "Reminder");
+
+        // 10 Min
+        Intent i10 = new Intent(context, SnoozeReceiver.class);
+        i10.setAction(ACTION_RESCHEDULE);
+        i10.putExtra(EXTRA_REMINDER_ID, reminderId);
+        i10.putExtra(EXTRA_REMINDER_TEXT, reminderText);
+        i10.putExtra(EXTRA_MINUTES, 10);
+        PendingIntent pi10 = PendingIntent.getBroadcast(
+                context,
+                reminderId * 100 + 1,
+                i10,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+        );
+        views.setOnClickPendingIntent(R.id.btn_notif_10_min, pi10);
+
+        // 20 Min
+        Intent i20 = new Intent(context, SnoozeReceiver.class);
+        i20.setAction(ACTION_RESCHEDULE);
+        i20.putExtra(EXTRA_REMINDER_ID, reminderId);
+        i20.putExtra(EXTRA_REMINDER_TEXT, reminderText);
+        i20.putExtra(EXTRA_MINUTES, 20);
+        PendingIntent pi20 = PendingIntent.getBroadcast(
+                context,
+                reminderId * 100 + 2,
+                i20,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+        );
+        views.setOnClickPendingIntent(R.id.btn_notif_20_min, pi20);
+
+        // 30 Min
+        Intent i30 = new Intent(context, SnoozeReceiver.class);
+        i30.setAction(ACTION_RESCHEDULE);
+        i30.putExtra(EXTRA_REMINDER_ID, reminderId);
+        i30.putExtra(EXTRA_REMINDER_TEXT, reminderText);
+        i30.putExtra(EXTRA_MINUTES, 30);
+        PendingIntent pi30 = PendingIntent.getBroadcast(
+                context,
+                reminderId * 100 + 3,
+                i30,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+        );
+        views.setOnClickPendingIntent(R.id.btn_notif_30_min, pi30);
+
+        // 1 Hour
+        Intent i60 = new Intent(context, SnoozeReceiver.class);
+        i60.setAction(ACTION_RESCHEDULE);
+        i60.putExtra(EXTRA_REMINDER_ID, reminderId);
+        i60.putExtra(EXTRA_REMINDER_TEXT, reminderText);
+        i60.putExtra(EXTRA_MINUTES, 60);
+        PendingIntent pi60 = PendingIntent.getBroadcast(
+                context,
+                reminderId * 100 + 4,
+                i60,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+        );
+        views.setOnClickPendingIntent(R.id.btn_notif_1_hour, pi60);
+
+        // Custom Date & Time (opens dialog directly)
+        Intent iCustom = new Intent(context, SnoozeOptionsActivity.class);
+        iCustom.putExtra("reminder_id", reminderId);
+        iCustom.putExtra("reminder_text", reminderText);
+        iCustom.putExtra("auto_open_picker", true);
+        iCustom.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        PendingIntent piCustom = PendingIntent.getActivity(
+                context,
+                reminderId * 100 + 5,
+                iCustom,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+        );
+        views.setOnClickPendingIntent(R.id.btn_notif_custom, piCustom);
+
+        // Dismiss
+        Intent iDismiss = new Intent(context, SnoozeReceiver.class);
+        iDismiss.setAction(ACTION_DISMISS);
+        iDismiss.putExtra(EXTRA_REMINDER_ID, reminderId);
+        PendingIntent piDismiss = PendingIntent.getBroadcast(
+                context,
+                reminderId * 100 + 6,
+                iDismiss,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+        );
+        views.setOnClickPendingIntent(R.id.btn_notif_dismiss, piDismiss);
+
+        return views;
+    }
+
     private void showNotificationOptions(Context context, NotificationManager notificationManager,
                                          int reminderId, String reminderText) {
         if (notificationManager == null) return;
 
-        String channelId = "reminder_channel";
-        NotificationChannel channel = new NotificationChannel(
-                channelId,
-                "Reminders",
-                NotificationManager.IMPORTANCE_HIGH
-        );
-        notificationManager.createNotificationChannel(channel);
-
-        // +10 min
-        Intent intent10 = new Intent(context, SnoozeReceiver.class);
-        intent10.setAction(ACTION_RESCHEDULE);
-        intent10.putExtra(EXTRA_REMINDER_ID, reminderId);
-        intent10.putExtra(EXTRA_REMINDER_TEXT, reminderText);
-        intent10.putExtra(EXTRA_MINUTES, 10);
-        PendingIntent pi10 = PendingIntent.getBroadcast(
-                context,
-                reminderId * 100 + 1,
-                intent10,
-                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
-        );
-
-        // +30 min
-        Intent intent30 = new Intent(context, SnoozeReceiver.class);
-        intent30.setAction(ACTION_RESCHEDULE);
-        intent30.putExtra(EXTRA_REMINDER_ID, reminderId);
-        intent30.putExtra(EXTRA_REMINDER_TEXT, reminderText);
-        intent30.putExtra(EXTRA_MINUTES, 30);
-        PendingIntent pi30 = PendingIntent.getBroadcast(
-                context,
-                reminderId * 100 + 2,
-                intent30,
-                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
-        );
-
-        // +1 hour
-        Intent intent60 = new Intent(context, SnoozeReceiver.class);
-        intent60.setAction(ACTION_RESCHEDULE);
-        intent60.putExtra(EXTRA_REMINDER_ID, reminderId);
-        intent60.putExtra(EXTRA_REMINDER_TEXT, reminderText);
-        intent60.putExtra(EXTRA_MINUTES, 60);
-        PendingIntent pi60 = PendingIntent.getBroadcast(
-                context,
-                reminderId * 100 + 3,
-                intent60,
-                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
-        );
-
-        // Custom minutes RemoteInput action
-        RemoteInput remoteInput = new RemoteInput.Builder(KEY_TEXT_REPLY)
-                .setLabel("Enter minutes (e.g. 15)")
-                .build();
-
-        Intent customIntent = new Intent(context, SnoozeReceiver.class);
-        customIntent.setAction(ACTION_RESCHEDULE);
-        customIntent.putExtra(EXTRA_REMINDER_ID, reminderId);
-        customIntent.putExtra(EXTRA_REMINDER_TEXT, reminderText);
-
-        int mutableFlags = PendingIntent.FLAG_UPDATE_CURRENT;
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            mutableFlags |= PendingIntent.FLAG_MUTABLE;
-        } else {
-            mutableFlags |= PendingIntent.FLAG_IMMUTABLE;
+        // Ensure silent low-importance channel so expanding/updating notification NEVER makes sound or vibrates
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            NotificationChannel silentChannel = new NotificationChannel(
+                    CHANNEL_SILENT_ID,
+                    "Reminder Reschedule Updates",
+                    NotificationManager.IMPORTANCE_LOW
+            );
+            silentChannel.setSound(null, null);
+            silentChannel.enableVibration(false);
+            silentChannel.setShowBadge(false);
+            notificationManager.createNotificationChannel(silentChannel);
         }
 
-        PendingIntent piCustom = PendingIntent.getBroadcast(
-                context,
-                reminderId * 100 + 4,
-                customIntent,
-                mutableFlags
-        );
+        RemoteViews expandedView = buildExpandedRemoteViews(context, reminderId, reminderText);
 
-        NotificationCompat.Action customAction = new NotificationCompat.Action.Builder(
-                android.R.drawable.ic_menu_edit,
-                "Custom",
-                piCustom)
-                .addRemoteInput(remoteInput)
-                .build();
-
-        // Build updated notification with all reschedule options
-        NotificationCompat.Builder builder = new NotificationCompat.Builder(context, channelId)
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(context, CHANNEL_SILENT_ID)
                 .setSmallIcon(android.R.drawable.ic_popup_reminder)
-                .setContentTitle("Reschedule: " + (reminderText != null ? reminderText : "Reminder"))
-                .setContentText("Choose a snooze duration:")
-                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setStyle(new NotificationCompat.DecoratedCustomViewStyle())
+                .setCustomBigContentView(expandedView)
+                .setCustomContentView(expandedView)
+                .setOnlyAlertOnce(true)
+                .setSilent(true)
+                .setDefaults(0)
+                .setVibrate(null)
+                .setSound(null)
                 .setAutoCancel(false)
-                .setOngoing(true)
-                .addAction(0, "+10 min", pi10)
-                .addAction(0, "+30 min", pi30)
-                .addAction(0, "+1 hour", pi60)
-                .addAction(customAction);
+                .setOngoing(true);
 
         notificationManager.notify(reminderId, builder.build());
     }
@@ -218,7 +223,7 @@ public class SnoozeReceiver extends BroadcastReceiver {
                     new SyncManager.SyncCallback<Long>() {
                         @Override
                         public void onSuccess(Long result) {
-                            Log.d(TAG, "Reschedule synced to server for ID: " + reminderId);
+                            Log.d(TAG, "Reschedule sync succeeded for ID: " + reminderId);
                         }
 
                         @Override
