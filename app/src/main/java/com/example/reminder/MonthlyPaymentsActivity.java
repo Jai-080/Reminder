@@ -13,6 +13,8 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
+import android.view.WindowManager;
+import android.widget.ScrollView;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -127,6 +129,7 @@ public class MonthlyPaymentsActivity extends AppCompatActivity {
         final View customDaysContainer = dialogView.findViewById(R.id.dialogCustomDaysContainer);
         final com.google.android.material.textfield.TextInputEditText customDaysInput = dialogView.findViewById(R.id.dialogCustomDaysInput);
         
+        final ScrollView dialogScrollView = dialogView.findViewById(R.id.dialogPaymentScrollView);
         final android.widget.Spinner recurrenceSpinner = dialogView.findViewById(R.id.dialogRecurrenceSpinner);
         android.widget.ArrayAdapter<String> spinnerAdapter = new android.widget.ArrayAdapter<>(
                 this,
@@ -143,6 +146,15 @@ public class MonthlyPaymentsActivity extends AppCompatActivity {
             public void onItemSelected(android.widget.AdapterView<?> parent, View view, int position, long id) {
                 if (position == 6) {
                     customDaysContainer.setVisibility(View.VISIBLE);
+                    if (dialogScrollView != null) {
+                        dialogScrollView.post(() -> {
+                            dialogScrollView.fullScroll(View.FOCUS_DOWN);
+                            customDaysInput.requestFocus();
+                            if (customDaysInput.getText() != null) {
+                                customDaysInput.setSelection(customDaysInput.getText().length());
+                            }
+                        });
+                    }
                 } else {
                     customDaysContainer.setVisibility(View.GONE);
                 }
@@ -182,7 +194,13 @@ public class MonthlyPaymentsActivity extends AppCompatActivity {
         builder.setNegativeButton("Cancel", null);
 
         androidx.appcompat.app.AlertDialog dialog = builder.create();
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
+        }
         dialog.show();
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
+        }
 
         dialog.getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
             v.setEnabled(false);
@@ -359,11 +377,21 @@ public class MonthlyPaymentsActivity extends AppCompatActivity {
         recurrenceSpinner.setSelection(selectionPos);
         customDaysContainer.setVisibility(selectionPos == 6 ? View.VISIBLE : View.GONE);
 
+        final ScrollView dialogScrollView = dialogView.findViewById(R.id.dialogPaymentScrollView);
         recurrenceSpinner.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(android.widget.AdapterView<?> parent, View view, int position, long id) {
                 if (position == 6) {
                     customDaysContainer.setVisibility(View.VISIBLE);
+                    if (dialogScrollView != null) {
+                        dialogScrollView.post(() -> {
+                            dialogScrollView.fullScroll(View.FOCUS_DOWN);
+                            customDaysInput.requestFocus();
+                            if (customDaysInput.getText() != null) {
+                                customDaysInput.setSelection(customDaysInput.getText().length());
+                            }
+                        });
+                    }
                 } else {
                     customDaysContainer.setVisibility(View.GONE);
                 }
@@ -399,7 +427,13 @@ public class MonthlyPaymentsActivity extends AppCompatActivity {
         builder.setNegativeButton("Cancel", null);
 
         androidx.appcompat.app.AlertDialog dialog = builder.create();
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
+        }
         dialog.show();
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
+        }
 
         dialog.getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
             v.setEnabled(false);

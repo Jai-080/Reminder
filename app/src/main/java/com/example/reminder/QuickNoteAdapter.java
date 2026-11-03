@@ -155,10 +155,10 @@ public class QuickNoteAdapter extends RecyclerView.Adapter<QuickNoteAdapter.Note
         com.google.android.material.textfield.TextInputEditText input = dialogView.findViewById(R.id.dialogNoteTextInput);
         input.setText(notes.get(position).getText());
 
-        new AlertDialog.Builder(context)
+        AlertDialog editDialog = new AlertDialog.Builder(context)
                 .setTitle("Edit Note")
                 .setView(dialogView)
-                .setPositiveButton("Save", (dialog, which) -> {
+                .setPositiveButton("Save", (dialogInterface, which) -> {
                     String newText = input.getText().toString().trim();
                     if (!newText.isEmpty()) {
                         QuickNote note = notes.get(position);
@@ -186,7 +186,14 @@ public class QuickNoteAdapter extends RecyclerView.Adapter<QuickNoteAdapter.Note
                     }
                 })
                 .setNegativeButton("Cancel", null)
-                .show();
+                .create();
+        if (editDialog.getWindow() != null) {
+            editDialog.getWindow().setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
+        }
+        editDialog.show();
+        if (editDialog.getWindow() != null) {
+            editDialog.getWindow().setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
+        }
     }
 
     @Override
