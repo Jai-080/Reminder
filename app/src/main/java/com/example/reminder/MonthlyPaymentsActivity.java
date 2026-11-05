@@ -1,6 +1,8 @@
 package com.example.reminder;
 
 import com.example.reminder.sync.SyncManager;
+import com.google.android.material.datepicker.MaterialDatePicker;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import android.util.Log;
 
 import android.app.AlarmManager;
@@ -32,6 +34,7 @@ public class MonthlyPaymentsActivity extends AppCompatActivity {
     private MonthlyPaymentAdapter adapter;
     private ArrayList<MonthlyPayment> payments;
     private android.widget.TextView txtNoPayments;
+    private Button clearAllButton;
 
     private BroadcastReceiver syncCompletedReceiver;
 
@@ -42,7 +45,7 @@ public class MonthlyPaymentsActivity extends AppCompatActivity {
 
         dbHelper = new PaymentDatabaseHelper(this);
         Button addButton = findViewById(R.id.addPaymentButton);
-        Button clearAllButton = findViewById(R.id.clearAllBtn);
+        clearAllButton = findViewById(R.id.clearAllBtn);
         RecyclerView recyclerView = findViewById(R.id.paymentRecyclerView);
         txtNoPayments = findViewById(R.id.txtNoPayments);
 
@@ -56,9 +59,7 @@ public class MonthlyPaymentsActivity extends AppCompatActivity {
 
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         recyclerView.setAdapter(adapter);
-        if (txtNoPayments != null) {
-            txtNoPayments.setVisibility(payments.isEmpty() ? View.VISIBLE : View.GONE);
-        }
+        updateEmptyState();
 
         addButton.setOnClickListener(v -> {
             showPaymentCreateDialog("");
@@ -66,9 +67,9 @@ public class MonthlyPaymentsActivity extends AppCompatActivity {
 
         clearAllButton.setOnClickListener(v -> {
             if (payments.isEmpty()) return;
-            new androidx.appcompat.app.AlertDialog.Builder(this)
+            new MaterialAlertDialogBuilder(this)
                     .setTitle("Clear All Payments")
-                    .setMessage("Are you sure you want to delete all payments?")
+                    .setMessage("Are you sure you want to delete all payments? This action cannot be undone.")
                     .setPositiveButton("Clear All", (dialog, which) -> {
                         // Cancel all scheduled alarms before clearing
                         for (MonthlyPayment payment : payments) {
@@ -78,9 +79,7 @@ public class MonthlyPaymentsActivity extends AppCompatActivity {
                         }
                         payments.clear();
                         adapter.notifyDataSetChanged();
-                        if (txtNoPayments != null) {
-                            txtNoPayments.setVisibility(View.VISIBLE);
-                        }
+                        updateEmptyState();
 
                         Toast.makeText(this, "All payments deleted", Toast.LENGTH_SHORT).show();
                         ReminderApplication.enqueueSyncWorker(this);
@@ -99,9 +98,7 @@ public class MonthlyPaymentsActivity extends AppCompatActivity {
                         payments.clear();
                         payments.addAll(dbHelper.getAllPayments());
                         adapter.notifyDataSetChanged();
-                        if (txtNoPayments != null) {
-                            txtNoPayments.setVisibility(payments.isEmpty() ? View.VISIBLE : View.GONE);
-                        }
+                        updateEmptyState();
                         Log.d("MonthlyPayments", "UI refresh executed");
                         System.out.println("UI refresh executed");
                         Log.d("MonthlyPayments", "Dataset size after refresh: " + payments.size());
@@ -112,6 +109,19 @@ public class MonthlyPaymentsActivity extends AppCompatActivity {
         };
         registerReceiver(syncCompletedReceiver, new IntentFilter(SyncManager.ACTION_SYNC_COMPLETED),
                 Context.RECEIVER_NOT_EXPORTED);
+    }
+
+    public void updateEmptyState() {
+        boolean empty = (payments == null || payments.isEmpty());
+        View emptyLayout = findViewById(R.id.emptyPaymentsLayout);
+        if (emptyLayout != null) {
+            emptyLayout.setVisibility(empty ? View.VISIBLE : View.GONE);
+        } else if (txtNoPayments != null) {
+            txtNoPayments.setVisibility(empty ? View.VISIBLE : View.GONE);
+        }
+        if (clearAllButton != null) {
+            clearAllButton.setVisibility(empty ? View.GONE : View.VISIBLE);
+        }
     }
 
     public void showPaymentCreateDialog(String initialName) {
@@ -175,19 +185,18 @@ public class MonthlyPaymentsActivity extends AppCompatActivity {
         dateButton.setText(sdf.format(dueCalendar.getTime()));
         
         dateButton.setOnClickListener(v -> {
-            android.app.DatePickerDialog datePickerDialog = new android.app.DatePickerDialog(
-                    this,
-                    (view, year, month, dayOfMonth) -> {
-                        dueCalendar.set(year, month, dayOfMonth, 9, 0, 0);
-                        dueCalendar.set(java.util.Calendar.MILLISECOND, 0);
-                        dateButton.setText(sdf.format(dueCalendar.getTime()));
-                    },
-                    dueCalendar.get(java.util.Calendar.YEAR),
-                    dueCalendar.get(java.util.Calendar.MONTH),
-                    dueCalendar.get(java.util.Calendar.DAY_OF_MONTH)
-            );
-            datePickerDialog.getDatePicker().setMinDate(System.currentTimeMillis() - 1000);
-            datePickerDialog.show();
+            MaterialDatePicker<Long> datePicker = MaterialDatePicker.Builder.datePicker()
+                    .setTitleText("Select Due Date")
+                    .setSelection(dueCalendar.getTimeInMillis())
+                    .build();
+            datePicker.addOnPositiveButtonClickListener(selection -> {
+                java.util.Calendar utcCal = java.util.Calendar.getInstance(java.util.TimeZone.getTimeZone("UTC"));
+                utcCal.setTimeInMillis(selection);
+                dueCalendar.set(utcCal.get(java.util.Calendar.YEAR), utcCal.get(java.util.Calendar.MONTH), utcCal.get(java.util.Calendar.DAY_OF_MONTH), 9, 0, 0);
+                dueCalendar.set(java.util.Calendar.MILLISECOND, 0);
+                dateButton.setText(sdf.format(dueCalendar.getTime()));
+            });
+            datePicker.show(getSupportFragmentManager(), "PAYMENT_CREATE_DATE");
         });
 
         builder.setPositiveButton("Save", null);
@@ -286,9 +295,7 @@ public class MonthlyPaymentsActivity extends AppCompatActivity {
             payments.clear();
             payments.addAll(dbHelper.getAllPayments());
             adapter.notifyDataSetChanged();
-            if (txtNoPayments != null) {
-                txtNoPayments.setVisibility(payments.isEmpty() ? View.VISIBLE : View.GONE);
-            }
+            updateEmptyState();
 
             Toast.makeText(this, "Payment reminder set for due date!", Toast.LENGTH_SHORT).show();
 
@@ -316,9 +323,7 @@ public class MonthlyPaymentsActivity extends AppCompatActivity {
                                 payments.clear();
                                 payments.addAll(dbHelper.getAllPayments());
                                 adapter.notifyDataSetChanged();
-                                if (txtNoPayments != null) {
-                                    txtNoPayments.setVisibility(payments.isEmpty() ? View.VISIBLE : View.GONE);
-                                }
+                                updateEmptyState();
                             });
                         }
 
@@ -409,18 +414,18 @@ public class MonthlyPaymentsActivity extends AppCompatActivity {
         dateButton.setText(sdf.format(dueCalendar.getTime()));
 
         dateButton.setOnClickListener(v -> {
-            android.app.DatePickerDialog datePickerDialog = new android.app.DatePickerDialog(
-                    this,
-                    (view, year, month, dayOfMonth) -> {
-                        dueCalendar.set(year, month, dayOfMonth, 9, 0, 0);
-                        dueCalendar.set(java.util.Calendar.MILLISECOND, 0);
-                        dateButton.setText(sdf.format(dueCalendar.getTime()));
-                    },
-                    dueCalendar.get(java.util.Calendar.YEAR),
-                    dueCalendar.get(java.util.Calendar.MONTH),
-                    dueCalendar.get(java.util.Calendar.DAY_OF_MONTH)
-            );
-            datePickerDialog.show();
+            MaterialDatePicker<Long> datePicker = MaterialDatePicker.Builder.datePicker()
+                    .setTitleText("Select Due Date")
+                    .setSelection(dueCalendar.getTimeInMillis())
+                    .build();
+            datePicker.addOnPositiveButtonClickListener(selection -> {
+                java.util.Calendar utcCal = java.util.Calendar.getInstance(java.util.TimeZone.getTimeZone("UTC"));
+                utcCal.setTimeInMillis(selection);
+                dueCalendar.set(utcCal.get(java.util.Calendar.YEAR), utcCal.get(java.util.Calendar.MONTH), utcCal.get(java.util.Calendar.DAY_OF_MONTH), 9, 0, 0);
+                dueCalendar.set(java.util.Calendar.MILLISECOND, 0);
+                dateButton.setText(sdf.format(dueCalendar.getTime()));
+            });
+            datePicker.show(getSupportFragmentManager(), "PAYMENT_EDIT_DUE_DATE");
         });
 
         builder.setPositiveButton("Save", null);
@@ -520,9 +525,7 @@ public class MonthlyPaymentsActivity extends AppCompatActivity {
             payments.clear();
             payments.addAll(dbHelper.getAllPayments());
             adapter.notifyDataSetChanged();
-            if (txtNoPayments != null) {
-                txtNoPayments.setVisibility(payments.isEmpty() ? View.VISIBLE : View.GONE);
-            }
+            updateEmptyState();
 
             Toast.makeText(this, "Payment updated", Toast.LENGTH_SHORT).show();
 
@@ -552,9 +555,7 @@ public class MonthlyPaymentsActivity extends AppCompatActivity {
             payments.clear();
             payments.addAll(dbHelper.getAllPayments());
             adapter.notifyDataSetChanged();
-            if (txtNoPayments != null) {
-                txtNoPayments.setVisibility(payments.isEmpty() ? View.VISIBLE : View.GONE);
-            }
+            updateEmptyState();
         }
 
         com.example.reminder.auth.TokenManager tokenManager = com.example.reminder.auth.TokenManager.getInstance(this);
@@ -569,9 +570,7 @@ public class MonthlyPaymentsActivity extends AppCompatActivity {
                                 payments.clear();
                                 payments.addAll(dbHelper.getAllPayments());
                                 adapter.notifyDataSetChanged();
-                                if (txtNoPayments != null) {
-                                    txtNoPayments.setVisibility(payments.isEmpty() ? View.VISIBLE : View.GONE);
-                                }
+                                updateEmptyState();
                             }
                         });
                     }

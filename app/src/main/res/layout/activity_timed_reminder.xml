@@ -124,6 +124,34 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
+            <!-- Single Unified Friendly Empty State -->
+            <LinearLayout
+                android:id="@+id/emptyRemindersLayout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:paddingVertical="36dp"
+                android:visibility="gone">
+
+                <ImageView
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:src="@drawable/ic_ms_notifications"
+                    android:alpha="0.35"
+                    app:tint="?android:attr/textColorSecondary"
+                    android:contentDescription="No reminders scheduled"
+                    android:layout_marginBottom="10dp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Schedule a reminder using the form above."
+                    android:textColor="?android:attr/textColorSecondary"
+                    android:textSize="13sp"
+                    android:gravity="center" />
+            </LinearLayout>
+
             <!-- Pending Section Header -->
             <TextView
                 android:id="@+id/pendingLabel"

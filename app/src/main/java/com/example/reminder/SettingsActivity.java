@@ -1,7 +1,10 @@
 package com.example.reminder;
 
+import android.content.Context;
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
+import android.view.View;
 import android.widget.RadioButton;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -12,7 +15,6 @@ import com.example.reminder.auth.AuthManager;
 import com.example.reminder.auth.LoginActivity;
 import com.example.reminder.auth.TokenManager;
 import com.example.reminder.sync.SyncManager;
-import com.example.reminder.ui.ThemeToggleView;
 import com.example.reminder.utils.ThemeManager;
 import com.example.reminder.utils.UIUtils;
 import com.google.android.material.appbar.MaterialToolbar;
@@ -27,8 +29,6 @@ import java.util.Locale;
 
 public class SettingsActivity extends AppCompatActivity implements ThemeManager.ThemeChangeListener {
 
-    private ThemeToggleView settingsThemeToggle;
-    private TextView txtCurrentThemeLabel;
     private RadioButton rbThemeSystem, rbThemeLight, rbThemeDark;
     private MaterialCardView cardThemeSystem, cardThemeLight, cardThemeDark;
 
@@ -47,8 +47,6 @@ public class SettingsActivity extends AppCompatActivity implements ThemeManager.
             toolbar.setNavigationOnClickListener(v -> finish());
         }
 
-        settingsThemeToggle = findViewById(R.id.settingsThemeToggle);
-        txtCurrentThemeLabel = findViewById(R.id.txtCurrentThemeLabel);
         rbThemeSystem = findViewById(R.id.rbThemeSystem);
         rbThemeLight = findViewById(R.id.rbThemeLight);
         rbThemeDark = findViewById(R.id.rbThemeDark);
@@ -68,8 +66,68 @@ public class SettingsActivity extends AppCompatActivity implements ThemeManager.
         cardThemeDark.setOnClickListener(v -> selectTheme(ThemeManager.MODE_DARK));
 
         setupAccountDetails();
+        setupContactLinks();
 
         ThemeManager.registerListener(this);
+    }
+
+    private void setupContactLinks() {
+        View btnGithub = findViewById(R.id.btnContactGithub);
+        if (btnGithub != null) {
+            String githubUrl = "https://github.com/Jai-080/Reminder";
+            btnGithub.setOnClickListener(v -> openUrl(githubUrl));
+            btnGithub.setOnLongClickListener(v -> {
+                copyToClipboard("GitHub Link", githubUrl, "GitHub link copied to clipboard");
+                return true;
+            });
+        }
+
+        View btnLinkedin = findViewById(R.id.btnContactLinkedin);
+        if (btnLinkedin != null) {
+            String linkedinUrl = "https://www.linkedin.com/in/jayachandran-k-91283728a/";
+            btnLinkedin.setOnClickListener(v -> openUrl(linkedinUrl));
+            btnLinkedin.setOnLongClickListener(v -> {
+                copyToClipboard("LinkedIn Link", linkedinUrl, "LinkedIn link copied to clipboard");
+                return true;
+            });
+        }
+
+        View btnEmail = findViewById(R.id.btnContactEmail);
+        if (btnEmail != null) {
+            String email = "jayachandran8269@gmail.com";
+            btnEmail.setOnClickListener(v -> {
+                try {
+                    Intent intent = new Intent(Intent.ACTION_SENDTO);
+                    intent.setData(Uri.parse("mailto:" + email));
+                    intent.putExtra(Intent.EXTRA_SUBJECT, "Reminder App Feedback");
+                    startActivity(intent);
+                } catch (Exception e) {
+                    copyToClipboard("Developer Email", email, "Email copied to clipboard");
+                }
+            });
+            btnEmail.setOnLongClickListener(v -> {
+                copyToClipboard("Developer Email", email, "Email copied to clipboard");
+                return true;
+            });
+        }
+    }
+
+    private void openUrl(String url) {
+        try {
+            Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+            startActivity(intent);
+        } catch (Exception e) {
+            Toast.makeText(this, "Could not open link", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void copyToClipboard(String label, String text, String successToast) {
+        android.content.ClipboardManager clipboard = (android.content.ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
+        if (clipboard != null) {
+            android.content.ClipData clip = android.content.ClipData.newPlainText(label, text);
+            clipboard.setPrimaryClip(clip);
+            Toast.makeText(this, successToast, Toast.LENGTH_SHORT).show();
+        }
     }
 
     private void selectTheme(int mode) {
@@ -79,19 +137,10 @@ public class SettingsActivity extends AppCompatActivity implements ThemeManager.
 
     private void updateThemeRadioSelection() {
         int currentMode = ThemeManager.getThemeMode(this);
-        boolean isDarkActive = ThemeManager.isDarkActive(this);
 
         rbThemeSystem.setChecked(currentMode == ThemeManager.MODE_SYSTEM);
         rbThemeLight.setChecked(currentMode == ThemeManager.MODE_LIGHT);
         rbThemeDark.setChecked(currentMode == ThemeManager.MODE_DARK);
-
-        if (currentMode == ThemeManager.MODE_SYSTEM) {
-            txtCurrentThemeLabel.setText("System Default (" + (isDarkActive ? "Dark" : "Light") + " active)");
-        } else if (currentMode == ThemeManager.MODE_DARK) {
-            txtCurrentThemeLabel.setText("Dark Mode 🌙");
-        } else {
-            txtCurrentThemeLabel.setText("Light Mode ☀️");
-        }
     }
 
     private void setupAccountDetails() {

@@ -79,16 +79,33 @@
                 android:layout_marginBottom="16dp" />
 
             <!-- Empty State -->
-            <TextView
-                android:id="@+id/txtNoPayments"
+            <LinearLayout
+                android:id="@+id/emptyPaymentsLayout"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="No recurring payments scheduled"
-                android:textColor="?android:attr/textColorSecondary"
-                android:textSize="13sp"
+                android:orientation="vertical"
                 android:gravity="center"
-                android:paddingVertical="32dp"
-                android:visibility="gone" />
+                android:paddingVertical="36dp"
+                android:visibility="gone">
+
+                <ImageView
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:src="@drawable/ic_ms_payments"
+                    android:alpha="0.35"
+                    app:tint="?android:attr/textColorSecondary"
+                    android:contentDescription="No payments"
+                    android:layout_marginBottom="10dp" />
+
+                <TextView
+                    android:id="@+id/txtNoPayments"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Schedule a payment reminder above to track bills."
+                    android:textColor="?android:attr/textColorSecondary"
+                    android:textSize="13sp"
+                    android:gravity="center" />
+            </LinearLayout>
 
             <!-- Payment list -->
             <androidx.recyclerview.widget.RecyclerView

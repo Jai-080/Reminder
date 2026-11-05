@@ -83,6 +83,14 @@ public class MainActivity extends AppCompatActivity {
             getSupportActionBar().hide();
         }
 
+        // Ensure title bar strictly maintains solid color on scroll without tinting
+        com.google.android.material.appbar.AppBarLayout appBarLayout = findViewById(R.id.appBarLayout);
+        if (appBarLayout != null) {
+            appBarLayout.setLiftOnScroll(false);
+            appBarLayout.setLiftable(false);
+            appBarLayout.setLifted(false);
+        }
+
         createNotificationChannel();
         requestExactAlarmPermission();
         requestNotificationPermission();
@@ -280,11 +288,38 @@ public class MainActivity extends AppCompatActivity {
             });
         }
 
+        // When typing in quick notes give it the same behavior of custom days input field (scroll up for better viewing)
+        if (quickNoteInput != null && notesSectionCard != null && scrollView != null) {
+            Runnable scrollToNotes = () -> scrollView.smoothScrollTo(0, notesSectionCard.getTop());
+            quickNoteInput.setOnFocusChangeListener((v, hasFocus) -> {
+                if (hasFocus) {
+                    scrollView.postDelayed(scrollToNotes, 250);
+                }
+            });
+            quickNoteInput.setOnClickListener(v -> {
+                scrollView.postDelayed(scrollToNotes, 250);
+            });
+            quickNoteInput.addTextChangedListener(new android.text.TextWatcher() {
+                @Override
+                public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+                @Override
+                public void onTextChanged(CharSequence s, int start, int before, int count) {
+                    if (s.length() > 0) {
+                        scrollView.post(scrollToNotes);
+                    }
+                }
+
+                @Override
+                public void afterTextChanged(android.text.Editable s) {}
+            });
+        }
+
         btnClearAll.setOnClickListener(v -> {
             if (noteList.isEmpty()) return;
-            new androidx.appcompat.app.AlertDialog.Builder(this)
+            new com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
                     .setTitle("Clear All Notes")
-                    .setMessage("Are you sure you want to delete all notes?")
+                    .setMessage("Are you sure you want to delete all notes? This action cannot be undone.")
                     .setPositiveButton("Clear All", (dialog, which) -> {
                         for (QuickNote note : noteList) {
                             noteDbHelper.softDeleteNote(note.getId());
@@ -313,6 +348,11 @@ public class MainActivity extends AppCompatActivity {
             public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {
                 // Not implemented
             }
+
+            @Override
+            public boolean isLongPressDragEnabled() {
+                return false;
+            }
         });
         itemTouchHelper.attachToRecyclerView(quickNotesRecycler);
 
@@ -324,14 +364,16 @@ public class MainActivity extends AppCompatActivity {
                 long id = noteDbHelper.addNote(noteText);
                 if (id != -1) {
                     int localId = (int) id;
-                    QuickNote note = new QuickNote(localId, null, noteText, false, noteList.size() + 1, "PENDING");
-                    int insertIndex = 0;
-                    while (insertIndex < noteList.size() && !noteList.get(insertIndex).isCompleted()) {
-                        insertIndex++;
+                    // Newly created note goes in at the top (index 0)
+                    QuickNote note = new QuickNote(localId, null, noteText, false, 0, "PENDING");
+                    noteList.add(0, note);
+                    for (int i = 0; i < noteList.size(); i++) {
+                        QuickNote n = noteList.get(i);
+                        n.setPosition(i);
+                        noteDbHelper.updateNotePosition(n.getId(), i);
                     }
-                    noteList.add(insertIndex, note);
-                    quickNoteAdapter.notifyItemInserted(insertIndex);
-                    quickNotesRecycler.scrollToPosition(insertIndex);
+                    quickNoteAdapter.notifyItemInserted(0);
+                    quickNotesRecycler.scrollToPosition(0);
                     quickNoteInput.setText("");
                     QuickNotesWidgetProvider.updateWidget(getApplicationContext());
                     refreshDashboardStats();

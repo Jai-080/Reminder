@@ -11,7 +11,9 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.RecyclerView;
+import com.google.android.material.datepicker.MaterialDatePicker;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 import java.text.DateFormat;
@@ -71,70 +73,79 @@ public class ReminderAdapter extends RecyclerView.Adapter<ReminderAdapter.ViewHo
             final java.util.Calendar calendar = java.util.Calendar.getInstance();
             calendar.setTimeInMillis(reminder.getEffectiveTime());
 
-            new android.app.DatePickerDialog(context, (view, year, month, dayOfMonth) -> {
-                calendar.set(java.util.Calendar.YEAR, year);
-                calendar.set(java.util.Calendar.MONTH, month);
-                calendar.set(java.util.Calendar.DAY_OF_MONTH, dayOfMonth);
+            if (context instanceof AppCompatActivity) {
+                AppCompatActivity activity = (AppCompatActivity) context;
+                MaterialDatePicker<Long> datePicker = MaterialDatePicker.Builder.datePicker()
+                        .setTitleText("Reschedule Date")
+                        .setSelection(calendar.getTimeInMillis())
+                        .build();
+                datePicker.addOnPositiveButtonClickListener(selection -> {
+                    java.util.Calendar utcCal = java.util.Calendar.getInstance(java.util.TimeZone.getTimeZone("UTC"));
+                    utcCal.setTimeInMillis(selection);
+                    calendar.set(java.util.Calendar.YEAR, utcCal.get(java.util.Calendar.YEAR));
+                    calendar.set(java.util.Calendar.MONTH, utcCal.get(java.util.Calendar.MONTH));
+                    calendar.set(java.util.Calendar.DAY_OF_MONTH, utcCal.get(java.util.Calendar.DAY_OF_MONTH));
 
-                java.util.Calendar now = java.util.Calendar.getInstance();
-                int hour = now.get(java.util.Calendar.HOUR_OF_DAY);
-                int minute = now.get(java.util.Calendar.MINUTE);
+                    java.util.Calendar now = java.util.Calendar.getInstance();
+                    int hour = now.get(java.util.Calendar.HOUR_OF_DAY);
+                    int minute = now.get(java.util.Calendar.MINUTE);
 
-                new CustomTimePickerDialog(context, R.style.TimePickerTheme, (timeView, hourOfDay, min) -> {
-                    calendar.set(java.util.Calendar.HOUR_OF_DAY, hourOfDay);
-                    calendar.set(java.util.Calendar.MINUTE, min);
-                    calendar.set(java.util.Calendar.SECOND, 0);
-                    calendar.set(java.util.Calendar.MILLISECOND, 0);
+                    new CustomTimePickerDialog(context, R.style.TimePickerTheme, (timeView, hourOfDay, min) -> {
+                        calendar.set(java.util.Calendar.HOUR_OF_DAY, hourOfDay);
+                        calendar.set(java.util.Calendar.MINUTE, min);
+                        calendar.set(java.util.Calendar.SECOND, 0);
+                        calendar.set(java.util.Calendar.MILLISECOND, 0);
 
-                    long triggerTime = calendar.getTimeInMillis();
-                    if (triggerTime <= System.currentTimeMillis()) {
-                        android.widget.Toast.makeText(context, "Please choose a future time", android.widget.Toast.LENGTH_SHORT).show();
-                        return;
-                    }
+                        long triggerTime = calendar.getTimeInMillis();
+                        if (triggerTime <= System.currentTimeMillis()) {
+                            android.widget.Toast.makeText(context, "Please choose a future time", android.widget.Toast.LENGTH_SHORT).show();
+                            return;
+                        }
 
-                    // Reschedule alarm
-                    AlarmUtils.cancelReminder(context, reminder.getId());
+                        // Reschedule alarm
+                        AlarmUtils.cancelReminder(context, reminder.getId());
 
-                    // Update local DB status and sync (reusing the snoozeReminder workflow)
-                    dbHelper.snoozeReminder(reminder.getId(), triggerTime);
+                        // Update local DB status and sync (reusing the snoozeReminder workflow)
+                        dbHelper.snoozeReminder(reminder.getId(), triggerTime);
 
-                    AlarmUtils.scheduleReminder(context, reminder.getId(), reminder.getText(), triggerTime);
+                        AlarmUtils.scheduleReminder(context, reminder.getId(), reminder.getText(), triggerTime);
 
-                    Toast.makeText(context, "Reminder rescheduled", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(context, "Reminder rescheduled", Toast.LENGTH_SHORT).show();
 
-                    SyncManager.getInstance(context).uploadReminder(
-                            reminder.getId(),
-                            reminder.getText(),
-                            reminder.getTime(),
-                            false,
-                            triggerTime,
-                            reminder.getServerId(),
-                            new SyncManager.SyncCallback<Long>() {
-                                @Override
-                                public void onSuccess(Long result) {
-                                    android.util.Log.d("ReminderAdapter", "Reminder reschedule sync succeeded");
+                        SyncManager.getInstance(context).uploadReminder(
+                                reminder.getId(),
+                                reminder.getText(),
+                                reminder.getTime(),
+                                false,
+                                triggerTime,
+                                reminder.getServerId(),
+                                new SyncManager.SyncCallback<Long>() {
+                                    @Override
+                                    public void onSuccess(Long result) {
+                                        android.util.Log.d("ReminderAdapter", "Reminder reschedule synced to server");
+                                    }
+
+                                    @Override
+                                    public void onError(String error) {
+                                        android.util.Log.e("ReminderAdapter", "Failed to sync reminder reschedule: " + error);
+                                    }
                                 }
+                        );
 
-                                @Override
-                                public void onError(String error) {
-                                    android.util.Log.e("ReminderAdapter", "Reminder reschedule sync failed: " + error);
-                                }
-                            }
-                    );
+                        int currentPos = holder.getAdapterPosition();
+                        if (currentPos != androidx.recyclerview.widget.RecyclerView.NO_POSITION) {
+                            reminders.remove(currentPos);
+                            notifyItemRemoved(currentPos);
+                            notifyItemRangeChanged(currentPos, reminders.size());
+                        }
 
-                    int currentPos = holder.getAdapterPosition();
-                    if (currentPos != androidx.recyclerview.widget.RecyclerView.NO_POSITION) {
-                        reminders.remove(currentPos);
-                        notifyItemRemoved(currentPos);
-                        notifyItemRangeChanged(currentPos, reminders.size());
-                    }
-
-                    if (deleteListener != null) {
-                        deleteListener.onReminderDeleted();
-                    }
-
-                }, hour, minute, true).show();
-            }, calendar.get(java.util.Calendar.YEAR), calendar.get(java.util.Calendar.MONTH), calendar.get(java.util.Calendar.DAY_OF_MONTH)).show();
+                        if (deleteListener != null) {
+                            deleteListener.onReminderDeleted();
+                        }
+                    }, hour, minute, false).show();
+                });
+                datePicker.show(activity.getSupportFragmentManager(), "RESCHEDULE_DATE_PICKER");
+            }
         });
 
         holder.deleteButton.setOnClickListener(v -> {

@@ -1,9 +1,9 @@
 package com.example.reminder;
 
 import com.example.reminder.sync.SyncManager;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import android.util.Log;
 
-import android.app.AlertDialog;
 import android.content.Context;
 import android.text.InputType;
 import android.view.LayoutInflater;
@@ -13,6 +13,7 @@ import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.CheckBox;
 import android.widget.ImageView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
@@ -110,22 +111,57 @@ public class QuickNoteAdapter extends RecyclerView.Adapter<QuickNoteAdapter.Note
             }
         };
 
+        // Only checking the checkbox toggles completion state
         holder.noteCheckBox.setOnClickListener(toggleListener);
-        holder.itemView.setOnClickListener(toggleListener);
 
-        // Edit note text on clicking the text directly
-        holder.noteText.setOnClickListener(v -> {
-            showEditDialog(position);
-        });
+        // Clicking the text, container or card opens the Edit Note dialog
+        View.OnClickListener editClickListener = v -> {
+            showEditDialog(holder.getAdapterPosition());
+        };
+        holder.itemView.setOnClickListener(editClickListener);
+        if (holder.contentContainer != null) {
+            holder.contentContainer.setOnClickListener(editClickListener);
+        }
+        holder.noteText.setOnClickListener(editClickListener);
 
-        // Quick delete note button click
+        // Long press anywhere on the note copies text to clipboard and shows Toast
+        View.OnLongClickListener copyLongClickListener = v -> {
+            int pos = holder.getAdapterPosition();
+            if (pos != RecyclerView.NO_POSITION && pos < notes.size()) {
+                QuickNote noteToCopy = notes.get(pos);
+                if (noteToCopy != null && noteToCopy.getText() != null) {
+                    android.content.ClipboardManager clipboard = (android.content.ClipboardManager) context.getSystemService(Context.CLIPBOARD_SERVICE);
+                    if (clipboard != null) {
+                        android.content.ClipData clip = android.content.ClipData.newPlainText("Quick Note", noteToCopy.getText());
+                        clipboard.setPrimaryClip(clip);
+                        v.performHapticFeedback(android.view.HapticFeedbackConstants.LONG_PRESS);
+                    }
+                }
+            }
+            return true;
+        };
+        holder.itemView.setOnLongClickListener(copyLongClickListener);
+        if (holder.contentContainer != null) {
+            holder.contentContainer.setOnLongClickListener(copyLongClickListener);
+        }
+        holder.noteText.setOnLongClickListener(copyLongClickListener);
+        holder.noteCheckBox.setOnLongClickListener(copyLongClickListener);
+
+        // Quick delete note button click with Material 3 confirmation dialog
         holder.btnDeleteNote.setOnClickListener(v -> {
-            new AlertDialog.Builder(context)
+            int pos = holder.getAdapterPosition();
+            if (pos == RecyclerView.NO_POSITION || pos >= notes.size()) return;
+            QuickNote noteToDelete = notes.get(pos);
+
+            new MaterialAlertDialogBuilder(context)
                     .setTitle("Delete Note")
                     .setMessage("Are you sure you want to delete this note?")
                     .setPositiveButton("Delete", (dialog, which) -> {
+                        int currentPos = holder.getAdapterPosition();
+                        if (currentPos == RecyclerView.NO_POSITION || currentPos >= notes.size()) return;
+
                         // Sync deletion
-                        SyncManager.getInstance(context).deleteNote(note.getId(), note.getServerId(), new SyncManager.SyncCallback<Void>() {
+                        SyncManager.getInstance(context).deleteNote(noteToDelete.getId(), noteToDelete.getServerId(), new SyncManager.SyncCallback<Void>() {
                             @Override
                             public void onSuccess(Void result) {
                                 Log.d("QuickNoteAdapter", "Note deletion synced to server");
@@ -137,9 +173,9 @@ public class QuickNoteAdapter extends RecyclerView.Adapter<QuickNoteAdapter.Note
                             }
                         });
 
-                        notes.remove(position);
-                        notifyItemRemoved(position);
-                        notifyItemRangeChanged(position, notes.size());
+                        notes.remove(currentPos);
+                        notifyItemRemoved(currentPos);
+                        notifyItemRangeChanged(currentPos, notes.size());
                         QuickNotesWidgetProvider.updateWidget(context);
                         if (context instanceof MainActivity) {
                             ((MainActivity) context).refreshDashboardStats();
@@ -151,17 +187,22 @@ public class QuickNoteAdapter extends RecyclerView.Adapter<QuickNoteAdapter.Note
     }
 
     private void showEditDialog(int position) {
+        if (position == RecyclerView.NO_POSITION || position >= notes.size()) return;
+        QuickNote note = notes.get(position);
+
         View dialogView = LayoutInflater.from(context).inflate(R.layout.dialog_edit_quick_note, null);
         com.google.android.material.textfield.TextInputEditText input = dialogView.findViewById(R.id.dialogNoteTextInput);
-        input.setText(notes.get(position).getText());
+        input.setText(note.getText());
+        if (input.getText() != null) {
+            input.setSelection(input.getText().length());
+        }
 
-        AlertDialog editDialog = new AlertDialog.Builder(context)
+        androidx.appcompat.app.AlertDialog editDialog = new MaterialAlertDialogBuilder(context)
                 .setTitle("Edit Note")
                 .setView(dialogView)
                 .setPositiveButton("Save", (dialogInterface, which) -> {
                     String newText = input.getText().toString().trim();
                     if (!newText.isEmpty()) {
-                        QuickNote note = notes.get(position);
                         note.setText(newText);
                         noteDbHelper.updateNote(note.getId(), newText, note.isCompleted());
 
@@ -187,13 +228,19 @@ public class QuickNoteAdapter extends RecyclerView.Adapter<QuickNoteAdapter.Note
                 })
                 .setNegativeButton("Cancel", null)
                 .create();
+
+        editDialog.setOnShowListener(d -> {
+            input.requestFocus();
+            android.view.inputmethod.InputMethodManager imm = (android.view.inputmethod.InputMethodManager) context.getSystemService(Context.INPUT_METHOD_SERVICE);
+            if (imm != null) {
+                imm.showSoftInput(input, android.view.inputmethod.InputMethodManager.SHOW_IMPLICIT);
+            }
+        });
+
         if (editDialog.getWindow() != null) {
             editDialog.getWindow().setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
         }
         editDialog.show();
-        if (editDialog.getWindow() != null) {
-            editDialog.getWindow().setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
-        }
     }
 
     @Override
@@ -226,12 +273,14 @@ public class QuickNoteAdapter extends RecyclerView.Adapter<QuickNoteAdapter.Note
     }
 
     static class NoteViewHolder extends RecyclerView.ViewHolder {
+        View contentContainer;
         TextView noteText;
         CheckBox noteCheckBox;
         ImageView btnDeleteNote;
 
         public NoteViewHolder(@NonNull View itemView) {
             super(itemView);
+            contentContainer = itemView.findViewById(R.id.noteContentContainer);
             noteText = itemView.findViewById(R.id.noteText);
             noteCheckBox = itemView.findViewById(R.id.noteCheckBox);
             btnDeleteNote = itemView.findViewById(R.id.btnDeleteNote);

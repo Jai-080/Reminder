@@ -70,10 +70,16 @@ public class SnoozeOptionsActivity extends AppCompatActivity {
         Calendar now = Calendar.getInstance();
         final Calendar selectedDateTime = Calendar.getInstance();
 
-        new android.app.DatePickerDialog(this, (view, year, month, dayOfMonth) -> {
-            selectedDateTime.set(Calendar.YEAR, year);
-            selectedDateTime.set(Calendar.MONTH, month);
-            selectedDateTime.set(Calendar.DAY_OF_MONTH, dayOfMonth);
+        com.google.android.material.datepicker.MaterialDatePicker<Long> datePicker = com.google.android.material.datepicker.MaterialDatePicker.Builder.datePicker()
+                .setTitleText("Reschedule Date")
+                .setSelection(selectedDateTime.getTimeInMillis())
+                .build();
+        datePicker.addOnPositiveButtonClickListener(selection -> {
+            Calendar utcCal = Calendar.getInstance(java.util.TimeZone.getTimeZone("UTC"));
+            utcCal.setTimeInMillis(selection);
+            selectedDateTime.set(Calendar.YEAR, utcCal.get(Calendar.YEAR));
+            selectedDateTime.set(Calendar.MONTH, utcCal.get(Calendar.MONTH));
+            selectedDateTime.set(Calendar.DAY_OF_MONTH, utcCal.get(Calendar.DAY_OF_MONTH));
 
             int hour = now.get(Calendar.HOUR_OF_DAY);
             int minute = now.get(Calendar.MINUTE);
@@ -91,9 +97,9 @@ public class SnoozeOptionsActivity extends AppCompatActivity {
                 }
 
                 performReschedule(triggerTime, "Rescheduled successfully");
-            }, hour, minute, true).show();
-
-        }, now.get(Calendar.YEAR), now.get(Calendar.MONTH), now.get(Calendar.DAY_OF_MONTH)).show();
+            }, hour, minute, false).show();
+        });
+        datePicker.show(getSupportFragmentManager(), "RESCHEDULE_CUSTOM_DATE");
     }
 
     private void performReschedule(long targetTimeMillis, String successMessage) {

@@ -12,6 +12,9 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="?android:attr/windowBackground"
+        app:liftOnScroll="false"
+        app:liftOnScrollColor="@android:color/transparent"
+        app:statusBarForeground="@null"
         app:elevation="0dp">
 
         <LinearLayout

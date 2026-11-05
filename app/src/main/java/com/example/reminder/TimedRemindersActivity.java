@@ -1,6 +1,8 @@
 package com.example.reminder;
 
 import com.example.reminder.sync.SyncManager;
+import com.google.android.material.datepicker.MaterialDatePicker;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 import android.app.AlarmManager;
 import android.app.DatePickerDialog;
@@ -92,9 +94,9 @@ public class TimedRemindersActivity extends AppCompatActivity {
         clearAllBtn.setOnClickListener(v -> {
             List<Reminder> allReminders = dbHelper.getAllReminders();
             if (allReminders.isEmpty()) return;
-            new androidx.appcompat.app.AlertDialog.Builder(this)
+            new MaterialAlertDialogBuilder(this)
                     .setTitle("Clear All Reminders")
-                    .setMessage("Are you sure you want to delete all reminders?")
+                    .setMessage("Are you sure you want to delete all reminders? This action cannot be undone.")
                     .setPositiveButton("Clear All", (dialog, which) -> {
                         for (Reminder r : allReminders) {
                             AlarmUtils.cancelReminder(this, r.getId());
@@ -120,15 +122,21 @@ public class TimedRemindersActivity extends AppCompatActivity {
             }
 
             Calendar now = Calendar.getInstance();
-            new DatePickerDialog(this, (DatePicker view, int year, int month, int dayOfMonth) -> {
-                selectedDateTime.set(Calendar.YEAR, year);
-                selectedDateTime.set(Calendar.MONTH, month);
-                selectedDateTime.set(Calendar.DAY_OF_MONTH, dayOfMonth);
+            MaterialDatePicker<Long> datePicker = MaterialDatePicker.Builder.datePicker()
+                    .setTitleText("Select Reminder Date")
+                    .setSelection(selectedDateTime.getTimeInMillis())
+                    .build();
+            datePicker.addOnPositiveButtonClickListener(selection -> {
+                Calendar utcCal = Calendar.getInstance(java.util.TimeZone.getTimeZone("UTC"));
+                utcCal.setTimeInMillis(selection);
+                selectedDateTime.set(Calendar.YEAR, utcCal.get(Calendar.YEAR));
+                selectedDateTime.set(Calendar.MONTH, utcCal.get(Calendar.MONTH));
+                selectedDateTime.set(Calendar.DAY_OF_MONTH, utcCal.get(Calendar.DAY_OF_MONTH));
 
                 int hour = now.get(Calendar.HOUR_OF_DAY);
                 int minute = now.get(Calendar.MINUTE);
 
-                // ✅ Modern spinner style instead of old analog clock
+                // Modern spinner style time picker
                 new CustomTimePickerDialog(this, R.style.TimePickerTheme, (timeView, h, m) -> {
                     selectedDateTime.set(Calendar.HOUR_OF_DAY, h);
                     selectedDateTime.set(Calendar.MINUTE, m);
@@ -177,13 +185,12 @@ public class TimedRemindersActivity extends AppCompatActivity {
                     );
 
                     long diff = triggerTime - System.currentTimeMillis();
-                    long hours = TimeUnit.MILLISECONDS.toHours(diff);
-                    long minutes = TimeUnit.MILLISECONDS.toMinutes(diff) % 60;
+                    long hours = java.util.concurrent.TimeUnit.MILLISECONDS.toHours(diff);
+                    long minutes = java.util.concurrent.TimeUnit.MILLISECONDS.toMinutes(diff) % 60;
                     Toast.makeText(this, "Reminder set in " + hours + "h " + minutes + "m", Toast.LENGTH_LONG).show();
-
-                }, hour, minute, true).show();
-
-            }, now.get(Calendar.YEAR), now.get(Calendar.MONTH), now.get(Calendar.DAY_OF_MONTH)).show();
+                }, hour, minute, false).show();
+            });
+            datePicker.show(getSupportFragmentManager(), "REMINDER_DATE_PICKER");
         });
 
         reminderExpiredReceiver = new BroadcastReceiver() {
@@ -240,10 +247,23 @@ public class TimedRemindersActivity extends AppCompatActivity {
             }
         }
 
-        pendingLabel.setVisibility(pendingReminders.isEmpty() ? View.GONE : View.VISIBLE);
-        expiredLabel.setVisibility(expiredReminders.isEmpty() ? View.GONE : View.VISIBLE);
-        txtNoPendingReminders.setVisibility(pendingReminders.isEmpty() ? View.VISIBLE : View.GONE);
-        txtNoExpiredReminders.setVisibility(expiredReminders.isEmpty() ? View.VISIBLE : View.GONE);
+        boolean hasPending = !pendingReminders.isEmpty();
+        boolean hasExpired = !expiredReminders.isEmpty();
+
+        View emptyRemindersLayout = findViewById(R.id.emptyRemindersLayout);
+        if (emptyRemindersLayout != null) {
+            emptyRemindersLayout.setVisibility((!hasPending && !hasExpired) ? View.VISIBLE : View.GONE);
+        }
+
+        pendingLabel.setVisibility(hasPending ? View.VISIBLE : View.GONE);
+        expiredLabel.setVisibility(hasExpired ? View.VISIBLE : View.GONE);
+        if (txtNoPendingReminders != null) txtNoPendingReminders.setVisibility(View.GONE);
+        if (txtNoExpiredReminders != null) txtNoExpiredReminders.setVisibility(View.GONE);
+
+        View clearAllBtn = findViewById(R.id.clearAllBtn);
+        if (clearAllBtn != null) {
+            clearAllBtn.setVisibility((hasPending || hasExpired) ? View.VISIBLE : View.GONE);
+        }
 
         pendingAdapter.notifyDataSetChanged();
         expiredAdapter.notifyDataSetChanged();

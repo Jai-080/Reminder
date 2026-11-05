@@ -1,6 +1,7 @@
 package com.example.reminder;
 
 import com.example.reminder.sync.SyncManager;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import android.util.Log;
 
 import android.app.AlarmManager;
@@ -273,10 +274,7 @@ public class MonthlyPaymentAdapter extends RecyclerView.Adapter<RecyclerView.Vie
 
                 notifyDataSetChanged();
                 if (context instanceof MonthlyPaymentsActivity) {
-                    View txtNoPayments = ((MonthlyPaymentsActivity) context).findViewById(R.id.txtNoPayments);
-                    if (txtNoPayments != null) {
-                        txtNoPayments.setVisibility(payments.isEmpty() ? View.VISIBLE : View.GONE);
-                    }
+                    ((MonthlyPaymentsActivity) context).updateEmptyState();
                 }
             }
         });
@@ -285,32 +283,36 @@ public class MonthlyPaymentAdapter extends RecyclerView.Adapter<RecyclerView.Vie
             int pos = holder.getAdapterPosition();
             if (pos != RecyclerView.NO_POSITION && pos < displayItems.size()) {
                 MonthlyPayment toDelete = (MonthlyPayment) displayItems.get(pos);
- 
-                AlarmUtils.cancelPaymentAlarm(context, toDelete.getId(), toDelete.getName());
-                AlarmUtils.cancelNotification(context, toDelete.getId());
- 
-                // Sync deletion to server
-                SyncManager.getInstance(context).deletePayment(toDelete.getId(), toDelete.getServerId(), new SyncManager.SyncCallback<Void>() {
-                    @Override
-                    public void onSuccess(Void result) {
-                        Log.d("MonthlyPaymentAdapter", "Payment deletion synced to server");
-                    }
- 
-                    @Override
-                    public void onError(String error) {
-                        Log.e("MonthlyPaymentAdapter", "Failed to sync payment deletion: " + error);
-                    }
-                });
- 
-                payments.remove(toDelete);
-                notifyDataSetChanged();
-                if (context instanceof MonthlyPaymentsActivity) {
-                    View txtNoPayments = ((MonthlyPaymentsActivity) context).findViewById(R.id.txtNoPayments);
-                    if (txtNoPayments != null) {
-                        txtNoPayments.setVisibility(payments.isEmpty() ? View.VISIBLE : View.GONE);
-                    }
-                }
-                Toast.makeText(context, "Payment deleted", Toast.LENGTH_SHORT).show();
+
+                new MaterialAlertDialogBuilder(context)
+                        .setTitle("Delete Payment")
+                        .setMessage("Are you sure you want to delete payment \"" + toDelete.getName() + "\"?")
+                        .setPositiveButton("Delete", (dialog, which) -> {
+                            AlarmUtils.cancelPaymentAlarm(context, toDelete.getId(), toDelete.getName());
+                            AlarmUtils.cancelNotification(context, toDelete.getId());
+
+                            // Sync deletion to server
+                            SyncManager.getInstance(context).deletePayment(toDelete.getId(), toDelete.getServerId(), new SyncManager.SyncCallback<Void>() {
+                                @Override
+                                public void onSuccess(Void result) {
+                                    Log.d("MonthlyPaymentAdapter", "Payment deletion synced to server");
+                                }
+
+                                @Override
+                                public void onError(String error) {
+                                    Log.e("MonthlyPaymentAdapter", "Failed to sync payment deletion: " + error);
+                                }
+                            });
+
+                            payments.remove(toDelete);
+                            notifyDataSetChanged();
+                            if (context instanceof MonthlyPaymentsActivity) {
+                                ((MonthlyPaymentsActivity) context).updateEmptyState();
+                            }
+                            Toast.makeText(context, "Payment deleted", Toast.LENGTH_SHORT).show();
+                        })
+                        .setNegativeButton("Cancel", null)
+                        .show();
             }
         });
     }

@@ -62,69 +62,7 @@
                     android:orientation="vertical"
                     android:padding="16dp">
 
-                    <!-- Custom Animated Theme Toggle Row -->
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="horizontal"
-                        android:gravity="center_vertical"
-                        android:paddingBottom="16dp">
-
-                        <LinearLayout
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:orientation="vertical">
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="Theme Mode"
-                                android:textColor="?android:attr/textColorPrimary"
-                                android:textSize="16sp"
-                                android:textStyle="bold" />
-
-                            <TextView
-                                android:id="@+id/txtCurrentThemeLabel"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="Tap toggle to switch Light / Dark"
-                                android:textColor="?android:attr/textColorSecondary"
-                                android:textSize="13sp"
-                                android:layout_marginTop="2dp" />
-                        </LinearLayout>
-
-                        <!-- The exact custom animated pill toggle -->
-                        <com.example.reminder.ui.ThemeToggleView
-                            android:id="@+id/settingsThemeToggle"
-                            android:layout_width="64dp"
-                            android:layout_height="32dp"
-                            android:layout_marginStart="12dp" />
-                    </LinearLayout>
-
-                    <View
-                        android:layout_width="match_parent"
-                        android:layout_height="1dp"
-                        android:background="@color/colorDivider"
-                        android:layout_marginBottom="16dp" />
-
-                    <!-- 3-Way Mode Selection Options -->
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Preferred Theme"
-                        android:textColor="?android:attr/textColorPrimary"
-                        android:textSize="14sp"
-                        android:textStyle="bold"
-                        android:layout_marginBottom="12dp" />
-
-                    <!-- Radio Group Replacement: Segmented M3 MaterialCard options -->
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="vertical">
-
-                        <!-- System Default Option -->
+                    <!-- System Default Option -->
                         <com.google.android.material.card.MaterialCardView
                             android:id="@+id/cardThemeSystem"
                             android:layout_width="match_parent"
@@ -287,8 +225,6 @@
                                 </LinearLayout>
                             </LinearLayout>
                         </com.google.android.material.card.MaterialCardView>
-                    </LinearLayout>
-
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
@@ -414,7 +350,8 @@
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                style="@style/Widget.Reminder.CardView">
+                style="@style/Widget.Reminder.CardView"
+                android:layout_marginBottom="24dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -433,7 +370,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Version 1.0 • Material 3 Expressive • Graphite &amp; Lime"
+                        android:text="Version 2.1 • Graphite &amp; Lime"
                         android:textColor="?android:attr/textColorSecondary"
                         android:textSize="13sp"
                         android:layout_marginTop="2dp" />
@@ -445,6 +382,233 @@
                         android:textColor="?android:attr/textColorSecondary"
                         android:textSize="12sp"
                         android:layout_marginTop="6dp" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- DEVELOPER & CONTACT SECTION -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="DEVELOPER &amp; CONTACT"
+                android:textColor="@color/gl_primary"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:letterSpacing="0.08"
+                android:layout_marginStart="4dp"
+                android:layout_marginBottom="8dp" />
+
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                style="@style/Widget.Reminder.CardView">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <!-- Developer Name Row -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:paddingBottom="14dp">
+
+                        <ImageView
+                            android:layout_width="40dp"
+                            android:layout_height="40dp"
+                            android:src="@drawable/ic_ms_person"
+                            app:tint="@color/gl_primary"
+                            android:background="@drawable/rounded_item_background"
+                            android:padding="8dp"
+                            android:contentDescription="Developer" />
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical"
+                            android:layout_marginStart="14dp">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Jayachandran K"
+                                android:textColor="?android:attr/textColorPrimary"
+                                android:textSize="16sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Developer &amp; Maintainer"
+                                android:textColor="?android:attr/textColorSecondary"
+                                android:textSize="12sp"
+                                android:layout_marginTop="2dp" />
+                        </LinearLayout>
+                    </LinearLayout>
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:background="@color/colorDivider"
+                        android:layout_marginBottom="12dp" />
+
+                    <!-- GitHub Link Row -->
+                    <LinearLayout
+                        android:id="@+id/btnContactGithub"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:background="?attr/selectableItemBackground"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:paddingVertical="10dp">
+
+                        <ImageView
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:src="@drawable/ic_github"
+                            app:tint="@color/gl_primary"
+                            android:contentDescription="GitHub" />
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical"
+                            android:layout_marginStart="14dp">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="GitHub"
+                                android:textColor="?android:attr/textColorPrimary"
+                                android:textSize="14sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="https://github.com/Jai-080/Reminder"
+                                android:textColor="@color/gl_primary"
+                                android:textSize="12sp"
+                                android:layout_marginTop="1dp" />
+                        </LinearLayout>
+
+                        <ImageView
+                            android:layout_width="18dp"
+                            android:layout_height="18dp"
+                            android:src="@drawable/ic_ms_open_in_new"
+                            app:tint="?android:attr/textColorSecondary"
+                            android:contentDescription="Open GitHub" />
+                    </LinearLayout>
+
+                    <!-- LinkedIn Link Row -->
+                    <LinearLayout
+                        android:id="@+id/btnContactLinkedin"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:background="?attr/selectableItemBackground"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:paddingVertical="10dp">
+
+                        <ImageView
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:src="@drawable/ic_linkedin"
+                            app:tint="@color/gl_primary"
+                            android:contentDescription="LinkedIn" />
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical"
+                            android:layout_marginStart="14dp">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="LinkedIn"
+                                android:textColor="?android:attr/textColorPrimary"
+                                android:textSize="14sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="https://www.linkedin.com/in/jayachandran-k-91283728a/"
+                                android:textColor="@color/gl_primary"
+                                android:textSize="12sp"
+                                android:layout_marginTop="1dp" />
+                        </LinearLayout>
+
+                        <ImageView
+                            android:layout_width="18dp"
+                            android:layout_height="18dp"
+                            android:src="@drawable/ic_ms_open_in_new"
+                            app:tint="?android:attr/textColorSecondary"
+                            android:contentDescription="Open LinkedIn" />
+                    </LinearLayout>
+
+                    <!-- Email Link Row -->
+                    <LinearLayout
+                        android:id="@+id/btnContactEmail"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:background="?attr/selectableItemBackground"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:paddingVertical="10dp">
+
+                        <ImageView
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:src="@drawable/ic_ms_email"
+                            app:tint="@color/gl_primary"
+                            android:contentDescription="Email" />
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical"
+                            android:layout_marginStart="14dp">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Email"
+                                android:textColor="?android:attr/textColorPrimary"
+                                android:textSize="14sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="jayachandran8269@gmail.com"
+                                android:textColor="?android:attr/textColorSecondary"
+                                android:textSize="12sp"
+                                android:layout_marginTop="1dp" />
+                        </LinearLayout>
+
+                        <ImageView
+                            android:layout_width="18dp"
+                            android:layout_height="18dp"
+                            android:src="@drawable/ic_ms_open_in_new"
+                            app:tint="?android:attr/textColorSecondary"
+                            android:contentDescription="Send Email" />
+                    </LinearLayout>
+
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
